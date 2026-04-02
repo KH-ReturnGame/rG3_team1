@@ -9,7 +9,7 @@ public class BossAI : MonoBehaviour
 
     [Header("공격 설정")]
     public GameObject attackPrefab;    // 아까 만든 빨간 장판 프리팹
-    public float attackCooldown = 1.5f;  // 공격 간격 (초)
+    public float attackCooldown = 3f;  // 공격 간격 (초)
     
     private bool isAttacking = false;
     private Transform player;
