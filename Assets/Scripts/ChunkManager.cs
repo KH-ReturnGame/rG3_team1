@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class ChunkManager : MonoBehaviour
 {
+    //얘는 당분간 안 건들여도 될듯
     public GameObject[] chunks;
     public Transform startPoint;
     public Transform stageAssets;
