@@ -2,35 +2,35 @@ using UnityEngine;
 
 public class StageManager : MonoBehaviour
 {
-    //얘는 지금 고장난 상태
-    //근데 꼭 필요한건 아니라 그냥 방치해놓음
+    //되긴 하는데 나중에 에너미 추가하면 수정해야함
     public Transform player;
-    public Transform stageEdge;
-    public int currentStage = 1;
-    private int totalStages = 3;
-    private bool stageCompleted = false;
+    public Transform startPoint;
+    public int chunksPerStage = 2;
+    public float chunkWidth = 60f;
+
+    private int currentStage = 1;
+    public int totalStages = 5;
 
     void Update()
     {
-        float distanceToEdge = player.position.x - stageEdge.position.x;
+        float distanceFromStart = player.position.x - startPoint.position.x;
+        int detectedStage = GetStage(distanceFromStart);
 
-        if (distanceToEdge >= 0 && stageCompleted)
+        if (detectedStage != currentStage)
         {
-            currentStage++;
-            currentStage = Mathf.Clamp(currentStage, 1, totalStages);
-            stageCompleted = false;
+            currentStage = detectedStage;
             OnStageChanged(currentStage);
         }
     }
 
-    public void CompleteStage()
+    int GetStage(float distance)
     {
-        stageCompleted = true;
-        Debug.Log("Stage " + currentStage + " completed!");
+        int stage = Mathf.FloorToInt(distance / chunkWidth) + 1;
+        return Mathf.Clamp(stage, 1, totalStages);
     }
 
     void OnStageChanged(int newStage)
     {
-        Debug.Log("Entered stage " + newStage);
+        Debug.Log("stage: " + newStage);
     }
 }
