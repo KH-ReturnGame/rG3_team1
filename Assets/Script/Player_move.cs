@@ -1,83 +1,130 @@
 using UnityEngine;
+using System.Collections;
 
-[RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Move Settings")]
-    [SerializeField] private float moveSpeed = 6f;
-    [SerializeField] private float jumpForce = 12f;
+    [Header("Move")]
+    public float moveSpeed = 6f;
+    public float jumpForce = 12f;
 
-    [Header("Ground Check")]
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundCheckRadius = 0.2f;
-    [SerializeField] private LayerMask groundLayer;
+    [Header("Dash")]
+    public float dashSpeed = 20f;
+    public float dashDuration = 0.2f;
+    public float dashCooldown = 1f;
+    public float dashCost = 20f;
+
+    [Header("Ground")]
+    public Transform groundCheck;
+    public LayerMask groundLayer;
+    public float groundRadius = 0.2f;
 
     private Rigidbody2D rb;
+
     private float moveInput;
     private bool isGrounded;
-    private bool jumpPressed;
 
-    private void Awake()
+    private bool jumpPressed;
+    private bool dashPressed;
+
+    private bool isDashing;
+    private bool canDash = true;
+
+    private float stamina = 100f;
+
+    // 바라보는 방향: 오른쪽 1, 왼쪽 -1
+    private int facingDirection = 1;
+
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    private void Update()
+    void Update()
     {
-        // 좌우 입력
         moveInput = Input.GetAxisRaw("Horizontal");
 
-        // 점프 입력은 Update에서 받기
-        if (Input.GetButtonDown("Jump") && isGrounded)
-        {
+        if (Input.GetKeyDown(KeyCode.Space))
             jumpPressed = true;
-        }
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+            dashPressed = true;
 
         CheckGround();
         Flip();
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        Move();
-        Jump();
+        if (!isDashing)
+        {
+            Move();
+            Jump();
+        }
+
+        TryDash();
     }
 
-    private void Move()
+    void Move()
     {
         rb.linearVelocity = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
     }
 
-    private void Jump()
+    void Jump()
     {
-        if (!jumpPressed) return;
+        if (jumpPressed && isGrounded)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        }
 
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         jumpPressed = false;
     }
 
-    private void CheckGround()
+    void TryDash()
     {
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        if (dashPressed && canDash && stamina >= dashCost)
+        {
+            dashPressed = false;
+            StartCoroutine(Dash());
+        }
     }
 
-    private void Flip()
+    IEnumerator Dash()
+    {
+        canDash = false;
+        isDashing = true;
+
+        stamina -= dashCost;
+
+        float originalGravity = rb.gravityScale;
+        rb.gravityScale = 0f;
+
+        rb.linearVelocity = new Vector2(facingDirection * dashSpeed, 0f);
+
+        yield return new WaitForSeconds(dashDuration);
+
+        rb.gravityScale = originalGravity;
+        isDashing = false;
+
+        yield return new WaitForSeconds(dashCooldown);
+        canDash = true;
+    }
+
+    void Flip()
     {
         if (moveInput > 0)
         {
+            facingDirection = 1;
             transform.localScale = new Vector3(1, 1, 1);
         }
         else if (moveInput < 0)
         {
+            facingDirection = -1;
             transform.localScale = new Vector3(-1, 1, 1);
         }
     }
 
-    private void OnDrawGizmosSelected()
+    void CheckGround()
     {
-        if (groundCheck == null) return;
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, groundLayer);
     }
 }
