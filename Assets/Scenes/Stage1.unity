@@ -576,7 +576,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 0
+  m_GravityScale: 0.5
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -629,9 +629,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1506136379}
   - component: {fileID: 1506136378}
-  - component: {fileID: 1506136380}
   m_Layer: 0
-  m_Name: GameManager
+  m_Name: ChunkManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -655,7 +654,8 @@ MonoBehaviour:
   - {fileID: 8978392074164899315, guid: 5c3d2b55676c6964f90599cfb15a65e0, type: 3}
   startPoint: {fileID: 461209925}
   stageAssets: {fileID: 1446125704}
-  ChunkCount: 6
+  chunkEnd: {fileID: 8978392074164899315, guid: b395864638fc5b440b357a52e68be62c, type: 3}
+  ChunkCount: 3
 --- !u!4 &1506136379
 Transform:
   m_ObjectHideFlags: 0
@@ -671,19 +671,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1506136380
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1506136377}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9250f85860242d4f87dcfef985ab57a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  currentStage: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

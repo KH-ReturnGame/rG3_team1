@@ -15,13 +15,11 @@ public class EndPointTeleporter : MonoBehaviour
 
     void AdvanceStageAndReturn()
     {
-        // Increase stage count
         if (GameManager.Instance != null)
         {
             GameManager.Instance.currentStage++;
         }
 
-        // Load starting area
         SceneManager.LoadScene(sceneToLoad);
     }
 }

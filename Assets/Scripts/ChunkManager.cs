@@ -2,28 +2,29 @@ using UnityEngine;
 
 public class ChunkManager : MonoBehaviour
 {
-    //얘는 당분간 안 건들여도 될듯
     public GameObject[] chunks;
     public Transform startPoint;
     public Transform stageAssets;
+    public GameObject chunkEnd;
     public int ChunkCount = 6;
 
     void Start()
     {
+        Debug.Log("ChunkManager");
         GenerateLevel();
     }
 
     void GenerateLevel()
     {
-    Vector3 spawnPos = startPoint.position;
-    int lastIndex = -1;
+        Vector3 spawnPos = startPoint.position;
+        int lastIndex = -1;
 
-    for (int i = 0; i < ChunkCount; i++)
+        for (int i = 0; i < ChunkCount; i++)
         {
             int randomIndex;
 
             do {
-            randomIndex = Random.Range(0, chunks.Length);
+                randomIndex = Random.Range(0, chunks.Length);
             } while (randomIndex == lastIndex && chunks.Length > 1);
 
             lastIndex = randomIndex;
@@ -38,5 +39,12 @@ public class ChunkManager : MonoBehaviour
             Transform exit = chunk.transform.Find("ChunkExit");
             spawnPos = exit.position;
         }
+
+        GameObject endChunk = Instantiate(chunkEnd, Vector3.zero, Quaternion.identity);
+        endChunk.transform.SetParent(stageAssets);
+
+        Transform endStart = endChunk.transform.Find("ChunkStart");
+        Vector3 endOffset = spawnPos - endStart.position;
+        endChunk.transform.position += endOffset;
     }
 }
