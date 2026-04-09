@@ -14,8 +14,10 @@ public class BossAI : MonoBehaviour
     public GameObject bluePrefab;
     public float attackCooldown = 3f;  // 공격 간격 (초)
 
-    
+    [Header("공격 설정 (블루 - 가로베기)")]
+    public float blueAttackCooldown = 5f; // 블루 어택 전용 쿨타임
     private bool isAttacking = false;
+    public bool isblue = true;
     private Transform player;
 
 
@@ -26,6 +28,8 @@ public class BossAI : MonoBehaviour
         // "Player" 태그를 가진 오브젝트를 찾습니다.
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.transform;
+        StartCoroutine(blueAttack());
+
 
     }
 
@@ -42,7 +46,6 @@ public class BossAI : MonoBehaviour
             StartCoroutine(PerformAttack());
         }
         //가로베기
-        StartCoroutine(blueAttack());
     }
 
     IEnumerator PerformAttack()
@@ -60,10 +63,26 @@ public class BossAI : MonoBehaviour
     }
     IEnumerator blueAttack()
     {
-        blueAttacking = true;
-        Instantiate(bluePrefab,new Vector2(2.5f, -3f) , Quaternion.identity);
-        yield return new WaitForSeconds(5f);
-        blueAttacking = false;
+
+        while (true) // 게임이 끝날 때까지 무한 반복
+        {
+            isblue = true;
+            // 쿨타임 대기
+            if(isblue == true)
+            {
+                yield return new WaitForSeconds(blueAttackCooldown);
+
+                
+                Instantiate(bluePrefab, new Vector2(2.5f, -3f), Quaternion.identity);
+
+                yield return new WaitForSeconds(1.0f);
+                isblue = false;
+ 
+            }
+
+                
+        
+        }
 
 
     }
