@@ -3,16 +3,21 @@ using System.Collections;
 
 public class BossAI : MonoBehaviour
 {
+    public bool blueAttacking = true;
+
     [Header("탐지 설정")]
     public float detectionRange = 3f; // 플레이어 감지 범위
     public LayerMask playerLayer;      // 플레이어 레이어 선택
 
     [Header("공격 설정")]
     public GameObject attackPrefab;    // 아까 만든 빨간 장판 프리팹
+    public GameObject bluePrefab;
     public float attackCooldown = 3f;  // 공격 간격 (초)
+
     
     private bool isAttacking = false;
     private Transform player;
+
 
     
 
@@ -21,6 +26,7 @@ public class BossAI : MonoBehaviour
         // "Player" 태그를 가진 오브젝트를 찾습니다.
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.transform;
+
     }
 
     void Update()
@@ -29,12 +35,14 @@ public class BossAI : MonoBehaviour
 
         // 1. 플레이어와의 거리 계산
         float distance = Vector2.Distance(transform.position, player.position);
-
+        
         // 2. 범위 안에 들어오면 공격 실행
         if (distance <= detectionRange)
         {
             StartCoroutine(PerformAttack());
         }
+        //가로베기
+        StartCoroutine(blueAttack());
     }
 
     IEnumerator PerformAttack()
@@ -49,6 +57,15 @@ public class BossAI : MonoBehaviour
         yield return new WaitForSeconds(attackCooldown);
 
         isAttacking = false;
+    }
+    IEnumerator blueAttack()
+    {
+        blueAttacking = true;
+        Instantiate(bluePrefab,new Vector2(2.5f, -3f) , Quaternion.identity);
+        yield return new WaitForSeconds(5f);
+        blueAttacking = false;
+
+
     }
 
     // 에디터 뷰에서 감지 범위를 시각적으로 확인하기 위함

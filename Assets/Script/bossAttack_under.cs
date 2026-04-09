@@ -52,7 +52,7 @@ public class bossAttack_under : MonoBehaviour
         {
             // PlayerHealth 스크립트의 TakeDamage 함수 호출 (예시)
             // other.GetComponent<PlayerHealth>().TakeDamage(10);
-            Debug.Log("플레이어가 보스의 공격에 맞았습니다!");
+            Debug.Log("빨간 공격 맞음");
         }
     }
 }
