@@ -655,7 +655,7 @@ MonoBehaviour:
   startPoint: {fileID: 461209925}
   stageAssets: {fileID: 1446125704}
   chunkEnd: {fileID: 8978392074164899315, guid: b395864638fc5b440b357a52e68be62c, type: 3}
-  ChunkCount: 2
+  ChunkCount: 4
 --- !u!4 &1506136379
 Transform:
   m_ObjectHideFlags: 0

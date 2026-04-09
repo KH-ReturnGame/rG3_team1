@@ -3,18 +3,15 @@ using UnityEngine.SceneManagement;
 
 public class StartAreaTeleporter : MonoBehaviour
 {
-    public string stageSceneName = "Stage1";
-
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            LoadStage();
-        }
-    }
+            int stage = GameManager.Instance.currentStage;
 
-    void LoadStage()
-    {
-        SceneManager.LoadScene(stageSceneName);
+            string sceneName = "Stage" + stage;
+
+            SceneManager.LoadScene(sceneName);
+        }
     }
 }
