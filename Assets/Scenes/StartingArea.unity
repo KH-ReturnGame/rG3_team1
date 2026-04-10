@@ -613,7 +613,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9250f85860242d4f87dcfef985ab57a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  currentStage: 1
+  currentStage: 0
 --- !u!1 &1663747795 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6968505454913070352, guid: 4d1b3507c0fc80842bfb6749559aceaa, type: 3}
