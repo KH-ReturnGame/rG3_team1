@@ -180,7 +180,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cf6cf60f8c0e0245a6c359cf3b4f172, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StartAreaTeleporter
-  stageSceneName: StageScene
 --- !u!1 &7310355290745848400
 GameObject:
   m_ObjectHideFlags: 0
@@ -259,7 +258,7 @@ GameObject:
   - component: {fileID: 1278199265926797100}
   - component: {fileID: 6414482288516124306}
   - component: {fileID: 600752802238785900}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Tilemap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
