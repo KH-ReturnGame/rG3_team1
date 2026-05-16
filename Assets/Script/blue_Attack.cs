@@ -7,7 +7,7 @@ public class blue_Attack : MonoBehaviour
     private Collider2D attackCollider;
 
     [Header("설정")]
-    public float delayTime = 2.0f; // 대기 시간
+    public float delayTime = 1.0f; // 대기 시간
     public Color warningColor = new Color(0f, 0f, 1f, 0.5f);
     public Color attackColor = new Color(0f, 0f, 1f, 1f);
 
@@ -20,11 +20,10 @@ public class blue_Attack : MonoBehaviour
         attackCollider.enabled = false;
     }
 
-    void Start()
+    // 보스가 이 함수를 호출하여 공격을 발동시킵니다.
+    public void TriggerAttack()
     {
-        // 오브젝트가 생성(활성화)되면 코루틴 시작
-        StartCoroutine(AttackProcess());//신호 받고 쓰는걸로 ㄱㄱ
-        
+        StartCoroutine(AttackProcess());
     }
 
     IEnumerator AttackProcess()
@@ -42,7 +41,7 @@ public class blue_Attack : MonoBehaviour
         // 4. 아주 짧은 시간 동안만 판정을 유지
         yield return new WaitForSeconds(0.2f);
         
-        // 5. 오브젝트 삭제 (또는 풀링 회수)
+        // 5. 오브젝트 삭제
         Destroy(gameObject);
     }
 
@@ -50,8 +49,6 @@ public class blue_Attack : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            // PlayerHealth 스크립트의 TakeDamage 함수 호출 (예시)
-            // other.GetComponent<PlayerHealth>().TakeDamage(10);
             Debug.Log("파란 공격 맞음");
         }
     }
