@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+public class Player_fucking_move : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float jumpForce = 7f;

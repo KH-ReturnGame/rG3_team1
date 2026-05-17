@@ -7,7 +7,7 @@ public class bossAttack_under : MonoBehaviour
     private Collider2D attackCollider;
 
     [Header("설정")]
-    public float delayTime = 2.0f; // 대기 시간
+    public float delayTime = 1.75f; // 대기 시간
     public Color warningColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨간색
     public Color attackColor = new Color(1f, 0f, 0f, 1f);   // 불투명 빨간색
 
@@ -32,7 +32,7 @@ public class bossAttack_under : MonoBehaviour
         // 1. 반투명 상태로 표시
         spriteRenderer.color = warningColor;
         
-        // 2. 2초 대기
+        // 2. 대기
         yield return new WaitForSeconds(delayTime);
 
         // 3. 불투명 상태로 전환 및 데미지 판정 활성화

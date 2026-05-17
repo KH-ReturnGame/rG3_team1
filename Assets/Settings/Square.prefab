@@ -105,7 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1489addf992dd84080cfb8cb7c86c7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::bossAttack_under
-  delayTime: 2
+  delayTime: 1.75
   warningColor: {r: 1, g: 0, b: 0, a: 0.5}
   attackColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!61 &4747825939203977136

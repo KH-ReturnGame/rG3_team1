@@ -7,7 +7,7 @@ public class BossAI : MonoBehaviour
     public float moveSpeed = 6.5f;    // 이동 속도
     public float detectionRange = 20f; // 추적을 시작할 탐지 범위
     public float attackDistance = 3f;  // 공격을 시작할 감지 범위 (기존 Attack_distance)
-    public float attackCooldown = 3f;  // 공격 성공 후 다음 공격까지의 재사용 대기시간
+    public float attackCooldown = 1.5f;  // 공격 성공 후 다음 공격까지의 재사용 대기시간
 
     [Header("공격 프리팹 설정")]
     public GameObject redAttackPrefab;  // 빨간 장판 프리팹 (플레이어 위치 생성용)
