@@ -6,8 +6,11 @@ public class BossAI : MonoBehaviour
     public Transform player;          // 플레이어의 위치
     public float moveSpeed = 6.5f;    // 이동 속도
     public float detectionRange = 20f; // 추적을 시작할 탐지 범위
-    public float attackDistance = 3f;  // 공격을 시작할 감지 범위 (기존 Attack_distance)
+    public float attackDistance = 6f;  // 공격을 시작할 감지 범위
     public float attackCooldown = 1.5f;  // 공격 성공 후 다음 공격까지의 재사용 대기시간
+    
+    [Tooltip("플레이어와 너무 가까워졌을 때 멈출 거리 설정")]
+    public float stopDistance = 3f;  // 추가: 너무 가까워지면 멈추는 거리
 
     [Header("공격 프리팹 설정")]
     public GameObject redAttackPrefab;  // 빨간 장판 프리팹 (플레이어 위치 생성용)
@@ -36,7 +39,15 @@ public class BossAI : MonoBehaviour
         // 플레이어와의 거리 계산
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // 1. 공격 범위 안에 들어왔을 때 -> 확률적 공격 시도
+        // [수정] 플레이어와 너무 가까우면 이동하지 않고 대기 (공격은 가능)
+        if (distance <= stopDistance)
+        {
+            // 너무 가까우면 공격 조건도 만족하므로 공격을 시도합니다.
+            StartCoroutine(ChooseAndPerformAttack());
+            return; 
+        }
+
+        // 1. 공격 범위 안에 들어왔을 때 -> 확률적 공격 시도 후 대기
         if (distance <= attackDistance)
         {
             StartCoroutine(ChooseAndPerformAttack());
@@ -59,7 +70,7 @@ public class BossAI : MonoBehaviour
         );
     }
 
-    // [핵심] 확률(80:20)에 따라 공격을 선택하고 실행하는 루틴
+    // 확률(80:20)에 따라 공격을 선택하고 실행하는 루틴
     IEnumerator ChooseAndPerformAttack()
     {
         isAttacking = true; // 이동 차단
@@ -69,12 +80,9 @@ public class BossAI : MonoBehaviour
 
         // 1. 파란색 공격 (20% 확률: 0 ~ 20 미만)
         if (randomChance < 20f)
-        {
-            Debug.Log($"[20% 확률 당첨] 파란 공격(보스 위치 가로베기) 발동! (값: {randomChance:F1})");
-            
+        {            
             if (blueAttackPrefab != null)
             {
-                // 보스 현재 위치에 파란 장판 생성
                 GameObject attackInstance = Instantiate(blueAttackPrefab, transform.position, Quaternion.identity);
                 blue_Attack attackScript = attackInstance.GetComponent<blue_Attack>();
                 if (attackScript != null)
@@ -87,17 +95,14 @@ public class BossAI : MonoBehaviour
                 Debug.LogError("오류: Blue Attack Prefab이 인스펙터에 할당되지 않았습니다.");
             }
 
-            // 파란 공격의 선딜+후딜 감안하여 보스가 멈춰있을 시간 (blue_Attack의 delayTime이 1초이므로 1.5초 정지)
             yield return new WaitForSeconds(1.5f);
         }
         // 2. 빨간색 공격 (80% 확률: 20 이상 ~ 100)
         else
         {
-            Debug.Log($"[80% 확률 당첨] 빨간 공격(플레이어 발밑) 발동! (값: {randomChance:F1})");
 
             if (redAttackPrefab != null)
             {
-                // 플레이어의 현재 발밑 위치에 빨간 장판 생성
                 Instantiate(redAttackPrefab, player.position, Quaternion.identity);
             }
             else
@@ -105,7 +110,6 @@ public class BossAI : MonoBehaviour
                 Debug.LogError("오류: Red Attack Prefab이 인스펙터에 할당되지 않았습니다.");
             }
 
-            // 빨간 공격 모션으로 인해 멈춰있을 시간
             yield return new WaitForSeconds(1.0f);
         }
 
@@ -132,5 +136,9 @@ public class BossAI : MonoBehaviour
         // 공격 범위 (빨간색)
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackDistance);
+
+        // 추가: 최소 유지 거리 표시 (하늘색)
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, stopDistance);
     }
 }
