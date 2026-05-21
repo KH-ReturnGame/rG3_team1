@@ -1173,7 +1173,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1333676802}
   - component: {fileID: 1333676801}
-  - component: {fileID: 1333676800}
   - component: {fileID: 1333676799}
   - component: {fileID: 1333676803}
   - component: {fileID: 1333676804}
@@ -1196,48 +1195,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2fd046c3daf2354e9492d33fc05edfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  moveSpeed: 6
-  guardMoveSpeed: 2.5
+  runSpeed: 6
+  walkSpeedInGuard: 2.5
   jumpForce: 12
   dashSpeed: 20
   dashDuration: 0.2
   dashCooldown: 1
-  dashCost: 20
-  guardCostPerSecond: 5
-  parryWindow: 0.5
-  damageReductionRate: 0.5
-  parryStaminaRecover: 30
+  dashStaminaCost: 20
+  guardStaminaDrainPerSec: 5
+  parryWindowDuration: 0.5
+  guardDamageReduction: 0.5
+  parryStaminaRegen: 30
   groundCheck: {fileID: 1547712456}
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  groundRadius: 0.2
+  groundCheckRadius: 0.2
   maxStamina: 100
-  stamina: 100
   maxHP: 100
+  currentStamina: 0
   currentHP: 100
---- !u!95 &1333676800
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1333676798}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: e5e3ed1abb1058d4e9252d82297aab3d, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!212 &1333676801
 SpriteRenderer:
   serializedVersion: 2
@@ -1306,7 +1283,7 @@ Transform:
   m_GameObject: {fileID: 1333676798}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.39, y: -1.36, z: 0}
+  m_LocalPosition: {x: -5.61, y: -1.31, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
