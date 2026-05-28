@@ -10,7 +10,7 @@ public class ChunkManager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("ChunkManager");
+        //Debug.Log("ChunkManager");
         GenerateLevel();
     }
 
