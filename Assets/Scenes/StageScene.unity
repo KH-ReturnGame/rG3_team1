@@ -296,9 +296,9 @@ GameObject:
   - component: {fileID: 504315358}
   - component: {fileID: 504315357}
   - component: {fileID: 504315356}
-  - component: {fileID: 504315355}
   - component: {fileID: 504315354}
   - component: {fileID: 504315353}
+  - component: {fileID: 504315359}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -370,38 +370,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &504315355
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 504315352}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d2fd046c3daf2354e9492d33fc05edfd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  runSpeed: 6
-  walkSpeedInGuard: 2.5
-  jumpForce: 12
-  dashSpeed: 20
-  dashDuration: 0.2
-  dashCooldown: 1
-  dashStaminaCost: 20
-  guardStaminaDrainPerSec: 5
-  parryWindowDuration: 0.5
-  guardDamageReduction: 0.5
-  parryStaminaRegen: 30
-  groundCheck: {fileID: 1610303552}
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 8
-  groundCheckRadius: 0.2
-  maxStamina: 100
-  maxHP: 100
-  currentStamina: 0
-  currentHP: 100
 --- !u!95 &504315356
 Animator:
   serializedVersion: 7
@@ -499,6 +467,29 @@ Transform:
   - {fileID: 1610303552}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &504315359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 504315352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83ce9e553c6acb44cbf9de9ac13a94a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
+  moveSpeed: 5
+  jumpForce: 10
+  maxJumps: 1
+  groundCheck: {fileID: 1610303552}
+  groundCheckRadius: 0.2
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  dashSpeed: 15
+  dashDuration: 0.2
+  maxDashes: 1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
