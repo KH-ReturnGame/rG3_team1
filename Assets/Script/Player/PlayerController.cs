@@ -5,15 +5,16 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Component References")]
     private Rigidbody2D rb;
+    private Animator anim; // [추가] 애니메이터를 부르기 위한 변수
     
     [Header("Movement")]
     public float moveSpeed = 5f;
-    private float currentMoveSpeed; // 가드 등 이동속도 변화를 위해 사용
+    private float currentMoveSpeed; 
     private float horizontalInput;
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 1; // 아이템 획득 시 이 값을 올려주면 다중 점프 가능
+    public int maxJumps = 1; 
     private int currentJumps;
     public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
@@ -23,46 +24,98 @@ public class PlayerController : MonoBehaviour
     [Header("Dash")]
     public float dashSpeed = 15f;
     public float dashDuration = 0.2f;
-    public int maxDashes = 1; // 아이템 획득 시 수정 가능
+    public int maxDashes = 1; 
     private int currentDashes;
     private bool isDashing;
-    private float dashTimeLeft;
+    private float dashTimer; 
+
+    [Header("Guard & Parry")]
+    public float parryWindow = 0.5f; 
+    private float parryTimer;
+    private bool isGuarding;
+    private bool isParrying;
+
+    [Header("Combat - Attack")]
+    public Transform attackPoint;      
+    public float attackRadius = 0.6f;  
+    public float attackDamage = 10f;   
+    public LayerMask enemyLayer;       
+
+    [Header("Combat - Skill (Q)")]
+    public Vector2 skillBoxSize = new Vector2(2.5f, 1.2f); 
+    public float skillDamage = 25f;    
+    public float skillCooldown = 3f;   
+    private float skillCooldownTimer;  
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>(); // [추가] 시작할 때 플레이어의 애니메이터를 찾아서 연결!
+    }
+
+    void Start()
+    {
         currentMoveSpeed = moveSpeed;
+        currentJumps = maxJumps;
+        currentDashes = maxDashes;
     }
 
     void Update()
     {
-        // 대시 중일 때는 다른 입력을 받지 않음
-        if (isDashing) return;
+        if (isDashing)
+        {
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0) EndDash();
+            return; 
+        }
 
         CheckInput();
-        CheckGrounded();
+        CheckGrounded(); 
+        
+        if (isParrying)
+        {
+            parryTimer -= Time.deltaTime;
+            if (parryTimer <= 0) isParrying = false;
+        }
+
+        if (skillCooldownTimer > 0)
+        {
+            skillCooldownTimer -= Time.deltaTime;
+        }
+
+        // [추가] 애니메이션 파라미터 실시간 업데이트
+        UpdateAnimations(); 
     }
 
     void FixedUpdate()
     {
         if (isDashing) return;
-
         Move();
     }
 
     private void CheckInput()
     {
-        // 1. 좌우 이동 입력
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
-        // 2. 점프 입력
-        if (Input.GetButtonDown("Jump") && currentJumps > 0)
+        if (Input.GetMouseButtonDown(1)) StartGuard();
+        if (Input.GetMouseButtonUp(1)) EndGuard();
+
+        if (Input.GetMouseButtonDown(0) && !isGuarding && !isDashing)
+        {
+            NormalAttack();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q) && !isGuarding && !isDashing && skillCooldownTimer <= 0)
+        {
+            UseSkill();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding)
         {
             Jump();
         }
 
-        // 3. 대시 입력 (예: Left Shift 키)
-        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding)
         {
             StartDash();
         }
@@ -70,62 +123,131 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {
+        currentMoveSpeed = isGuarding ? moveSpeed * 0.2f : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
         
-        // 캐릭터 방향 뒤집기
         if (horizontalInput > 0) transform.localScale = new Vector3(1, 1, 1);
         else if (horizontalInput < 0) transform.localScale = new Vector3(-1, 1, 1);
     }
 
+    // [추가된 부분] 애니메이션 상태를 관리하는 함수
+    private void UpdateAnimations()
+    {
+        if (anim == null) return;
+
+        // 1. 달리기 애니메이션 (좌우 입력값이 조금이라도 있으면 true)
+        bool isMoving = Mathf.Abs(horizontalInput) > 0.1f;
+        anim.SetBool("isRunning", isMoving);
+
+        // 2. 점프/추락 애니메이션 (땅에 닿아있는지 여부 전달)
+        anim.SetBool("isGrounded", isGrounded);
+    }
+
+    private void NormalAttack()
+    {
+        Debug.Log("⚔️ 일반 공격!");
+        if (anim != null) anim.SetTrigger("doAttack"); // [추가] 공격 애니메이션 실행 빵!
+
+        if (attackPoint == null) return;
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, enemyLayer);
+        foreach (Collider2D enemy in hitEnemies)
+        {
+            DummyMonster monster = enemy.GetComponent<DummyMonster>();
+            if (monster != null) monster.TakePlayerDamage(attackDamage);
+        }
+    }
+
+    private void UseSkill()
+    {
+        Debug.Log("🔥 스킬 공격 (횡베기)!");
+        skillCooldownTimer = skillCooldown; 
+        
+        // 스킬 전용 애니메이션이 있다면 여기에 넣으면 돼! (지금은 일반 공격 모션 임시 사용)
+        if (anim != null) anim.SetTrigger("doAttack"); 
+
+        if (attackPoint == null) return;
+        Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, skillBoxSize, 0f, enemyLayer);
+        foreach (Collider2D enemy in hitEnemies)
+        {
+            DummyMonster monster = enemy.GetComponent<DummyMonster>();
+            if (monster != null) monster.TakePlayerDamage(skillDamage);
+        }
+    }
+
     private void Jump()
     {
-        // 다중 점프 시 y축 속도를 초기화하여 일정한 점프력을 보장
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); 
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         currentJumps--;
+        isGrounded = false;
+        
+        if (anim != null) anim.SetTrigger("doJump"); // [추가] 점프 애니메이션 실행
     }
 
     private void StartDash()
     {
         isDashing = true;
         currentDashes--;
-        dashTimeLeft = dashDuration;
-        
-        // 대시 방향 설정 (현재 바라보고 있는 방향)
+        dashTimer = dashDuration;
         float dashDirection = transform.localScale.x;
-        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); // 대시 중 y축 이동 방지
-
-        // 대시 종료 타이머 실행
-        Invoke("EndDash", dashDuration);
+        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); 
+        rb.gravityScale = 0;
     }
 
     private void EndDash()
     {
         isDashing = false;
-        // 대시 종료 시 속도 초기화
+        rb.gravityScale = 3; 
         rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
     }
 
     private void CheckGrounded()
     {
-        // 바닥 충돌 체크
+        if (groundCheck == null) return;
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-
-        if (isGrounded)
+        if (isGrounded && rb.linearVelocity.y <= 0.1f) 
         {
-            // 바닥에 닿으면 점프와 대시 횟수 초기화
             currentJumps = maxJumps;
             currentDashes = maxDashes;
         }
     }
 
+    private void StartGuard()
+    {
+        isGuarding = true;
+        isParrying = true;
+        parryTimer = parryWindow;
+    }
+
+    private void EndGuard()
+    {
+        isGuarding = false;
+        isParrying = false;
+    }
+
+    public void TakeDamage(float damage, bool isMeleeAttacker, DummyMonster attacker = null)
+    {
+        if (isParrying)
+        {
+            if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy(); 
+            return; 
+        }
+        else if (isGuarding) damage *= 0.5f; 
+    }
+
     private void OnDrawGizmos()
     {
-        // 에디터에서 GroundCheck 위치를 시각적으로 확인하기 위함
         if (groundCheck != null)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        }
+        if (attackPoint != null)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(attackPoint.position, attackRadius);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireCube(attackPoint.position, skillBoxSize);
         }
     }
 }
