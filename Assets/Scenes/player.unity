@@ -163,8 +163,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 1.25}
-  m_Size: {x: 0.875, y: 2.5}
+  m_Offset: {x: 0, y: 0.8626391}
+  m_Size: {x: 0.875, y: 1.7252783}
   m_Direction: 0
 --- !u!50 &194677166
 Rigidbody2D:
@@ -214,7 +214,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   dashSpeed: 15
-  dashDuration: 0.2
+  dashDuration: 0.3
   maxDashes: 1
   parryWindow: 0.5
   attackPoint: {fileID: 468265583}
@@ -222,7 +222,7 @@ MonoBehaviour:
   attackDamage: 10
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   skillBoxSize: {x: 2.5, y: 1.2}
   skillDamage: 25
   skillCooldown: 3
@@ -1451,8 +1451,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -2253911629886400664, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
+      propertyPath: m_Icon
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: -2253911629886400664, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 1160356261127867848, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: c794c61eb96248f4fbcd054821a369cd, type: 2}
+    - target: {fileID: 1160356261127867848, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
+      propertyPath: m_AnimatePhysics
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1160356261127867848, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7878350319992209165, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
       propertyPath: m_LocalPosition.x
