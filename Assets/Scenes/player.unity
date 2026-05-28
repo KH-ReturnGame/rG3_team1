@@ -212,7 +212,7 @@ MonoBehaviour:
   groundCheckRadius: 0.2
   groundLayer:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 0
   dashSpeed: 15
   dashDuration: 0.3
   maxDashes: 1

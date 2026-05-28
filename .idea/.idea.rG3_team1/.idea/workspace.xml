@@ -6,40 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Animations.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Demo.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Demo/Scene demo.unity" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Demo/Scene demo.unity.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack1.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack1_0.controller" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack1_0.controller.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Attack2.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Death.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Death.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Fall.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Fall.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0 1.controller" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0 1.controller.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0 2.controller" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0 2.controller.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0.controller" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Idle_0.controller.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Jump.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Jump.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/New Animation.anim" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/New Animation.anim.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Run.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Run.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Take Hit.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Hero_Knight/Sprites/Take Hit.png.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Scenes/player.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/player.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UIManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UIManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/PackageManagerSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/PackageManagerSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +22,7 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/Script/Dummy_monster.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Scripts/frame.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.2d.tooling@9d6aff712598/Editor/Insider/SpriteAtlas/DataSource/EditorAtlasInfo.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.ugui@4dc88464a83d/Editor/UGUI/UI/SelectableEditor.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
@@ -63,19 +34,19 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;player&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Unity 에디터에 연결.Unity 에디터에 연결">
     <configuration name="유닛 테스트(배치 모드)" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\6000.4.7f1\Editor\Unity.exe" />
