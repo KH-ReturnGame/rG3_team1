@@ -1,11 +1,15 @@
 using UnityEngine;
 
+
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
+    
+    
     [Header("Component References")]
     private Rigidbody2D rb;
     private Animator anim; // [추가] 애니메이터를 부르기 위한 변수
+    private SpriteRenderer sr;
     
     [Header("Movement")]
     public float moveSpeed = 5f;
@@ -16,7 +20,7 @@ public class PlayerController : MonoBehaviour
     public float jumpForce = 10f;
     public int maxJumps = 1; 
     private int currentJumps;
-    public Transform groundCheck;
+    public RuleTile.TilingRuleOutput.Transform groundCheck;
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
     private bool isGrounded;
@@ -36,7 +40,7 @@ public class PlayerController : MonoBehaviour
     private bool isParrying;
 
     [Header("Combat - Attack")]
-    public Transform attackPoint;      
+    public RuleTile.TilingRuleOutput.Transform attackPoint;      
     public float attackRadius = 0.6f;  
     public float attackDamage = 10f;   
     public LayerMask enemyLayer;       
@@ -49,6 +53,7 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
+        sr = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>(); // [추가] 시작할 때 플레이어의 애니메이터를 찾아서 연결!
     }
@@ -125,11 +130,11 @@ public class PlayerController : MonoBehaviour
     {
         currentMoveSpeed = isGuarding ? moveSpeed * 0.2f : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
-        
-        if (horizontalInput > 0) transform.localScale = new Vector3(1, 1, 1);
-        else if (horizontalInput < 0) transform.localScale = new Vector3(-1, 1, 1);
-    }
 
+        if (horizontalInput > 0) sr.flipX = false;
+        else if (horizontalInput < 0) sr.flipX = true;
+    }
+ 
     // [추가된 부분] 애니메이션 상태를 관리하는 함수
     private void UpdateAnimations()
     {
@@ -141,6 +146,7 @@ public class PlayerController : MonoBehaviour
 
         // 2. 점프/추락 애니메이션 (땅에 닿아있는지 여부 전달)
         anim.SetBool("isGrounded", isGrounded);
+        
     }
 
     private void NormalAttack()
@@ -189,9 +195,12 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
-        float dashDirection = transform.localScale.x;
-        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); 
+        rb.linearVelocity = Vector2.zero;
+        float dashDirection = sr.flipX ? -1 : 1;
+        rb.AddForce(transform.right * dashDirection * dashSpeed, ForceMode2D.Impulse);
         rb.gravityScale = 0;
+        if (anim != null) anim.SetBool("isDashing", isDashing);
+    
     }
 
     private void EndDash()
@@ -223,6 +232,7 @@ public class PlayerController : MonoBehaviour
     {
         isGuarding = false;
         isParrying = false;
+        
     }
 
     public void TakeDamage(float damage, bool isMeleeAttacker, DummyMonster attacker = null)
