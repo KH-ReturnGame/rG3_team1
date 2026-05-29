@@ -53,6 +53,7 @@ public class PlayerMovement : MonoBehaviour
         stamina = maxStamina;
     }
 
+
     void Update()
     {
         moveInput = Input.GetAxisRaw("Horizontal");

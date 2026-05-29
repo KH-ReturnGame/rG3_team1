@@ -15,6 +15,7 @@ public class BossAI : MonoBehaviour
     [Header("공격 프리팹 설정")]
     public GameObject redAttackPrefab;  // 빨간 장판 프리팹 (플레이어 위치 생성용)
     public GameObject blueAttackPrefab; // 파란 장판 프리팹 (보스 위치 생성용)
+    public GameObject homingMissilePrefab; // 추가: 유도 미사일 프리팹
 
     private bool isAttacking = false;   // 공격 애니메이션/정지 상태 체크
     private bool isCooldown = false;    // 쿨타임 체크
@@ -33,29 +34,32 @@ public class BossAI : MonoBehaviour
     {
         if (player == null) return;
 
-        // 공격 액션 중이거나 공격 후 쿨타임 중일 때는 이동하지 않고 대기합니다.
         if (isAttacking || isCooldown) return;
 
         // 플레이어와의 거리 계산
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // [수정] 플레이어와 너무 가까우면 이동하지 않고 대기 (공격은 가능)
+        // 1. 플레이어와 너무 가까우면 이동하지 않고 대기하며 근접 공격
         if (distance <= stopDistance)
         {
-            // 너무 가까우면 공격 조건도 만족하므로 공격을 시도합니다.
             StartCoroutine(ChooseAndPerformAttack());
             return; 
         }
 
-        // 1. 공격 범위 안에 들어왔을 때 -> 확률적 공격 시도 후 대기
+        // 2. 공격 범위 안에 들어왔을 때 -> 확률적 공격 시도 후 대기
         if (distance <= attackDistance)
         {
             StartCoroutine(ChooseAndPerformAttack());
         }
-        // 2. 공격 범위 밖이고, 탐지 범위 안일 때 -> 플레이어 추적 (Y축 고정)
+        // 3. 공격 범위 밖이고, 탐지 범위 안일 때 -> 플레이어 추적 (Y축 고정)
         else if (distance <= detectionRange)
         {
             MoveTowardsPlayer();
+        }
+        // 4. 탐지 범위를 완전히 벗어났을 때 -> 순간이동 기습 패턴 발동!
+        else if (distance > detectionRange)
+        {
+            StartCoroutine(TeleportAndAttackPattern());
         }
     }
 
@@ -100,7 +104,6 @@ public class BossAI : MonoBehaviour
         // 2. 빨간색 공격 (80% 확률: 20 이상 ~ 100)
         else
         {
-
             if (redAttackPrefab != null)
             {
                 Instantiate(redAttackPrefab, player.position, Quaternion.identity);
@@ -114,6 +117,49 @@ public class BossAI : MonoBehaviour
         }
 
         // 공격 액션 끝, 쿨타임 돌입
+        isAttacking = false;
+        StartCoroutine(CooldownRoutine());
+    }
+
+    // [추가 개발] 멀어진 플레이어에게 순간이동하고 유도 미사일 연계 공격을 가하는 패턴
+    IEnumerator TeleportAndAttackPattern()
+    {
+        isAttacking = true; // 다른 행동 차단
+        
+        // 1. 플레이어 위치로 순간이동 (기존 보스 Y축 높이 유지)
+        Vector2 teleportPosition = new Vector2(player.position.x, transform.position.y);
+        transform.position = teleportPosition;
+
+        // 2. 순간이동 직후 플레이어가 반응할 미세한 유예 시간 생성 (0.2초)
+        yield return new WaitForSeconds(0.2f);
+
+        // 3. 기습 공격 연계: 유도 미사일 생성 후 발사
+        if (homingMissilePrefab != null)
+        {
+            Debug.Log("🚀 유도 미사일 발사!");
+            // 보스 위치보다 약간 위쪽에서 미사일 생성
+            Vector3 spawnOffset = new Vector3(0f, 1f, 0f);
+            GameObject missile = Instantiate(homingMissilePrefab, transform.position + spawnOffset, Quaternion.identity);
+            
+            // 미사일에 타겟(플레이어) 정보 넘겨주기
+            HomingMissile missileScript = missile.GetComponent<HomingMissile>();
+            if (missileScript != null)
+            {
+                missileScript.target = this.player;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Homing Missile Prefab이 할당되지 않아 기본 장판 공격으로 대체합니다.");
+            // 미사일이 없을 때를 대비한 안전 장치로 기존 확률 공격 실행
+            yield return StartCoroutine(ChooseAndPerformAttack());
+            yield break;
+        }
+
+        // 미사일 발사 후 보스가 취하는 후딜레이 시간 (1초 대기)
+        yield return new WaitForSeconds(1.0f);
+
+        // 공격 종료 및 쿨타임 시작
         isAttacking = false;
         StartCoroutine(CooldownRoutine());
     }
