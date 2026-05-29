@@ -1,14 +1,11 @@
 using UnityEngine;
 
-
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
-    
-    
     [Header("Component References")]
     private Rigidbody2D rb;
-    private Animator anim; // [추가] 애니메이터를 부르기 위한 변수
+    private Animator anim; 
     private SpriteRenderer sr;
     
     [Header("Movement")]
@@ -20,7 +17,7 @@ public class PlayerController : MonoBehaviour
     public float jumpForce = 10f;
     public int maxJumps = 1; 
     private int currentJumps;
-    public RuleTile.TilingRuleOutput.Transform groundCheck;
+    public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
     private bool isGrounded;
@@ -32,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private int currentDashes;
     private bool isDashing;
     private float dashTimer; 
+    private float dashDir;
 
     [Header("Guard & Parry")]
     public float parryWindow = 0.5f; 
@@ -40,7 +38,7 @@ public class PlayerController : MonoBehaviour
     private bool isParrying;
 
     [Header("Combat - Attack")]
-    public RuleTile.TilingRuleOutput.Transform attackPoint;      
+    public Transform attackPoint;      
     public float attackRadius = 0.6f;  
     public float attackDamage = 10f;   
     public LayerMask enemyLayer;       
@@ -55,7 +53,7 @@ public class PlayerController : MonoBehaviour
     {
         sr = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
-        anim = GetComponent<Animator>(); // [추가] 시작할 때 플레이어의 애니메이터를 찾아서 연결!
+        anim = GetComponent<Animator>(); 
     }
 
     void Start()
@@ -88,13 +86,17 @@ public class PlayerController : MonoBehaviour
             skillCooldownTimer -= Time.deltaTime;
         }
 
-        // [추가] 애니메이션 파라미터 실시간 업데이트
         UpdateAnimations(); 
     }
 
     void FixedUpdate()
     {
-        if (isDashing) return;
+        if (isDashing)
+        {
+            rb.linearVelocity = new Vector2(dashDir * dashSpeed, 0f);
+            return;
+        }
+
         Move();
     }
 
@@ -131,29 +133,23 @@ public class PlayerController : MonoBehaviour
         currentMoveSpeed = isGuarding ? moveSpeed * 0.2f : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
 
+        
+        
         if (horizontalInput > 0) sr.flipX = false;
         else if (horizontalInput < 0) sr.flipX = true;
     }
  
-    // [추가된 부분] 애니메이션 상태를 관리하는 함수
     private void UpdateAnimations()
     {
         if (anim == null) return;
-
-        // 1. 달리기 애니메이션 (좌우 입력값이 조금이라도 있으면 true)
         bool isMoving = Mathf.Abs(horizontalInput) > 0.1f;
         anim.SetBool("isRunning", isMoving);
-
-        // 2. 점프/추락 애니메이션 (땅에 닿아있는지 여부 전달)
         anim.SetBool("isGrounded", isGrounded);
-        
     }
 
     private void NormalAttack()
     {
-        Debug.Log("⚔️ 일반 공격!");
-        if (anim != null) anim.SetTrigger("doAttack"); // [추가] 공격 애니메이션 실행 빵!
-
+        if (anim != null) anim.SetTrigger("doAttack"); 
         if (attackPoint == null) return;
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, enemyLayer);
         foreach (Collider2D enemy in hitEnemies)
@@ -165,12 +161,8 @@ public class PlayerController : MonoBehaviour
 
     private void UseSkill()
     {
-        Debug.Log("🔥 스킬 공격 (횡베기)!");
         skillCooldownTimer = skillCooldown; 
-        
-        // 스킬 전용 애니메이션이 있다면 여기에 넣으면 돼! (지금은 일반 공격 모션 임시 사용)
         if (anim != null) anim.SetTrigger("doAttack"); 
-
         if (attackPoint == null) return;
         Collider2D[] hitEnemies = Physics2D.OverlapBoxAll(attackPoint.position, skillBoxSize, 0f, enemyLayer);
         foreach (Collider2D enemy in hitEnemies)
@@ -186,8 +178,7 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         currentJumps--;
         isGrounded = false;
-        
-        if (anim != null) anim.SetTrigger("doJump"); // [추가] 점프 애니메이션 실행
+        if (anim != null) anim.SetTrigger("doJump"); 
     }
 
     private void StartDash()
@@ -195,19 +186,17 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
-        rb.linearVelocity = Vector2.zero;
-        float dashDirection = sr.flipX ? -1 : 1;
-        rb.AddForce(transform.right * dashDirection * dashSpeed, ForceMode2D.Impulse);
-        rb.gravityScale = 0;
-        if (anim != null) anim.SetBool("isDashing", isDashing);
-    
+        dashDir = sr.flipX ? -1f : 1f;
+        rb.gravityScale = 0; 
+        if (anim != null) anim.SetBool("isDashing", true);
     }
 
     private void EndDash()
     {
         isDashing = false;
         rb.gravityScale = 3; 
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y); 
+        if (anim != null) anim.SetBool("isDashing", false); 
     }
 
     private void CheckGrounded()
@@ -217,7 +206,7 @@ public class PlayerController : MonoBehaviour
         if (isGrounded && rb.linearVelocity.y <= 0.1f) 
         {
             currentJumps = maxJumps;
-            currentDashes = maxDashes;
+            currentDashes = maxDashes; 
         }
     }
 
@@ -232,7 +221,6 @@ public class PlayerController : MonoBehaviour
     {
         isGuarding = false;
         isParrying = false;
-        
     }
 
     public void TakeDamage(float damage, bool isMeleeAttacker, DummyMonster attacker = null)
