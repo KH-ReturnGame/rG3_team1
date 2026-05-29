@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
     private int currentDashes;
     private bool isDashing;
     private float dashTimer; 
+    private float dashDir;
 
     [Header("Guard & Parry")]
     public float parryWindow = 0.5f; 
@@ -189,6 +190,7 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
+        dashDir = sr.flipX ? -1f : 1f;
         float dashDirection = transform.localScale.x;
         rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); 
         rb.gravityScale = 0;
