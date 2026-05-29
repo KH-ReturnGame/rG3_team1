@@ -5,7 +5,8 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Component References")]
     private Rigidbody2D rb;
-    private Animator anim; // [추가] 애니메이터를 부르기 위한 변수
+    private Animator anim; 
+    private SpriteRenderer sr;
     
     [Header("Movement")]
     public float moveSpeed = 5f;
@@ -28,6 +29,7 @@ public class PlayerController : MonoBehaviour
     private int currentDashes;
     private bool isDashing;
     private float dashTimer; 
+    private float dashDir; // [추가] 대시 방향을 기억하기 위한 변수
 
     [Header("Guard & Parry")]
     public float parryWindow = 0.5f; 
@@ -49,8 +51,10 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
+        // 컴포넌트 자동 연결
+        sr = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
-        anim = GetComponent<Animator>(); // [추가] 시작할 때 플레이어의 애니메이터를 찾아서 연결!
+        anim = GetComponent<Animator>(); 
     }
 
     void Start()
@@ -62,6 +66,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // 대시 중일 때는 타이머만 깎고 다른 입력(공격, 점프 등)을 무시합니다.
         if (isDashing)
         {
             dashTimer -= Time.deltaTime;
@@ -83,13 +88,18 @@ public class PlayerController : MonoBehaviour
             skillCooldownTimer -= Time.deltaTime;
         }
 
-        // [추가] 애니메이션 파라미터 실시간 업데이트
         UpdateAnimations(); 
     }
 
     void FixedUpdate()
     {
-        if (isDashing) return;
+        // [핵심] 대시 중일 때는 바닥 마찰력을 씹고 설정한 대시 속도로 묵직하게 밀어붙입니다.
+        if (isDashing)
+        {
+            rb.linearVelocity = new Vector2(dashDir * dashSpeed, 0f);
+            return;
+        }
+
         Move();
     }
 
@@ -125,28 +135,28 @@ public class PlayerController : MonoBehaviour
     {
         currentMoveSpeed = isGuarding ? moveSpeed * 0.2f : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * currentMoveSpeed, rb.linearVelocity.y);
-        
-        if (horizontalInput > 0) transform.localScale = new Vector3(1, 1, 1);
-        else if (horizontalInput < 0) transform.localScale = new Vector3(-1, 1, 1);
-    }
 
-    // [추가된 부분] 애니메이션 상태를 관리하는 함수
+        // [요청 반영] SpriteRenderer의 flipX를 사용하는 좌우 반전 메커니즘
+        if (horizontalInput > 0) sr.flipX = false;
+        else if (horizontalInput < 0) sr.flipX = true;
+    }
+ 
     private void UpdateAnimations()
     {
         if (anim == null) return;
 
-        // 1. 달리기 애니메이션 (좌우 입력값이 조금이라도 있으면 true)
+        // 1. 달리기 애니메이션
         bool isMoving = Mathf.Abs(horizontalInput) > 0.1f;
         anim.SetBool("isRunning", isMoving);
 
-        // 2. 점프/추락 애니메이션 (땅에 닿아있는지 여부 전달)
+        // 2. 점프/추락 애니메이션
         anim.SetBool("isGrounded", isGrounded);
     }
 
     private void NormalAttack()
     {
         Debug.Log("⚔️ 일반 공격!");
-        if (anim != null) anim.SetTrigger("doAttack"); // [추가] 공격 애니메이션 실행 빵!
+        if (anim != null) anim.SetTrigger("doAttack"); 
 
         if (attackPoint == null) return;
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, enemyLayer);
@@ -162,7 +172,6 @@ public class PlayerController : MonoBehaviour
         Debug.Log("🔥 스킬 공격 (횡베기)!");
         skillCooldownTimer = skillCooldown; 
         
-        // 스킬 전용 애니메이션이 있다면 여기에 넣으면 돼! (지금은 일반 공격 모션 임시 사용)
         if (anim != null) anim.SetTrigger("doAttack"); 
 
         if (attackPoint == null) return;
@@ -181,7 +190,7 @@ public class PlayerController : MonoBehaviour
         currentJumps--;
         isGrounded = false;
         
-        if (anim != null) anim.SetTrigger("doJump"); // [추가] 점프 애니메이션 실행
+        if (anim != null) anim.SetTrigger("doJump"); 
     }
 
     private void StartDash()
@@ -189,16 +198,22 @@ public class PlayerController : MonoBehaviour
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
-        float dashDirection = transform.localScale.x;
-        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0); 
-        rb.gravityScale = 0;
+
+        // SpriteRenderer가 뒤집혔는지(왼쪽인지) 체크해서 대시 방향 결정
+        dashDir = sr.flipX ? -1f : 1f;
+
+        rb.gravityScale = 0; // 대시 중에는 중력 0으로 고정해서 아래로 쳐지지 않게 방지
+
+        if (anim != null) anim.SetBool("isDashing", true);
     }
 
     private void EndDash()
     {
         isDashing = false;
-        rb.gravityScale = 3; 
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        rb.gravityScale = 3; // 원래 쓰던 중력 수치로 복귀
+        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y); // 대시가 끝나는 순간 X축 급정거
+
+        if (anim != null) anim.SetBool("isDashing", false); // 대시 애니메이션 끄기
     }
 
     private void CheckGrounded()
@@ -208,7 +223,7 @@ public class PlayerController : MonoBehaviour
         if (isGrounded && rb.linearVelocity.y <= 0.1f) 
         {
             currentJumps = maxJumps;
-            currentDashes = maxDashes;
+            currentDashes = maxDashes; // 땅에 닿으면 대시 횟수 초기화
         }
     }
 
