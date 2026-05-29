@@ -91,13 +91,6 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // 🚨 [좌표 상승 버그 추적용 실시간 로그]
-        // 아무 키도 안 눌렀을 때 캐릭터의 물리 상태를 콘솔창에 찍어줍니다.
-        if (horizontalInput == 0 && !isDashing)
-        {
-            Debug.Log($"[버그추적] Y좌표: {transform.position.y:F2} | X속도: {rb.linearVelocity.x:F2} | Y속도: {rb.linearVelocity.y:F2} | 중력수치: {rb.gravityScale}");
-        }
-
         if (isDashing)
         {
             rb.linearVelocity = new Vector2(dashDir * dashSpeed, 0f);
