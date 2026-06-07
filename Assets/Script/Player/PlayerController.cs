@@ -18,7 +18,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 1;
+    public int maxJumps = 2;       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
+    public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
     public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
@@ -61,6 +62,23 @@ public class PlayerController : MonoBehaviour
     public float skillCooldown = 5f;
     private float skillCooldownTimer;
 
+    [Header("Air / Plunge (공중 공격 / 낙하 공격)")]
+    public string airAttackState = "AirSlash";
+    public string airDownAttackState = "AirSlashDown";      // 공중 아래 베기(1타)
+    public string plungeFallState = "AirSlashDown";         // 낙하(다이브) 자세
+    public string plungeLandState = "GroundSlam";
+    [Range(0f, 1f)] public float plungeLandStartTime = 0f;   // GroundSlam을 이 지점부터 재생(앞 준비동작 건너뛰기, 0~1)
+    public float airAttackDamage = 10f;
+    public float plungeDamage = 20f;
+    public float plungeSpeed = 16f;                          // 낙하 공격 수직 하강 속도
+    public Vector2 plungeAoeSize = new Vector2(3f, 1.5f);    // 착지 충격 범위(플레이어 중심)
+    public float plungeAoeYOffset = -0.3f;
+    public float plungeArmBuffer = 0.15f;                    // 아래 베기 후 낙하공격 입력을 받는 추가 여유
+    public float airDownHoverTime = 0.25f;                   // 공중 아래 베기 시 체공 시간
+    private bool isPlunging;
+    private float plungeArmTimer;                            // >0이면 한 번 더 누를 때 낙하 공격
+    private float hoverTimer;                                // >0이면 잠깐 체공(아래 베기 중)
+
     [Header("발도 / 납도 (Sheathe / Draw)")]
     public KeyCode sheatheKey = KeyCode.R;     // 검 뽑기/넣기 토글 키
     public bool startDrawn = true;             // 시작 시 검을 든 상태로?
@@ -85,6 +103,7 @@ public class PlayerController : MonoBehaviour
 
     private string currentAnimState = "";
     private float animBusyTimer;   // >0이면 1회성 모션(공격/발도 등) 재생 중 → 이동 애니로 안 바뀌고 새 행동도 잠금
+    private float animHoldTimer;    // >0이면 "애니만" 보호(입력은 막지 않음) — 2단 점프 플립 등
     private Dictionary<string, float> clipLengths;   // 상태(클립) 이름 → 실제 재생 길이(초)
 
     void Awake()
@@ -133,6 +152,8 @@ public class PlayerController : MonoBehaviour
         CheckInput();
         CheckGrounded();
 
+        if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
+
         if (isParrying)
         {
             parryTimer -= Time.deltaTime;
@@ -141,12 +162,16 @@ public class PlayerController : MonoBehaviour
 
         if (skillCooldownTimer > 0) skillCooldownTimer -= Time.deltaTime;
         if (animBusyTimer > 0) animBusyTimer -= Time.deltaTime;
+        if (animHoldTimer > 0) animHoldTimer -= Time.deltaTime;
+        if (hoverTimer > 0) hoverTimer -= Time.deltaTime;
         if (attackBufferTimer > 0) attackBufferTimer -= Time.deltaTime;
         if (comboResetTimer > 0)
         {
             comboResetTimer -= Time.deltaTime;
             if (comboResetTimer <= 0) comboStep = 0;   // 시간 초과 → 콤보 처음으로
         }
+        if (plungeArmTimer > 0) plungeArmTimer -= Time.deltaTime;
+        if (isGrounded) plungeArmTimer = 0;            // 착지하면 낙하공격 입력창 닫힘
 
         // 스윙 중 미리 눌러둔 공격: 스윙이 끝나는 즉시 다음 콤보로 연결
         if (attackBufferTimer > 0 && animBusyTimer <= 0 && isSwordDrawn && !isGuarding && !isDashing && isGrounded)
@@ -165,11 +190,23 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(dashDir * dashSpeed, 0f);
             return;
         }
+        if (isPlunging)
+        {
+            rb.linearVelocity = new Vector2(0f, -plungeSpeed);   // 똑바로 빠르게 하강
+            return;
+        }
+        if (hoverTimer > 0)
+        {
+            rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, 0f);   // 아래 베기 중 잠깐 체공
+            return;
+        }
         Move();
     }
 
     private void CheckInput()
     {
+        if (isPlunging) return;   // 낙하 공격 중엔 입력 무시(착지까지 커밋)
+
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
         // 발도/납도 토글
@@ -180,18 +217,35 @@ public class PlayerController : MonoBehaviour
         if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0) StartGuard();
         if (Input.GetMouseButtonUp(1)) EndGuard();
 
-        // 좌클릭 콤보 (검 들고 + 지상에서만; 공중 공격은 3단계)
-        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && isGrounded)
+        // 좌클릭: 지상=콤보 / 공중=공중 공격 (아래키 같이 누르면 낙하 공격)
+        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing)
         {
-            if (animBusyTimer <= 0) DoComboAttack();
-            else attackBufferTimer = attackInputBuffer;   // 스윙 중이면 버퍼에 저장
+            if (isGrounded)
+            {
+                if (animBusyTimer <= 0) DoComboAttack();
+                else attackBufferTimer = attackInputBuffer;   // 스윙 중이면 버퍼에 저장
+            }
+            else   // 공중
+            {
+                if (plungeArmTimer > 0)
+                {
+                    StartPlunge();   // 아래 베기 모션 중 한 번 더 → 낙하 공격
+                }
+                else if (animBusyTimer <= 0)
+                {
+                    bool down = Input.GetKey(KeyCode.S) || Input.GetAxisRaw("Vertical") < -0.1f;
+                    if (down) AirDownAttack();   // S + 좌클릭 → 아래 베기(1타)
+                    else AirAttack();
+                }
+            }
         }
 
         // 스킬 Q (검을 들었을 때만)
         if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0)
             UseSkill();
 
-        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && animBusyTimer <= 0)
+        // 점프는 공격 모션을 캔슬하고 나갈 수 있음(animBusyTimer 무시)
+        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding)
             Jump();
 
         if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding && animBusyTimer <= 0)
@@ -213,7 +267,9 @@ public class PlayerController : MonoBehaviour
     private void UpdateAnimations()
     {
         if (anim == null) return;
-        if (animBusyTimer > 0) return;          // 공격/발도 등 1회성 모션 보호
+        if (isDashing) { PlayState(dashState); return; }       // 대시 모션 유지
+        if (isPlunging) { PlayState(plungeFallState); return; }
+        if (animBusyTimer > 0 || animHoldTimer > 0) return;   // 1회성/플립 모션 보호
         if (isGuarding) { PlayState(guardState); return; }
 
         string state;
@@ -238,11 +294,12 @@ public class PlayerController : MonoBehaviour
     }
 
     // 공격/발도 같은 1회성 모션은 같은 상태라도 처음부터 다시 재생
-    private void PlayStateForced(string state)
+    private void PlayStateForced(string state, float normalizedTime = 0f)
     {
         if (anim == null) return;
-        anim.Play(state, 0, 0f);
+        anim.Play(state, 0, normalizedTime);
         currentAnimState = state;
+        animHoldTimer = 0f;   // 강제 재생은 플립 같은 "애니만 보호" 상태를 덮어씀
     }
 
     private void ToggleSheathe()
@@ -292,12 +349,61 @@ public class PlayerController : MonoBehaviour
     private void PerformAttack(float damage, float rangeMultiplier)
     {
         GetAttackBox(rangeMultiplier, out Vector2 center, out Vector2 size);
+        PerformAreaDamage(center, size, damage);
+    }
+
+    // 지정한 사각형 범위 안의 적에게 데미지(낙하 공격 착지 충격 등에 사용)
+    private void PerformAreaDamage(Vector2 center, Vector2 size, float damage)
+    {
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f, enemyLayer);
         foreach (Collider2D hit in hits)
         {
             DummyMonster monster = hit.GetComponent<DummyMonster>();
             if (monster != null) monster.TakePlayerDamage(damage);
         }
+    }
+
+    // ── 공중 공격 ──
+    private void AirAttack()
+    {
+        comboStep = 0;
+        animBusyTimer = ClipLength(airAttackState);
+        PlayStateForced(airAttackState);
+        PerformAttack(airAttackDamage, 1f);
+    }
+
+    // ── 공중 아래 베기(1타). 이 모션 중 한 번 더 누르면 낙하 공격으로 전환 ──
+    private void AirDownAttack()
+    {
+        comboStep = 0;
+        float len = ClipLength(airDownAttackState);
+        animBusyTimer = len;
+        plungeArmTimer = len + plungeArmBuffer;   // 이 시간 안에 또 누르면 낙하 공격
+        hoverTimer = airDownHoverTime;            // 아래 베기 중 잠깐 체공
+        PlayStateForced(airDownAttackState);
+        PerformAttack(airAttackDamage, 1f);
+    }
+
+    // ── 낙하 공격(아래 베기 중 한 번 더 입력) ──
+    private void StartPlunge()
+    {
+        isPlunging = true;
+        plungeArmTimer = 0;
+        hoverTimer = 0;
+        comboStep = 0;
+        PlayStateForced(plungeFallState);
+        // 하강 속도는 FixedUpdate, 착지 판정은 Update에서 처리
+    }
+
+    private void PlungeLand()
+    {
+        isPlunging = false;
+        PlayStateForced(plungeLandState, plungeLandStartTime);   // 준비동작 건너뛰고 타격 프레임부터
+        animBusyTimer = ClipLength(plungeLandState) * (1f - plungeLandStartTime);   // 남은 길이만큼만 보호
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);   // 착지 시 수평 정지
+
+        Vector2 center = (Vector2)transform.position + new Vector2(0f, plungeAoeYOffset);
+        PerformAreaDamage(center, plungeAoeSize, plungeDamage);     // 착지 충격(광역)
     }
 
     private void GetAttackBox(float rangeMultiplier, out Vector2 center, out Vector2 size)
@@ -321,12 +427,24 @@ public class PlayerController : MonoBehaviour
 
     private void Jump()
     {
+        bool isAirJump = (currentJumps < maxJumps);   // 처음(지상) 점프가 아니면 공중 점프(2단 이상)
+
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         currentJumps--;
         isGrounded = false;
-        comboStep = 0;   // 점프하면 콤보 끊김
-        // 점프/낙하 애니메이션은 UpdateAnimations가 공중 상태(y속도)를 보고 자동 처리
+        comboStep = 0;          // 점프하면 콤보 끊김
+        hoverTimer = 0;         // 점프하면 체공 해제
+        animBusyTimer = 0;      // 공격 모션 즉시 캔슬
+        attackBufferTimer = 0;  // 버퍼된 공격도 취소
+
+        if (isAirJump)
+        {
+            // 2단 이상 점프: 플립 애니(입력은 막지 않고 애니만 잠깐 보호)
+            PlayStateForced(doubleJumpState);
+            animHoldTimer = ClipLength(doubleJumpState);
+        }
+        // 첫 점프는 UpdateAnimations가 JumpRise로 자동 처리
     }
 
     private void StartDash()
@@ -407,5 +525,9 @@ public class PlayerController : MonoBehaviour
         GetAttackBox(skillRangeMultiplier, out Vector2 sCenter, out Vector2 sSize);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(sCenter, sSize);
+
+        // 낙하 공격 착지 충격 범위(보라색)
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireCube((Vector2)transform.position + new Vector2(0f, plungeAoeYOffset), plungeAoeSize);
     }
 }

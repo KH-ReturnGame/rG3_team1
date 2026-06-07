@@ -11,12 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Dummy_monster.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/DummyMonster.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Dummy_monster.cs.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/DummyMonster.cs.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Player_move.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Player_move.cs.meta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +43,65 @@
     <urls />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0000004267812113" />
+      <entry key="MS500" value="1.053215856734309" />
+      <entry key="S2" value="1.4802974319767384" />
+      <entry key="S5" value="1.7457686206959089" />
+      <entry key="S10" value="1.863578960313363" />
+      <entry key="S30" value="1.9522858933480807" />
+      <entry key="S60" value="1.9758513684716954" />
+      <entry key="M2" value="1.9878518960207017" />
+      <entry key="M5" value="1.9951229335851242" />
+      <entry key="M10" value="1.9975584862979836" />
+      <entry key="M15" value="1.9983716611467939" />
+      <entry key="M30" value="1.9991854988673494" />
+      <entry key="H1" value="1.9995926664733736" />
+      <entry key="H2" value="1.9997963124923865" />
+      <entry key="H4" value="1.9998981510595897" />
+      <entry key="D1" value="1.999983024456192" />
+      <entry key="W1" value="1.9999975749046701" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="3.2342392466861727E-6" />
+      <entry key="MS500" value="0.10085027515086732" />
+      <entry key="S2" value="0.9124840447642188" />
+      <entry key="S5" value="1.4563848797752108" />
+      <entry key="S10" value="1.7057407092035903" />
+      <entry key="S30" value="1.8964334182233773" />
+      <entry key="S60" value="1.9474984507280093" />
+      <entry key="M2" value="1.9735670649946562" />
+      <entry key="M5" value="1.9893827707899656" />
+      <entry key="M10" value="1.9946840146123959" />
+      <entry key="M15" value="1.9964543696907282" />
+      <entry key="M30" value="1.9982263642944835" />
+      <entry key="H1" value="1.9991129769109397" />
+      <entry key="H2" value="1.9995564371340662" />
+      <entry key="H4" value="1.9997782057351405" />
+      <entry key="D1" value="1.999963032506852" />
+      <entry key="W1" value="1.9999947188858997" />
+    </decayedShown>
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -177,7 +231,7 @@
       <workItem from="1780821156410" duration="205000" />
       <workItem from="1780821378144" duration="109000" />
       <workItem from="1780821529558" duration="58000" />
-      <workItem from="1780821607227" duration="1864000" />
+      <workItem from="1780821607227" duration="2656000" />
     </task>
     <servers />
   </component>
