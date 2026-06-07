@@ -21,6 +21,13 @@ public class PlayerController : MonoBehaviour
     public int maxJumps = 2;       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
+
+    [Header("Charge Jump (스페이스 길게 → 높은 점프)")]
+    public float chargeJumpTime = 1.5f;            // 이 시간 이상 누르면 높은 점프
+    public float chargeJumpForce = 16f;            // 높은 점프 힘(일반 Jump Force보다 크게)
+    public string chargeState = "Crouch";          // 차지 중 웅크리는 모션
+    private bool isChargingJump;
+    private float jumpHoldTimer;
     public Transform groundCheck;
     public float groundCheckRadius = 0.2f;
     public LayerMask groundLayer;
@@ -40,6 +47,23 @@ public class PlayerController : MonoBehaviour
     private float parryTimer;
     private bool isGuarding;
     private bool isParrying;
+
+    [Header("기력 소모/회복 (GameManager 스탯 사용)")]
+    public float dashStaminaCost = 20f;
+    public float guardStaminaCost = 15f;    // 가드/패링 시도(클릭 순간) 즉시 소모 — 남발 방지 패널티
+    public float guardStaminaDrain = 30f;   // 가드 중 초당 소모
+    public float staminaRegen = 15f;        // 가드/대시 중이 아닐 때 초당 회복
+    public float parryStaminaRecover = 30f; // 패링 성공 시 회복
+
+    [Header("Hit Reaction (피격 넉백/경직)")]
+    public string hitState = "HitDamage";
+    public float hitstunDuration = 0.3f;    // 피격 경직(입력 잠금) 시간
+    public float knockbackForce = 4f;       // 피격 시 뒤로 밀리는 힘(수평만)
+    public float hitInvincibleTime = 1f;    // 피격 후 무적 시간
+    public float blinkInterval = 0.08f;     // 무적 중 점멸 간격
+    [Range(0f, 1f)] public float blinkMinAlpha = 0.3f;   // 점멸 시 가장 흐려질 때의 투명도
+    private float hitstunTimer;
+    private float hitInvincibleTimer;
 
     [Header("Combat - Attack (좌클릭)")]
     public Transform attackPoint;
@@ -142,11 +166,25 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (hitInvincibleTimer > 0)
+        {
+            hitInvincibleTimer -= Time.deltaTime;
+            bool dim = ((int)(hitInvincibleTimer / blinkInterval) % 2) == 0;
+            SetAlpha(dim ? blinkMinAlpha : 1f);                 // 반투명 ↔ 불투명 점멸
+            if (hitInvincibleTimer <= 0) SetAlpha(1f);          // 무적 끝 → 완전 불투명
+        }
+
         if (isDashing)
         {
             dashTimer -= Time.deltaTime;
             if (dashTimer <= 0) EndDash();
             return;
+        }
+
+        if (hitstunTimer > 0)
+        {
+            hitstunTimer -= Time.deltaTime;
+            return;   // 경직: 입력/행동 무시 (피격 모션·넉백 유지)
         }
 
         CheckInput();
@@ -173,6 +211,20 @@ public class PlayerController : MonoBehaviour
         if (plungeArmTimer > 0) plungeArmTimer -= Time.deltaTime;
         if (isGrounded) plungeArmTimer = 0;            // 착지하면 낙하공격 입력창 닫힘
 
+        // 기력: 가드 중 소모 / 그 외 회복 (대시 중에는 이 블록에 도달 안 함 — 위에서 return)
+        if (GameManager.Instance != null)
+        {
+            if (isGuarding)
+            {
+                GameManager.Instance.ChangeStamina(-guardStaminaDrain * Time.deltaTime);
+                if (GameManager.Instance.CurrentStamina <= 0f) EndGuard();   // 기력 고갈 시 가드 해제
+            }
+            else
+            {
+                GameManager.Instance.ChangeStamina(staminaRegen * Time.deltaTime);
+            }
+        }
+
         // 스윙 중 미리 눌러둔 공격: 스윙이 끝나는 즉시 다음 콤보로 연결
         if (attackBufferTimer > 0 && animBusyTimer <= 0 && isSwordDrawn && !isGuarding && !isDashing && isGrounded)
         {
@@ -190,6 +242,7 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(dashDir * dashSpeed, 0f);
             return;
         }
+        if (hitstunTimer > 0) return;   // 경직 중엔 이동 제어 안 함(넉백 속도 유지)
         if (isPlunging)
         {
             rb.linearVelocity = new Vector2(0f, -plungeSpeed);   // 똑바로 빠르게 하강
@@ -214,11 +267,13 @@ public class PlayerController : MonoBehaviour
             ToggleSheathe();
 
         // 가드/패링 (검을 들었을 때만)
-        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0) StartGuard();
+        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump
+            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= guardStaminaCost))
+            StartGuard();
         if (Input.GetMouseButtonUp(1)) EndGuard();
 
         // 좌클릭: 지상=콤보 / 공중=공중 공격 (아래키 같이 누르면 낙하 공격)
-        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing)
+        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && !isChargingJump)
         {
             if (isGrounded)
             {
@@ -241,19 +296,52 @@ public class PlayerController : MonoBehaviour
         }
 
         // 스킬 Q (검을 들었을 때만)
-        if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0)
+        if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0 && !isChargingJump)
             UseSkill();
 
-        // 점프는 공격 모션을 캔슬하고 나갈 수 있음(animBusyTimer 무시)
+        // 점프: 지상=차지(길게 누르면 높은 점프) / 공중=즉시 2단 점프. 공격 모션도 캔슬.
         if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding)
-            Jump();
+        {
+            if (isGrounded)
+            {
+                isChargingJump = true;   // 차지 시작(점프는 뗄 때)
+                jumpHoldTimer = 0f;
+                animBusyTimer = 0;       // 공격 캔슬하고 웅크림
+                comboStep = 0;
+            }
+            else
+            {
+                Jump(jumpForce);         // 공중 점프(즉시)
+            }
+        }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding && animBusyTimer <= 0)
+        if (isChargingJump)
+        {
+            if (!isGrounded)
+            {
+                isChargingJump = false;  // 차지 중 바닥에서 벗어나면 취소
+            }
+            else
+            {
+                if (Input.GetKey(KeyCode.Space)) jumpHoldTimer += Time.deltaTime;
+                if (Input.GetKeyUp(KeyCode.Space))
+                {
+                    bool high = jumpHoldTimer >= chargeJumpTime;
+                    isChargingJump = false;
+                    Jump(high ? chargeJumpForce : jumpForce);   // 길게 눌렀으면 높은 점프
+                }
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding && animBusyTimer <= 0 && !isChargingJump
+            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= dashStaminaCost))
             StartDash();
     }
 
     private void Move()
     {
+        if (isChargingJump) { rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }  // 차지 중 제자리 고정
+
         float speed = isGuarding ? moveSpeed * guardSpeedMultiplier : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
 
@@ -271,6 +359,7 @@ public class PlayerController : MonoBehaviour
         if (isPlunging) { PlayState(plungeFallState); return; }
         if (animBusyTimer > 0 || animHoldTimer > 0) return;   // 1회성/플립 모션 보호
         if (isGuarding) { PlayState(guardState); return; }
+        if (isChargingJump) { PlayState(chargeState); return; }   // 차지 중 웅크림
 
         string state;
         if (!isGrounded)
@@ -300,6 +389,15 @@ public class PlayerController : MonoBehaviour
         anim.Play(state, 0, normalizedTime);
         currentAnimState = state;
         animHoldTimer = 0f;   // 강제 재생은 플립 같은 "애니만 보호" 상태를 덮어씀
+    }
+
+    // 스프라이트 투명도만 바꾸기(피격 무적 점멸용). RGB는 유지.
+    private void SetAlpha(float a)
+    {
+        if (sr == null) return;
+        Color c = sr.color;
+        c.a = a;
+        sr.color = c;
     }
 
     private void ToggleSheathe()
@@ -358,8 +456,8 @@ public class PlayerController : MonoBehaviour
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f, enemyLayer);
         foreach (Collider2D hit in hits)
         {
-            DummyMonster monster = hit.GetComponent<DummyMonster>();
-            if (monster != null) monster.TakePlayerDamage(damage);
+            IDamageable target = hit.GetComponent<IDamageable>();
+            if (target != null) target.TakeDamage(damage);
         }
     }
 
@@ -425,12 +523,12 @@ public class PlayerController : MonoBehaviour
 
     // ───────────────────────── 점프 / 대시 / 바닥 ─────────────────────────
 
-    private void Jump()
+    private void Jump(float force)
     {
         bool isAirJump = (currentJumps < maxJumps);   // 처음(지상) 점프가 아니면 공중 점프(2단 이상)
 
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
-        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        rb.AddForce(Vector2.up * force, ForceMode2D.Impulse);
         currentJumps--;
         isGrounded = false;
         comboStep = 0;          // 점프하면 콤보 끊김
@@ -449,6 +547,7 @@ public class PlayerController : MonoBehaviour
 
     private void StartDash()
     {
+        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(dashStaminaCost);
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
@@ -481,6 +580,7 @@ public class PlayerController : MonoBehaviour
 
     private void StartGuard()
     {
+        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(guardStaminaCost);  // 패링 시도 비용
         isGuarding = true;
         isParrying = true;
         parryTimer = parryWindow;
@@ -494,18 +594,44 @@ public class PlayerController : MonoBehaviour
         isParrying = false;
     }
 
-    public void TakeDamage(float damage, bool isMeleeAttacker, DummyMonster attacker = null)
+    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default)
     {
+        if (isDashing || hitInvincibleTimer > 0) return;   // 대시 무적 / 피격 후 무적
+
         if (isParrying)
         {
             if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
             PlayStateForced("SwordGuardImpact");   // 패링 성공 연출
             animBusyTimer = ClipLength("SwordGuardImpact");
+            if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
             return;
         }
-        else if (isGuarding) damage *= 0.5f;
 
-        // TODO: 체력 시스템 연결 시 여기서 실제 체력 차감 + 피격(넉백) 연출 (4단계)
+        // damage는 "하트" 단위. 가드 중이면 절반(반올림).
+        int hearts = isGuarding ? Mathf.RoundToInt(damage * 0.5f) : Mathf.RoundToInt(damage);
+        if (hearts <= 0) return;   // 가드로 완전히 막힘 → 피해/반응 없음
+
+        if (GameManager.Instance != null) GameManager.Instance.TakeDamage(hearts);
+
+        Hurt(source);   // 넉백 + 경직 + 피격 모션
+    }
+
+    // 피격 반응: 진행 중 행동 취소 + 넉백 + 경직 + 피격 모션
+    private void Hurt(Vector2 source)
+    {
+        comboStep = 0;
+        isPlunging = false;
+        hoverTimer = 0;
+        animBusyTimer = 0;
+        attackBufferTimer = 0;
+
+        hitstunTimer = hitstunDuration;
+        hitInvincibleTimer = hitInvincibleTime;   // 피격 후 무적 시작
+
+        float kbDir = (source.x <= transform.position.x) ? 1f : -1f;   // 공격자 반대 방향으로 조금
+        rb.linearVelocity = new Vector2(kbDir * knockbackForce, rb.linearVelocity.y);   // 수평만(공중으로 안 띄움)
+
+        PlayStateForced(hitState);
     }
 
     // ───────────────────────── 기즈모 ─────────────────────────

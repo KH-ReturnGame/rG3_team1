@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class DummyMonster : MonoBehaviour
+public class DummyMonster : MonoBehaviour, IDamageable, IParryable
 {
     [Header("Stats")]
     public float maxHealth = 100f;
@@ -10,7 +10,7 @@ public class DummyMonster : MonoBehaviour
     public bool attacksPlayer = true;     // 끄면 순수 샌드백(내 공격만 테스트할 때)
     public Transform player;
     public float attackInterval = 3f;
-    public float attackDamage = 10f;
+    public float attackDamage = 2f;       // 플레이어에게 주는 피해 = 하트 칸 수
     public float attackRange = 2.5f;
     private float attackTimer;
 
@@ -72,8 +72,8 @@ public class DummyMonster : MonoBehaviour
         UpdateColor();
     }
 
-    // 플레이어에게 맞았을 때 (PlayerController가 호출)
-    public void TakePlayerDamage(float damage)
+    // 플레이어에게 맞았을 때 (IDamageable)
+    public void TakeDamage(float damage)
     {
         if (isGroggy) damage *= 1.5f;   // 그로기 중 치명타
 
@@ -108,7 +108,7 @@ public class DummyMonster : MonoBehaviour
 
         attackFlashTimer = flashDuration * 2f;
         PlayerController pc = player.GetComponent<PlayerController>();
-        if (pc != null) pc.TakeDamage(attackDamage, true, this);
+        if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
     }
 
     private void UpdateColor()
