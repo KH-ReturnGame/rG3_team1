@@ -259,6 +259,7 @@ public class PlayerController : MonoBehaviour
     private void CheckInput()
     {
         if (isPlunging) return;   // 낙하 공격 중엔 입력 무시(착지까지 커밋)
+        if (InventoryUI.IsOpen) { horizontalInput = 0f; return; }   // 인벤토리 열려있으면 조작 잠금
 
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
