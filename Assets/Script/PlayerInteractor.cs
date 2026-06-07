@@ -11,7 +11,7 @@ public class PlayerInteractor : MonoBehaviour
 
     void Update()
     {
-        if (InventoryUI.IsOpen) { nearest = null; return; }   // 인벤토리 열려있으면 상호작용 잠금
+        if (Inventory.IsUIOpen) { nearest = null; return; }   // 인벤토리/메뉴 열려있으면 상호작용 잠금
         nearest = FindNearest();
         if (nearest != null && Input.GetKeyDown(interactKey))
             nearest.Interact();
