@@ -7,9 +7,6 @@
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/DeadRevolver/PixelPrototypePlayerSprites/Art/Animations/Animators/PlayerAnimator.controller" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/DeadRevolver/PixelPrototypePlayerSprites/Art/Animations/Animators/PlayerAnimator.controller" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,6 +108,7 @@
       <workItem from="1779977091480" duration="2549000" />
       <workItem from="1780025842464" duration="273000" />
       <workItem from="1780036493479" duration="3786000" />
+      <workItem from="1780041160782" duration="598000" />
     </task>
     <servers />
   </component>
