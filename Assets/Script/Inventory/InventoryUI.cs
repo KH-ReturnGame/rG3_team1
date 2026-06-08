@@ -207,7 +207,7 @@ public class InventoryUI : MonoBehaviour
     {
         if (playerT == null)
         {
-            var pc = FindFirstObjectByType<PlayerController>();
+            var pc = FindAnyObjectByType<PlayerController>();
             if (pc != null) playerT = pc.transform;
         }
         return playerT;

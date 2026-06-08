@@ -17,6 +17,9 @@ public class GameManager : MonoBehaviour
     [Header("재화")]
     public int gold = 0;
 
+    [Header("진행도")]
+    public int currentStage = 0;   // 로그라이크 스테이지 진행 (스테이지 쪽 GameManager 통합)
+
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = true;
 
@@ -106,6 +109,18 @@ public class GameManager : MonoBehaviour
         gold -= amount;
         OnStatsChanged?.Invoke();
         return true;
+    }
+
+    // ───────── 세이브/로드 ─────────
+    // 저장된 값으로 스탯 복원. hearts가 음수면 최대치로 시작(새 게임).
+    public void LoadStats(int hearts, int maxH, float maxStam, int g)
+    {
+        maxHearts = Mathf.Max(1, maxH);
+        maxStamina = Mathf.Max(1f, maxStam);
+        gold = Mathf.Max(0, g);
+        currentHearts = (hearts < 0) ? maxHearts : Mathf.Clamp(hearts, 0, maxHearts);
+        currentStamina = maxStamina;
+        OnStatsChanged?.Invoke();
     }
 
     // 임시 디버그 표시 (실제 UI 붙이기 전까지 화면 좌상단에 스탯 표시)

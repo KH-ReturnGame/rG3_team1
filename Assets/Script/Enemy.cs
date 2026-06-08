@@ -77,7 +77,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         if (sr != null) baseColor = sr.color;
         if (player == null)
         {
-            PlayerController pc = FindFirstObjectByType<PlayerController>();
+            PlayerController pc = FindAnyObjectByType<PlayerController>();
             if (pc != null) player = pc.transform;
         }
 

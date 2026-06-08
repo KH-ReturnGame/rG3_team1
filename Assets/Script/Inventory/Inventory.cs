@@ -98,4 +98,17 @@ public class Inventory : MonoBehaviour
             if (!s.IsEmpty && s.item == item) total += s.count;
         return total;
     }
+
+    // 세이브 데이터로 인벤토리 복원
+    public void LoadFromSaved(List<SavedItem> saved)
+    {
+        foreach (var s in slots) s.Clear();
+        if (saved != null)
+            foreach (var si in saved)
+            {
+                ItemData item = ItemDatabase.Get(si.id);
+                if (item != null) Add(item, si.count);
+            }
+        OnChanged?.Invoke();
+    }
 }
