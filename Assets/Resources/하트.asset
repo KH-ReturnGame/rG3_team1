@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
   m_Name: "\uD558\uD2B8"
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  id: 1
   itemName: "\uC544\uC774\uD15C"
   icon: {fileID: -8674678632225266132, guid: fe164bf6a14a45549b2d22cb7bc0ac7a, type: 3}
   maxStack: 99

@@ -210,25 +210,35 @@ MonoBehaviour:
   jumpForce: 10
   maxJumps: 2
   doubleJumpState: FrontFlip
+  chargeJumpTime: 1.5
+  chargeJumpForce: 16
+  chargeState: Crouch
   groundCheck: {fileID: 272284037}
   groundCheckRadius: 0.2
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   dashSpeed: 15
   dashDuration: 0.3
   maxDashes: 1
   parryWindow: 0.5
   dashStaminaCost: 20
+  guardStaminaCost: 15
   guardStaminaDrain: 30
   staminaRegen: 15
   parryStaminaRecover: 30
+  hitState: HitDamage
+  hitstunDuration: 0.3
+  knockbackForce: 4
+  hitInvincibleTime: 1
+  blinkInterval: 0.08
+  blinkMinAlpha: 0.3
   attackPoint: {fileID: 468265583}
   attackBoxSize: {x: 1.2, y: 1.2}
   attackDamage: 10
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 256
   comboStates:
   - ComboAttackA
   - ComboAttackB
@@ -1527,7 +1537,12 @@ MonoBehaviour:
   attackCooldown: 1
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
+  moveBehavior: 0
+  randomizeStats: 1
+  randomizeRange: 0.25
   patrolDistance: 3
+  wanderChangeInterval: 2
+  wanderPauseTime: 1.2
   player: {fileID: 0}
   showHealthLabel: 1
   labelHeight: 1.2
@@ -1693,7 +1708,12 @@ MonoBehaviour:
   attackCooldown: 1
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
+  moveBehavior: 0
+  randomizeStats: 1
+  randomizeRange: 0.25
   patrolDistance: 3
+  wanderChangeInterval: 2
+  wanderPauseTime: 1.2
   player: {fileID: 0}
   showHealthLabel: 1
   labelHeight: 1.2
@@ -1878,7 +1898,12 @@ MonoBehaviour:
   attackCooldown: 1
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
+  moveBehavior: 0
+  randomizeStats: 1
+  randomizeRange: 0.25
   patrolDistance: 3
+  wanderChangeInterval: 2
+  wanderPauseTime: 1.2
   player: {fileID: 0}
   showHealthLabel: 1
   labelHeight: 1.2
@@ -2052,6 +2077,7 @@ MonoBehaviour:
   maxHearts: 6
   maxStamina: 100
   gold: 0
+  currentStage: 0
   showDebugStats: 1
 --- !u!4 &1828990179
 Transform:

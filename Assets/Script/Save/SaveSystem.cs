@@ -36,6 +36,8 @@ public static class SaveSystem
     // 새 게임: 기본 데이터 생성·저장 후 시작 씬 로드
     public static void NewGame(int slot, string startScene)
     {
+        if (string.IsNullOrEmpty(startScene)) startScene = "TutorialScene";
+
         var data = new SaveSlotData
         {
             saveName = $"슬롯 {slot + 1}",
@@ -49,7 +51,7 @@ public static class SaveSystem
         Write(slot, data);
         CurrentSlot = slot;
         pending = data;
-        SceneManager.LoadScene(startScene);
+        LoadSceneSafe(startScene);
     }
 
     // 불러오기: 저장된 씬·데이터로 복귀
@@ -59,7 +61,23 @@ public static class SaveSystem
         if (data == null) return;
         CurrentSlot = slot;
         pending = data;
-        SceneManager.LoadScene(string.IsNullOrEmpty(data.sceneName) ? "TutorialScene" : data.sceneName);
+        LoadSceneSafe(string.IsNullOrEmpty(data.sceneName) ? "TutorialScene" : data.sceneName);
+    }
+
+    // 씬을 안전하게 로드 — Build Settings에 없으면 조용히 실패하지 않고 콘솔에 명확히 에러
+    private static void LoadSceneSafe(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            Debug.LogError("[SaveSystem] 시작 씬 이름이 비어있습니다. StartMenu의 Start Scene을 'TutorialScene'으로 설정하세요.");
+            return;
+        }
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogError($"[SaveSystem] '{sceneName}' 씬을 로드할 수 없습니다. File ▸ Build Settings의 'Scenes In Build'에 이 씬이 추가·체크돼 있는지 확인하세요.");
+            return;
+        }
+        SceneManager.LoadScene(sceneName);
     }
 
     // 현재 상태를 현재 슬롯에 저장(자동저장 등)
