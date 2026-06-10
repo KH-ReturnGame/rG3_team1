@@ -92,7 +92,8 @@ public class InventoryUI : MonoBehaviour
 
         // --- 배경(불투명) / 제목 ---
         GUI.DrawTexture(windowRect, bgTex, ScaleMode.StretchToFill);
-        GUI.Box(new Rect(x0, y0, w, titleH), "인벤토리   (B: 닫기 · 클릭: 집기/놓기 · 창 밖 클릭: 버리기)", titleStyle);
+        int gold = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
+        GUI.Box(new Rect(x0, y0, w, titleH), $"인벤토리      Gold {gold}      (B: 닫기 · 클릭: 집기/놓기 · 창 밖 클릭: 버리기)", titleStyle);
 
         // --- 슬롯 ---
         int hoverIdx = -1;
@@ -169,39 +170,7 @@ public class InventoryUI : MonoBehaviour
 
     // 아이템을 월드에 떨군다(아이콘 스프라이트 + 콜라이더 + ItemPickup → 나중에 F로 다시 줍기 가능)
     private void SpawnWorldItem(ItemData item, int count, Vector3 pos)
-    {
-        if (item == null) return;
-
-        GameObject go = new GameObject("Dropped_" + item.itemName);
-        go.transform.position = pos;
-
-        int itemLayer = LayerMask.NameToLayer("Item");
-        if (itemLayer >= 0) go.layer = itemLayer;
-        else Debug.LogWarning("[InventoryUI] 'Item' 레이어가 없습니다. Tags & Layers에서 만들어주세요.");
-
-        var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = item.icon;              // 인벤토리 아이콘과 같은 스프라이트
-        sr.sortingOrder = 1;
-
-        // 스프라이트 원본 크기(PPU)와 무관하게 목표 월드 크기로 맞춤
-        if (item.icon != null)
-        {
-            Vector2 sz = item.icon.bounds.size;          // scale=1일 때의 월드 크기
-            float maxDim = Mathf.Max(sz.x, sz.y);
-            float scale = maxDim > 0.0001f ? dropWorldSize / maxDim : 1f;
-            go.transform.localScale = Vector3.one * scale;
-        }
-
-        go.AddComponent<BoxCollider2D>();   // 스프라이트 크기에 맞게 자동(+ 위 스케일 반영) + 줍기/바닥 충돌
-
-        var rb = go.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 1f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-
-        var pickup = go.AddComponent<ItemPickup>();
-        pickup.item = item;
-        pickup.count = count;
-    }
+        => ItemPickup.SpawnWorld(item, count, pos, dropWorldSize);   // 공용 생성기 사용(적 드랍과 동일)
 
     private Transform Player()
     {

@@ -99,6 +99,22 @@ public class Inventory : MonoBehaviour
         return total;
     }
 
+    // 특정 슬롯에서 개수 차감(단축키 사용 등). 충분하면 true.
+    public bool ConsumeAt(int index, int amount = 1)
+    {
+        if (index < 0 || index >= slots.Count) return false;
+        var s = slots[index];
+        if (s.IsEmpty || s.count < amount) return false;
+        s.count -= amount;
+        if (s.count <= 0) s.Clear();
+        OnChanged?.Invoke();
+        return true;
+    }
+
+    // 특정 슬롯의 아이템(비었으면 null).
+    public ItemData ItemAt(int index)
+        => (index >= 0 && index < slots.Count && !slots[index].IsEmpty) ? slots[index].item : null;
+
     // 세이브 데이터로 인벤토리 복원
     public void LoadFromSaved(List<SavedItem> saved)
     {

@@ -34,6 +34,16 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float wanderChangeInterval = 2f;   // Wander: 한 방향으로 걷는 시간
     public float wanderPauseTime = 1.2f;      // Wander: 중간중간 가만히 서 있는 시간
 
+    [Header("Drops (처치 보상)")]
+    public int goldMin = 1;
+    public int goldMax = 5;
+    public Sprite goldSprite;            // 골드 코인 스프라이트(비우면 노란 원 자동 생성)
+    public int goldCoinMin = 2;          // 떨어지는 코인 개수(연출용)
+    public int goldCoinMax = 3;
+    public LootDrop[] loot;              // 사망 시 확률로 떨어지는 채집물/전리품(바닥에 떨궈 F로 줍기)
+    public float dropSize = 0.5f;        // 떨군 아이템 월드 크기
+    public float dropScatter = 0.3f;     // 여러 개일 때 퍼지는 정도
+
     [Header("References")]
     public Transform player;             // 비워두면 씬에서 자동으로 PlayerController 탐색
 
@@ -268,8 +278,34 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     {
         state = State.Dead;
         SetMove(0);
-        // TODO: 드랍/사망 연출은 이후 단계에서. 지금은 제거.
+        GrantRewards();
         Destroy(gameObject);
+    }
+
+    // 처치 보상: 골드는 즉시 적립(런 결과에 집계), 채집물/전리품은 바닥에 떨궈 F로 줍게.
+    private void GrantRewards()
+    {
+        int goldAmount = Random.Range(goldMin, goldMax + 1);
+        if (goldAmount > 0) DropGoldCoins(goldAmount);   // 즉시 적립이 아니라 코인으로 떨궈 인벤토리로 빨려가게
+
+        if (loot == null) return;
+        foreach (var d in loot)
+        {
+            if (d == null || d.item == null || Random.value > d.chance) continue;
+            int n = Random.Range(d.minCount, d.maxCount + 1);
+            if (n <= 0) continue;
+            Vector3 pos = transform.position + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
+            ItemPickup.SpawnWorld(d.item, n, pos, dropSize);
+        }
+    }
+
+    // 골드를 코인 여러 개로 떨궈 인벤토리(우상단)로 빨려가게 — 도착 시 적립
+    private void DropGoldCoins(int amount)
+    {
+        int coins = Mathf.Clamp(Random.Range(goldCoinMin, goldCoinMax + 1), 1, amount);
+        int per = amount / coins, rem = amount % coins;
+        for (int i = 0; i < coins; i++)
+            GoldCoin.Spawn(transform.position + Vector3.up * 0.3f, per + (i < rem ? 1 : 0), goldSprite, player);
     }
 
     private void UpdateColor()
@@ -301,4 +337,14 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }
+}
+
+// 적이 사망 시 떨어뜨리는 항목 하나(확률·개수). 인스펙터에서 적별 드랍 테이블 구성.
+[System.Serializable]
+public class LootDrop
+{
+    public ItemData item;
+    [Range(0f, 1f)] public float chance = 1f;   // 떨어질 확률(1=항상)
+    public int minCount = 1;
+    public int maxCount = 1;
 }
