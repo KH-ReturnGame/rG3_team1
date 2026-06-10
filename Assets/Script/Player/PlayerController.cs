@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Charge Jump (스페이스 길게 → 높은 점프)")]
     public float chargeJumpTime = 1.5f;            // 이 시간 이상 누르면 높은 점프
+    public float tapJumpTime = 0.1f;               // 이 시간 안에 떼면 준비자세 없이 바로 일반 점프
     public float chargeJumpForce = 16f;            // 높은 점프 힘(일반 Jump Force보다 크게)
     public string chargeState = "Crouch";          // 차지 중 웅크리는 모션
     private bool isChargingJump;
@@ -300,19 +301,21 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0 && !isChargingJump)
             UseSkill();
 
-        // 점프: 지상=차지(길게 누르면 높은 점프) / 공중=즉시 2단 점프. 공격 모션도 캔슬.
-        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding)
+        // 점프: 스페이스 탭=누르는 즉시 일반 점프(반응 즉각) / 아래(S)+스페이스=차지 높은 점프 / 공중=즉시 2단 점프
+        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && !isChargingJump)
         {
-            if (isGrounded)
+            bool wantCharge = isGrounded &&
+                (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f);
+            if (wantCharge)
             {
-                isChargingJump = true;   // 차지 시작(점프는 뗄 때)
+                isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
                 jumpHoldTimer = 0f;
                 animBusyTimer = 0;       // 공격 캔슬하고 웅크림
                 comboStep = 0;
             }
             else
             {
-                Jump(jumpForce);         // 공중 점프(즉시)
+                Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
             }
         }
 
@@ -327,9 +330,9 @@ public class PlayerController : MonoBehaviour
                 if (Input.GetKey(KeyCode.Space)) jumpHoldTimer += Time.deltaTime;
                 if (Input.GetKeyUp(KeyCode.Space))
                 {
-                    bool high = jumpHoldTimer >= chargeJumpTime;
+                    bool high = jumpHoldTimer >= chargeJumpTime;   // 충분히 충전해야만 높은 점프
                     isChargingJump = false;
-                    Jump(high ? chargeJumpForce : jumpForce);   // 길게 눌렀으면 높은 점프
+                    Jump(high ? chargeJumpForce : jumpForce);      // 덜 눌렀으면 일반 점프
                 }
             }
         }
@@ -341,7 +344,7 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {
-        if (isChargingJump) { rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }  // 차지 중 제자리 고정
+        if (isChargingJump && jumpHoldTimer >= tapJumpTime) { rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }  // 차지 중 제자리 고정
 
         float speed = isGuarding ? moveSpeed * guardSpeedMultiplier : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
@@ -360,7 +363,7 @@ public class PlayerController : MonoBehaviour
         if (isPlunging) { PlayState(plungeFallState); return; }
         if (animBusyTimer > 0 || animHoldTimer > 0) return;   // 1회성/플립 모션 보호
         if (isGuarding) { PlayState(guardState); return; }
-        if (isChargingJump) { PlayState(chargeState); return; }   // 차지 중 웅크림
+        if (isChargingJump && jumpHoldTimer >= tapJumpTime) { PlayState(chargeState); return; }   // 준비자세는 0.1초 이상 홀드 때만
 
         string state;
         if (!isGrounded)
