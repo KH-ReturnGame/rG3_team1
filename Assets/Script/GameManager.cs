@@ -72,6 +72,7 @@ public class GameManager : MonoBehaviour
     {
         OnPlayerDied?.Invoke();
         Debug.Log("[GameManager] 플레이어 사망");
+        GameFlow.Instance?.OnRunPlayerDied();   // 런 중이면 마을로 귀환(결과창 표시)
         // 임시: 테스트 편의를 위해 체력 리셋(진짜 사망/리스폰 처리는 이후 단계에서)
         currentHearts = maxHearts;
         OnStatsChanged?.Invoke();
