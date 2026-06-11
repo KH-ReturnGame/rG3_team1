@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/DeadRevolver/PixelPrototypePlayerSprites/Art/Animations/Animators/PlayerAnimator.controller.meta
+guid: 16e593002d6f8db4f83d11a151b8a81e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+========
+guid: 08fd882abc2f1fa41b86d267169b332d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+>>>>>>>> player:Assets/Item/하트.asset.meta
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
