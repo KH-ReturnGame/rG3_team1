@@ -1,9 +1,9 @@
 using UnityEngine;
 
 // B키로 열고/닫는 인벤토리 창 (OnGUI 기반, Canvas 세팅 불필요).
-// - 불투명 배경 + 큰 격자
-// - 아이템에 마우스 올리면 이름/설명 툴팁
-// - 칸 클릭으로 집기, 다른 칸 클릭으로 놓기/교체/스택, 창 밖 클릭으로 버리기
+//  - 나무/주황 톤(스타듀식) · 상단 카테고리 탭 · 단축키 칸(주황 테두리+번호) 강조
+//  - 칸 클릭으로 집기, 다른 칸 클릭으로 놓기/교체/스택, 창 밖 클릭으로 버리기, 마우스 호버 툴팁
+// 표시만 담당하므로 나중에 UI 에셋으로 갈아끼우기 쉬움(데이터는 Inventory/GameManager).
 public class InventoryUI : MonoBehaviour
 {
     [Header("열기/닫기")]
@@ -11,39 +11,47 @@ public class InventoryUI : MonoBehaviour
 
     [Header("격자")]
     public int columns = 8;
-    public bool autoSize = true;           // 화면 크기에 맞춰 칸 크기 자동(켜면 항상 큼, 해상도 무관)
+    public bool autoSize = true;           // 화면 크기에 맞춰 칸 크기 자동
     public float slotHeightRatio = 0.11f;  // autoSize 시 화면 높이 대비 칸 크기 비율
     public float slotSize = 80f;           // autoSize 끄면 쓰는 고정 칸 크기
     public float padding = 8f;
-    private float curSlot;                  // 이번 프레임 실제 칸 크기
+    private float curSlot;
 
     [Header("툴팁 / 버리기")]
-    public float tooltipWidth = 320f;   // 툴팁 너비
-    public float dropWorldSize = 0.5f;  // 바닥에 떨군 아이템의 목표 크기(월드 단위, 작을수록 작음)
+    public float tooltipWidth = 320f;
+    public float dropWorldSize = 0.5f;
 
     private bool open;
-    private ItemData heldItem;   // 마우스로 잡은 아이템
+    private ItemData heldItem;
     private int heldCount;
-    private Transform playerT;    // 떨굴 위치(플레이어) 캐시
+    private Transform playerT;
+    private Hotbar hotbar;
 
-    private Texture2D bgTex;
-    private GUIStyle titleStyle, countStyle, tipNameStyle, tipDescStyle;
+    private int selectedCat;   // 0=전체 1=소비 2=재료 3=장비
+    private static readonly string[] catNames = { "전체", "소비", "재료", "장비" };
 
-    void Awake()
-    {
-        SetupItemCollisions();
-    }
+    // ── 색(나무/주황 팔레트) ──
+    private static readonly Color cPanel  = new Color(0.14f, 0.11f, 0.08f);   // 어두운 나무(불투명) — 글자/아이템이 잘 보이게
+    private static readonly Color cBorder = new Color(0.86f, 0.63f, 0.30f);   // 밝은 금색 테두리
+    private static readonly Color cSlot   = new Color(0.31f, 0.25f, 0.18f);   // 슬롯(패널보다 밝게)
+    private static readonly Color cSlotBd = new Color(0.58f, 0.45f, 0.30f);
+    private static readonly Color cAccent = new Color(1f, 0.64f, 0.14f);      // 밝은 주황(선택 탭·단축키)
+    private static readonly Color cTabOff = new Color(0.34f, 0.27f, 0.19f);
+    private static readonly Color cClose  = new Color(0.82f, 0.26f, 0.18f);   // 닫기(X) 버튼
 
-    // Item 레이어는 맵(Ground)하고만 충돌, 그 외(플레이어/적/다른 아이템 등)와는 안 부딪힘(밀림 방지)
+    private Texture2D white;
+    private GUIStyle countStyle, tipNameStyle, tipDescStyle, tabStyle, tabSelStyle, goldStyle, itemLabelStyle, hotkeyNumStyle, closeStyle;
+
+    void Awake() { SetupItemCollisions(); }
+
+    // Item 레이어는 맵(Ground)하고만 충돌(밀림 방지)
     private void SetupItemCollisions()
     {
         int item = LayerMask.NameToLayer("Item");
         if (item < 0) return;
-        for (int i = 0; i < 32; i++)
-            Physics2D.IgnoreLayerCollision(item, i, true);        // 일단 전부 무시
+        for (int i = 0; i < 32; i++) Physics2D.IgnoreLayerCollision(item, i, true);
         int ground = LayerMask.NameToLayer("Ground");
-        if (ground >= 0)
-            Physics2D.IgnoreLayerCollision(item, ground, false);  // 맵(Ground)만 충돌 허용
+        if (ground >= 0) Physics2D.IgnoreLayerCollision(item, ground, false);
     }
 
     void Update()
@@ -51,9 +59,9 @@ public class InventoryUI : MonoBehaviour
         if (Input.GetKeyDown(toggleKey))
         {
             open = !open;
-            if (!open) ReturnHeld();   // 닫을 때 들고 있던 아이템 되돌리기
+            if (!open) ReturnHeld();
         }
-        Inventory.IsUIOpen = open;      // 플레이어 조작 잠금 플래그(데이터 쪽에 둬서 UI 교체에 자유롭게)
+        Inventory.IsUIOpen = open;
     }
 
     void OnDisable() { Inventory.IsUIOpen = false; }
@@ -61,98 +69,156 @@ public class InventoryUI : MonoBehaviour
     void OnGUI()
     {
         if (!open || Inventory.Instance == null) return;
-
         EnsureStyles();
-        curSlot = autoSize ? Screen.height * slotHeightRatio : slotSize;   // 화면에 맞춘 칸 크기
+        curSlot = autoSize ? Screen.height * slotHeightRatio : slotSize;
 
         var slots = Inventory.Instance.slots;
         int cols = Mathf.Max(1, columns);
         int rows = Mathf.CeilToInt(slots.Count / (float)cols);
 
-        float titleH = 34f;
+        float tabH = Mathf.Clamp(curSlot * 0.42f, 30f, 48f);
         float w = cols * (curSlot + padding) + padding;
-        float h = rows * (curSlot + padding) + padding + titleH;
+        float h = rows * (curSlot + padding) + padding + tabH;
         float x0 = (Screen.width - w) * 0.5f;
         float y0 = (Screen.height - h) * 0.5f;
         Rect windowRect = new Rect(x0, y0, w, h);
-        float gridTop = y0 + titleH;
+        float gridTop = y0 + tabH;
 
         Vector2 mouse = Event.current.mousePosition;
 
-        // --- 클릭 처리 ---
+        // --- 클릭 처리 (탭 먼저, 그다음 칸/버리기) ---
         if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
         {
-            int idx = SlotIndexAt(mouse, x0, gridTop, cols, slots.Count);
-            if (idx >= 0)
-                HandleSlotClick(slots, idx);
-            else if (!windowRect.Contains(mouse) && heldItem != null)
-                DropHeld();                       // 창 밖 클릭 → 버리기
+            if (CloseBtnRect(x0, y0, w, tabH).Contains(mouse)) { Close(); Event.current.Use(); return; }
+            int tab = TabIndexAt(mouse, x0, y0, w, tabH);
+            if (tab >= 0) selectedCat = tab;
+            else
+            {
+                int idx = SlotIndexAt(mouse, x0, gridTop, cols, slots.Count);
+                if (idx >= 0) HandleSlotClick(slots, idx);
+                else if (!windowRect.Contains(mouse) && heldItem != null) DropHeld();
+            }
             Event.current.Use();
         }
 
-        // --- 배경(불투명) / 제목 ---
-        GUI.DrawTexture(windowRect, bgTex, ScaleMode.StretchToFill);
+        // --- 패널 ---
+        Fill(windowRect, cPanel);
+        Border(windowRect, 4f, cBorder);
+
+        // --- 탭 + 골드 + 닫기(X) ---
+        DrawTabs(x0, y0, w, tabH);
         int gold = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
-        GUI.Box(new Rect(x0, y0, w, titleH), $"인벤토리      Gold {gold}      (B: 닫기 · 클릭: 집기/놓기 · 창 밖 클릭: 버리기)", titleStyle);
+        GUI.Label(new Rect(x0, y0, w - (tabH - 10f) - 16f, tabH), $"{gold} G", goldStyle);
+        Rect cb = CloseBtnRect(x0, y0, w, tabH);
+        Fill(cb, cClose);
+        Border(cb, 2f, cBorder);
+        GUI.Label(cb, "X", closeStyle);
 
         // --- 슬롯 ---
         int hoverIdx = -1;
         for (int i = 0; i < slots.Count; i++)
         {
             Rect r = SlotRect(i, x0, gridTop, cols);
-            GUI.Box(r, GUIContent.none);
+            Fill(r, cSlot);
+            bool isHot = IsHotkeySlot(i, out int hkNum);
+            Border(r, isHot ? 3f : 2f, isHot ? cAccent : cSlotBd);
 
             var s = slots[i];
             if (s != null && !s.IsEmpty)
             {
-                DrawItem(r, s.item, s.count);
+                DrawItem(r, s.item, s.count, !MatchesCat(s.item));   // 카테고리 불일치는 흐리게
                 if (heldItem == null && r.Contains(mouse)) hoverIdx = i;
             }
+            if (isHot) GUI.Label(new Rect(r.x + 5, r.y + 2, 22, 18), hkNum.ToString(), hotkeyNumStyle);
         }
 
-        // --- 툴팁 (잡고 있지 않을 때만) ---
         if (hoverIdx >= 0) DrawTooltip(slots[hoverIdx].item, mouse);
 
-        // --- 잡은 아이템을 커서에 따라다니게 ---
         if (heldItem != null)
         {
             float hs = curSlot * 0.8f;
-            DrawItem(new Rect(mouse.x - hs * 0.5f, mouse.y - hs * 0.5f, hs, hs), heldItem, heldCount);
+            DrawItem(new Rect(mouse.x - hs * 0.5f, mouse.y - hs * 0.5f, hs, hs), heldItem, heldCount, false);
         }
     }
 
-    // 칸 클릭: 집기 / 놓기 / 교체 / 스택
+    // ── 카테고리 ──
+    private bool MatchesCat(ItemData item)
+    {
+        if (selectedCat == 0 || item == null) return true;
+        switch (selectedCat)
+        {
+            case 1: return item.kind == ItemData.ItemKind.Consumable;
+            case 2: return item.kind == ItemData.ItemKind.Material;
+            case 3: return item.kind == ItemData.ItemKind.Equipment;
+        }
+        return true;
+    }
+
+    private void DrawTabs(float x0, float y0, float w, float tabH)
+    {
+        float tabW = TabWidth(w);
+        for (int c = 0; c < catNames.Length; c++)
+        {
+            Rect t = TabRect(c, x0, y0, tabW, tabH);
+            bool sel = selectedCat == c;
+            Fill(t, sel ? cAccent : cTabOff);
+            Border(t, 2f, cBorder);
+            GUI.Label(t, catNames[c], sel ? tabSelStyle : tabStyle);
+        }
+    }
+
+    private float TabWidth(float w) => Mathf.Min(120f, (w - padding * 2f) / (catNames.Length + 1.6f));
+    private Rect TabRect(int c, float x0, float y0, float tabW, float tabH)
+        => new Rect(x0 + padding + c * (tabW + 4f), y0 + 4f, tabW, tabH - 8f);
+    private int TabIndexAt(Vector2 m, float x0, float y0, float w, float tabH)
+    {
+        float tabW = TabWidth(w);
+        for (int c = 0; c < catNames.Length; c++)
+            if (TabRect(c, x0, y0, tabW, tabH).Contains(m)) return c;
+        return -1;
+    }
+
+    // 오른쪽 위 닫기(X) 버튼 영역
+    private Rect CloseBtnRect(float x0, float y0, float w, float tabH)
+    {
+        float s = tabH - 10f;
+        return new Rect(x0 + w - s - 6f, y0 + (tabH - s) * 0.5f, s, s);
+    }
+
+    // ── 단축키 칸 판정(맨 아랫줄 왼쪽 N칸) ──
+    private Hotbar Bar()
+    {
+        if (hotbar == null) hotbar = FindAnyObjectByType<Hotbar>();
+        return hotbar;
+    }
+    private bool IsHotkeySlot(int index, out int hotkeyNum)
+    {
+        hotkeyNum = 0;
+        var b = Bar();
+        if (b == null) return false;
+        int start = Mathf.Max(0, Inventory.Instance.slotCount - b.hotbarColumns);
+        if (index >= start && index < start + b.hotkeySlots) { hotkeyNum = index - start + 1; return true; }
+        return false;
+    }
+
+    // ── 클릭: 집기/놓기/교체/스택 ──
     private void HandleSlotClick(System.Collections.Generic.List<Inventory.Slot> slots, int i)
     {
         var s = slots[i];
-
         if (heldItem == null)
         {
-            if (!s.IsEmpty)                       // 집기(스택 통째로)
-            {
-                heldItem = s.item; heldCount = s.count;
-                s.Clear();
-            }
+            if (!s.IsEmpty) { heldItem = s.item; heldCount = s.count; s.Clear(); }
         }
         else
         {
-            if (s.IsEmpty)                        // 빈 칸 → 놓기
-            {
-                s.item = heldItem; s.count = heldCount;
-                heldItem = null; heldCount = 0;
-            }
-            else if (s.item == heldItem)         // 같은 아이템 → 스택
+            if (s.IsEmpty) { s.item = heldItem; s.count = heldCount; heldItem = null; heldCount = 0; }
+            else if (s.item == heldItem)
             {
                 int put = Mathf.Min(s.item.maxStack - s.count, heldCount);
                 s.count += put; heldCount -= put;
                 if (heldCount <= 0) heldItem = null;
             }
-            else                                 // 다른 아이템 → 교체(swap)
-            {
-                var ti = s.item; var tc = s.count;
-                s.item = heldItem; s.count = heldCount;
-                heldItem = ti; heldCount = tc;
-            }
+            else { var ti = s.item; var tc = s.count; s.item = heldItem; s.count = heldCount; heldItem = ti; heldCount = tc; }
         }
         Inventory.Instance.RaiseChanged();
     }
@@ -162,15 +228,14 @@ public class InventoryUI : MonoBehaviour
         if (heldItem != null)
         {
             Vector3 basePos = (Player() != null ? Player().position : Vector3.zero);
-            SpawnWorldItem(heldItem, heldCount, basePos + Vector3.up * 0.3f);   // 바닥에 떨구기
+            SpawnWorldItem(heldItem, heldCount, basePos + Vector3.up * 0.3f);
         }
         heldItem = null; heldCount = 0;
         Inventory.Instance.RaiseChanged();
     }
 
-    // 아이템을 월드에 떨군다(아이콘 스프라이트 + 콜라이더 + ItemPickup → 나중에 F로 다시 줍기 가능)
     private void SpawnWorldItem(ItemData item, int count, Vector3 pos)
-        => ItemPickup.SpawnWorld(item, count, pos, dropWorldSize);   // 공용 생성기 사용(적 드랍과 동일)
+        => ItemPickup.SpawnWorld(item, count, pos, dropWorldSize);
 
     private Transform Player()
     {
@@ -184,9 +249,16 @@ public class InventoryUI : MonoBehaviour
 
     private void ReturnHeld()
     {
-        if (heldItem != null && Inventory.Instance != null)
-            Inventory.Instance.Add(heldItem, heldCount);
+        if (heldItem != null && Inventory.Instance != null) Inventory.Instance.Add(heldItem, heldCount);
         heldItem = null; heldCount = 0;
+    }
+
+    // B 없이도 닫기(X 버튼) — 들고 있던 아이템은 되돌림
+    private void Close()
+    {
+        open = false;
+        ReturnHeld();
+        Inventory.IsUIOpen = false;
     }
 
     private Rect SlotRect(int i, float x0, float gridTop, int cols)
@@ -204,12 +276,15 @@ public class InventoryUI : MonoBehaviour
         return -1;
     }
 
-    private void DrawItem(Rect r, ItemData item, int count)
+    private void DrawItem(Rect r, ItemData item, int count, bool dim)
     {
-        Rect inner = new Rect(r.x + 5, r.y + 5, r.width - 10, r.height - 10);
+        Rect inner = new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 12);
+        var prev = GUI.color;
+        if (dim) GUI.color = new Color(1f, 1f, 1f, 0.30f);
         if (item.icon != null) GUI.DrawTexture(inner, item.icon.texture, ScaleMode.ScaleToFit);
-        else GUI.Label(inner, item.itemName);
-        if (count > 1) GUI.Label(new Rect(r.x, r.y, r.width - 5, r.height - 3), count.ToString(), countStyle);
+        else GUI.Label(inner, item.itemName, itemLabelStyle);
+        GUI.color = prev;
+        if (count > 1) GUI.Label(new Rect(r.x, r.y, r.width - 6, r.height - 4), count.ToString(), countStyle);
     }
 
     private void DrawTooltip(ItemData item, Vector2 mouse)
@@ -226,23 +301,46 @@ public class InventoryUI : MonoBehaviour
         if (ty + th > Screen.height) ty = Screen.height - th - 4;
 
         Rect tr = new Rect(tx, ty, tw, th);
-        GUI.DrawTexture(tr, bgTex, ScaleMode.StretchToFill);
-        GUI.Box(tr, GUIContent.none);
-        GUI.Label(new Rect(tx + 6, ty + 5, tw - 12, nameH), name, tipNameStyle);
-        if (descH > 0) GUI.Label(new Rect(tx + 6, ty + 5 + nameH, tw - 12, descH), desc, tipDescStyle);
+        Fill(tr, cPanel);
+        Border(tr, 2f, cBorder);
+        GUI.Label(new Rect(tx + 8, ty + 5, tw - 16, nameH), name, tipNameStyle);
+        if (descH > 0) GUI.Label(new Rect(tx + 8, ty + 5 + nameH, tw - 16, descH), desc, tipDescStyle);
+    }
+
+    // ── 그리기 헬퍼(흰 1x1 텍스처를 색으로 칠함) ──
+    private void Fill(Rect r, Color c) { var p = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = p; }
+    private void Border(Rect r, float t, Color c)
+    {
+        Fill(new Rect(r.x, r.y, r.width, t), c);
+        Fill(new Rect(r.x, r.yMax - t, r.width, t), c);
+        Fill(new Rect(r.x, r.y, t, r.height), c);
+        Fill(new Rect(r.xMax - t, r.y, t, r.height), c);
     }
 
     private void EnsureStyles()
     {
-        if (bgTex == null)
-        {
-            bgTex = new Texture2D(1, 1);
-            bgTex.SetPixel(0, 0, new Color(0.12f, 0.12f, 0.15f, 1f));  // 불투명 배경색
-            bgTex.Apply();
-        }
-        if (titleStyle == null) titleStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 14 };
-        if (countStyle == null) countStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerRight, fontStyle = FontStyle.Bold };
-        if (tipNameStyle == null) tipNameStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = 18 };
-        if (tipDescStyle == null) tipDescStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
+        if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
+        if (countStyle != null) return;
+
+        Color cream = new Color(0.97f, 0.93f, 0.83f);
+        Color gold  = new Color(1f, 0.85f, 0.42f);
+        countStyle     = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerRight, fontStyle = FontStyle.Bold, fontSize = 14 };
+        countStyle.normal.textColor = Color.white;
+        tipNameStyle   = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = 18 };
+        tipNameStyle.normal.textColor = gold;
+        tipDescStyle   = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
+        tipDescStyle.normal.textColor = cream;
+        tabStyle       = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 14, fontStyle = FontStyle.Bold };
+        tabStyle.normal.textColor = new Color(0.82f, 0.74f, 0.60f);
+        tabSelStyle    = new GUIStyle(tabStyle);
+        tabSelStyle.normal.textColor = Color.white;
+        goldStyle      = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleRight, fontSize = 16, fontStyle = FontStyle.Bold };
+        goldStyle.normal.textColor = gold;
+        itemLabelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 11, wordWrap = true };
+        itemLabelStyle.normal.textColor = cream;
+        hotkeyNumStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold };
+        hotkeyNumStyle.normal.textColor = Color.white;
+        closeStyle     = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 16, fontStyle = FontStyle.Bold };
+        closeStyle.normal.textColor = Color.white;
     }
 }

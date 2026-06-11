@@ -60,7 +60,7 @@ public class StatUI : MonoBehaviour
             for (int px = 0; px < S; px++)
             {
                 float x = (px / (float)(S - 1)) * 2.6f - 1.3f;
-                float y = 1.2f - (py / (float)(S - 1)) * 2.6f;        // y 위로(위쪽 두 봉우리, 아래 꼭지점)
+                float y = (py / (float)(S - 1)) * 2.6f - 1.4f;        // 텍스처 좌표(아래=0) 보정: 봉우리 위·꼭지점 아래
                 float a = x * x + y * y - 1f;
                 float f = a * a * a - x * x * y * y * y;
                 _heart.SetPixel(px, py, f <= 0f ? Color.white : Color.clear);

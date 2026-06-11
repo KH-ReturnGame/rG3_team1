@@ -46,5 +46,19 @@ public class ChunkManager : MonoBehaviour
         Transform endStart = endChunk.transform.Find("ChunkStart");
         Vector3 endOffset = spawnPos - endStart.position;
         endChunk.transform.position += endOffset;
+
+        ApplyCameraBounds();   // 생성된 맵 크기에 맞춰 카메라 경계 설정
+    }
+
+    // 생성된 스테이지 전체 콜라이더 범위를 카메라 경계(CameraFollow)로 전달
+    private void ApplyCameraBounds()
+    {
+        if (stageAssets == null) return;
+        Collider2D[] cols = stageAssets.GetComponentsInChildren<Collider2D>();
+        if (cols.Length == 0) return;
+        Bounds tb = cols[0].bounds;
+        for (int i = 1; i < cols.Length; i++) tb.Encapsulate(cols[i].bounds);
+        CameraFollow cf = FindAnyObjectByType<CameraFollow>();
+        if (cf != null) cf.SetBounds(tb.min, tb.max);
     }
 }
