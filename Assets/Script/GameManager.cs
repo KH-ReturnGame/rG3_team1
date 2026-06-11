@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
     public int currentStage = 0;   // 로그라이크 스테이지 진행 (스테이지 쪽 GameManager 통합)
 
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
-    public bool showDebugStats = true;
+    public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠
 
     private bool isDead;
 
@@ -31,10 +31,17 @@ public class GameManager : MonoBehaviour
 
     // 읽기용
     public int CurrentHearts => currentHearts;
-    public int MaxHearts => maxHearts;
+    public int MaxHearts => maxHearts + equipHeartBonus;
     public float CurrentStamina => currentStamina;
-    public float MaxStamina => maxStamina;
+    public float MaxStamina => maxStamina + equipStaminaBonus;
     public int Gold => gold;
+
+    // 일시 버프(전투/방어 포션) + 장신구 보너스
+    private float atkBuffMult, atkBuffTimer, defReduction, defBuffTimer;
+    private int equipHeartBonus;
+    private float equipStaminaBonus, equipAttackBonus;
+    public float AttackMultiplier => 1f + (atkBuffTimer > 0f ? atkBuffMult : 0f) + equipAttackBonus;  // 플레이어 공격력 배수
+    public float DamageReduction => defBuffTimer > 0f ? defReduction : 0f;        // 피해 감량(0~1)
 
     void Awake()
     {
@@ -46,10 +53,20 @@ public class GameManager : MonoBehaviour
         currentStamina = maxStamina;
     }
 
+    // 어느 씬에서 시작해도 스탯(체력·기력·골드)이 존재하도록 자동 생성(1회, 씬 넘어가도 유지)
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (Instance != null) return;
+        new GameObject("GameManager").AddComponent<GameManager>();
+    }
+
     // ───────── 체력 ─────────
     public void TakeDamage(int hearts)
     {
         if (isDead || hearts <= 0) return;
+        hearts = Mathf.RoundToInt(hearts * (1f - DamageReduction));   // 방어 포션: 피해 감량
+        if (hearts <= 0) return;
         currentHearts = Mathf.Max(0, currentHearts - hearts);
         OnStatsChanged?.Invoke();
         if (currentHearts == 0) Die();
@@ -103,6 +120,26 @@ public class GameManager : MonoBehaviour
 
     // ───────── 재화 ─────────
     public void AddGold(int amount) { gold = Mathf.Max(0, gold + amount); OnStatsChanged?.Invoke(); }
+
+    // ───────── 일시 버프 ─────────
+    public void ApplyAttackBuff(float mult, float dur) { atkBuffMult = mult; atkBuffTimer = dur; OnStatsChanged?.Invoke(); }
+    public void ApplyDefenseBuff(float reduction, float dur) { defReduction = Mathf.Clamp01(reduction); defBuffTimer = dur; OnStatsChanged?.Invoke(); }
+    void Update()
+    {
+        if (atkBuffTimer > 0f) atkBuffTimer -= Time.deltaTime;
+        if (defBuffTimer > 0f) defBuffTimer -= Time.deltaTime;
+    }
+
+    // 장신구 보너스 적용(Equipment가 호출). 최대치 변동 시 현재값 클램프.
+    public void SetEquipBonuses(int heart, float stamina, float attack)
+    {
+        equipHeartBonus = heart;
+        equipStaminaBonus = stamina;
+        equipAttackBonus = attack;
+        currentHearts = Mathf.Min(currentHearts, MaxHearts);
+        currentStamina = Mathf.Min(currentStamina, MaxStamina);
+        OnStatsChanged?.Invoke();
+    }
 
     public bool TrySpendGold(int amount)
     {

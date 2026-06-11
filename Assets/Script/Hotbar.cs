@@ -8,6 +8,15 @@ using UnityEngine;
 // 호출하게 하면 그대로 교체된다(로직-표시 분리).
 public class Hotbar : MonoBehaviour
 {
+    public static Hotbar Instance { get; private set; }
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this); return; }   // 중복 제거(HUD 하나만 유지)
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
     [Header("단축키")]
     public int hotbarColumns = 8;   // 최하단 줄 너비(인벤토리 columns와 맞추기)
     public int hotkeySlots = 2;     // 현재 활성 단축키 개수(상점으로 증가)

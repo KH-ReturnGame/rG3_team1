@@ -125,18 +125,26 @@ public class PlayerController : MonoBehaviour
     public string swordJumpRiseState = "SwordJumpRise";
     public string swordJumpFallState = "SwordJumpFall";
     public string guardState = "SwordGuard";
+    public string parrySuccessState = "SwordStandingSlash";   // 패링 성공 시 반격 베기(리포스트). 인스펙터에서 교체 가능
 
     private string currentAnimState = "";
     private float animBusyTimer;   // >0이면 1회성 모션(공격/발도 등) 재생 중 → 이동 애니로 안 바뀌고 새 행동도 잠금
     private float animHoldTimer;    // >0이면 "애니만" 보호(입력은 막지 않음) — 2단 점프 플립 등
     private Dictionary<string, float> clipLengths;   // 상태(클립) 이름 → 실제 재생 길이(초)
 
+    public static PlayerController Instance;          // 현재 씬의 플레이어(장비 적용용)
+    private int baseMaxJumps;                         // 장신구 보너스 전 기본값
+    private float baseStaminaRegen;
+
     void Awake()
     {
+        Instance = this;
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
         defaultGravityScale = rb.gravityScale;
+        baseMaxJumps = maxJumps;
+        baseStaminaRegen = staminaRegen;
         BuildClipLengthTable();
     }
 
@@ -159,10 +167,21 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        ApplyEquipment();
         currentJumps = maxJumps;
         currentDashes = maxDashes;
         isSwordDrawn = startDrawn;
         PlayStateForced(isSwordDrawn ? swordIdleState : idleState);
+    }
+
+    // 장신구 보너스 반영(점프 횟수·기력 회복). 장착 변경 시 Equipment가 호출.
+    public void ApplyEquipment()
+    {
+        int jb = Equipment.Instance != null ? Equipment.Instance.MaxJumpBonus : 0;
+        float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
+        maxJumps = baseMaxJumps + jb;
+        staminaRegen = baseStaminaRegen + rgb;
+        if (currentJumps > maxJumps) currentJumps = maxJumps;
     }
 
     void Update()
@@ -461,7 +480,7 @@ public class PlayerController : MonoBehaviour
         foreach (Collider2D hit in hits)
         {
             IDamageable target = hit.GetComponent<IDamageable>();
-            if (target != null) target.TakeDamage(damage);
+            if (target != null) target.TakeDamage(damage * (GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f));
         }
     }
 
@@ -605,8 +624,8 @@ public class PlayerController : MonoBehaviour
         if (isParrying)
         {
             if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
-            PlayStateForced("SwordGuardImpact");   // 패링 성공 연출
-            animBusyTimer = ClipLength("SwordGuardImpact");
+            PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
+            animBusyTimer = ClipLength(parrySuccessState);
             if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
             return;
         }

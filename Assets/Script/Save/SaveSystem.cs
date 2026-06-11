@@ -95,8 +95,8 @@ public static class SaveSystem
         if (GameManager.Instance != null)
         {
             data.hearts = GameManager.Instance.CurrentHearts;
-            data.maxHearts = GameManager.Instance.MaxHearts;
-            data.maxStamina = GameManager.Instance.MaxStamina;
+            data.maxHearts = GameManager.Instance.maxHearts;       // 장신구 보너스 제외(기본 최대)
+            data.maxStamina = GameManager.Instance.maxStamina;
             data.gold = GameManager.Instance.Gold;
         }
         data.items = new List<SavedItem>();
@@ -104,6 +104,7 @@ public static class SaveSystem
             foreach (var s in Inventory.Instance.slots)
                 if (s != null && !s.IsEmpty)
                     data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count });
+        if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
     }
 
     private static void Apply(SaveSlotData data)
@@ -112,6 +113,8 @@ public static class SaveSystem
             GameManager.Instance.LoadStats(data.hearts, data.maxHearts, data.maxStamina, data.gold);
         if (Inventory.Instance != null)
             Inventory.Instance.LoadFromSaved(data.items);
+        if (Equipment.Instance != null)
+            Equipment.Instance.LoadIds(data.equipped);   // 착용 장신구 복원(스탯 보너스 재적용)
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록
@@ -120,6 +123,7 @@ public static class SaveSystem
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         SceneManager.sceneLoaded += OnSceneLoaded;
+        TryAutoLoad(SceneManager.GetActiveScene());   // 초기 씬(직접 Play)은 sceneLoaded가 안 떠서 여기서 복원
     }
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -128,10 +132,41 @@ public static class SaveSystem
         {
             Apply(pending);       // 새 게임/불러오기 → 적용
             pending = null;
+            return;
         }
-        else if (CurrentSlot >= 0 && GameManager.Instance != null)
+        if (CurrentSlot >= 0 && GameManager.Instance != null)
         {
             SaveCurrent();        // 진행 중 씬 이동 → 자동 저장
+            return;
         }
+        // 스타트메뉴를 안 거치고 게임플레이 씬을 바로 Play한 경우(에디터 반복 테스트):
+        // 가장 최근 세이브가 있으면 자동 복원 → 레포트 기록한 인벤·스탯이 유지됨.
+        TryAutoLoad(scene);
+    }
+
+    // 스타트메뉴를 안 거치고 게임플레이 씬을 바로 Play했을 때, 가장 최근 세이브를 자동 복원(에디터 반복 테스트 편의).
+    private static void TryAutoLoad(Scene scene)
+    {
+        if (pending != null || CurrentSlot >= 0) return;
+        if (scene.name == "StartScene") return;
+        int recent = MostRecentSlot();
+        if (recent < 0) return;
+        CurrentSlot = recent;
+        var data = Read(recent);
+        if (data != null) Apply(data);
+    }
+
+    // 가장 최근(lastPlayed)에 저장된 슬롯. 없으면 -1.
+    private static int MostRecentSlot()
+    {
+        int best = -1;
+        string bestTime = "";
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var d = Read(i);
+            if (d == null) continue;
+            if (best < 0 || string.Compare(d.lastPlayed, bestTime) > 0) { best = i; bestTime = d.lastPlayed; }
+        }
+        return best;
     }
 }

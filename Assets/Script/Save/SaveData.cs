@@ -19,4 +19,5 @@ public class SaveSlotData
     public float maxStamina = 100f;
     public int gold;
     public List<SavedItem> items = new List<SavedItem>();
+    public List<string> equipped = new List<string>();   // 착용한 장신구 id(빈칸은 "")
 }

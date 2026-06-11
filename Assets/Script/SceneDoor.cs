@@ -6,7 +6,7 @@ using UnityEngine;
 //                     모든 스테이지가 '같은 chunkend 프리팹'을 공유해도 Stage1→2→3 진행이 됨.
 public class SceneDoor : MonoBehaviour, IInteractable
 {
-    public enum DoorAction { GoToScene, AdvanceRunStage }
+    public enum DoorAction { GoToScene, AdvanceRunStage, ClearRun }
 
     public DoorAction action = DoorAction.GoToScene;
     public string targetScene = "StartingArea";   // GoToScene 모드일 때만 사용
@@ -18,7 +18,9 @@ public class SceneDoor : MonoBehaviour, IInteractable
     {
         if (GameFlow.Instance == null) return;
         if (action == DoorAction.AdvanceRunStage)
-            GameFlow.Instance.AdvanceStage();      // 목표는 GameFlow가 결정(다음 스테이지/보스/결과)
+            GameFlow.Instance.AdvanceStage();      // 다음 스테이지/보스/결과
+        else if (action == DoorAction.ClearRun)
+            GameFlow.Instance.ClearRun();          // 보스 클리어 포탈 → 클리어 결과창
         else
             GameFlow.Instance.GoToScene(targetScene);
     }

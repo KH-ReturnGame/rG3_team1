@@ -262,10 +262,11 @@ MonoBehaviour:
   jumpRiseState: JumpRise
   jumpFallState: JumpFall
   swordIdleState: SwordIdle
-  swordMoveState: SwordWalk
+  swordMoveState: SwordRunAltGrip
   swordJumpRiseState: SwordJumpRise
   swordJumpFallState: SwordJumpFall
   guardState: SwordGuard
+  parrySuccessState: SwordStandingSlash
 --- !u!50 &6778775217546913723
 Rigidbody2D:
   serializedVersion: 5
