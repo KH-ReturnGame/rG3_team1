@@ -181,7 +181,7 @@ namespace BossPatterns {
 
             for (int i = 0; i < 6 && splitSequenceTime < 3.0f; i++) {
                 if (i % 2 == 0) { // 정박 타격 판정
-                     Debug.Log($"⚡ [Pattern B Phase 2] 차원 공격 " + (i + 1));
+                     Debug.log($"⚡ [Pattern B Phase 2] 차원 공격 " + (i + 1));
 
                     if (CheckPlayerJumpTiming(platformPositions[currentPlatformIndex], currentPlatformIndex, true)) {
                         ApplySplitDamage(player.transform.position, currentPlatformIndex, splitDamageColors[currentPlatformIndex]);
@@ -248,7 +248,7 @@ namespace BossPatterns {
              // 체력 분할 값 계산 (0=최대치, 5=최소치)
             float damage = GetHealthSplitValue(platformIndex);
 
-             Debug.Log($"💥 [Pattern B] 점프 데미지! " + hitPos + " - 데미지: " + damage.ToString("F1"));
+             Debug.log($"💥 [Pattern B] 점프 데미지! " + hitPos + " - 데미지: " + damage.ToString("F1"));
 
              // 플레이어 데미지 적용
             PlayerController player = FindObjectOfType<PlayerController>();
@@ -381,7 +381,7 @@ namespace BossPatterns {
                 Debug.Log("[Pattern B] 2 페이즈 모드에서 체력 분할 공격!");
                 StartCoroutine(ExecutePhase2SplitAttack());
               } else {
-                Debug.Log("[Pattern B] 1 페이즈에서 기본 점프 판정!");
+                Debug.log("[Pattern B] 1 페이즈에서 기본 점프 판정!");
                 StartCoroutine(ExecutePhase1JumpSequence());
               }
            }
