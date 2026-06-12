@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
+  m_Name: warriors_ring
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  id: warriors_ring
+  itemName: "\uD22C\uC0AC\uC758 \uBC18\uC9C0"
+  icon: {fileID: 0}
+  maxStack: 1
+  description: "\uCC29\uC6A9 \uC2DC \uACF5\uACA9\uB825 +25%."
+  kind: 2
+  healHearts: 0
+  restoreStamina: 0
+  tempAttackMult: 0
+  tempDamageReduction: 0
+  buffDuration: 0
+  maxJumpBonus: 0
+  maxHeartBonus: 0
+  maxStaminaBonus: 0
+  staminaRegenBonus: 0
+  attackBonus: 0.25
+  sellValue: 0

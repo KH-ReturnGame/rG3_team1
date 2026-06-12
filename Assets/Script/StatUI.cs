@@ -5,8 +5,28 @@ using UnityEngine;
 // 같은 GameManager 게터/OnStatsChanged 이벤트를 쓰는 에셋 UI를 넣으면 됨(데이터-표시 분리).
 public class StatUI : MonoBehaviour
 {
+    public static StatUI Instance { get; private set; }
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this); return; }   // 중복 컴포넌트 제거(한 개만)
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    // 어느 씬에서 시작하든 HUD(체력·기력 + 단축키)가 항상 뜨도록 자동 생성(1회, 씬 넘어가도 유지)
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (Instance != null) return;
+        var go = new GameObject("HUD");
+        go.AddComponent<Hotbar>();
+        go.AddComponent<MenuUI>();
+        go.AddComponent<StatUI>();
+    }
+
     [Header("하트(체력)")]
-    public Vector2 origin = new Vector2(0.02f, 0.03f);   // 좌상단 시작(화면 비율)
+    public Vector2 origin = new Vector2(0.02f, 0.06f);   // 좌상단 시작(화면 비율) — 메뉴 버튼 아래
     public float heartSize = 34f;
     public float heartPad = 6f;
 

@@ -49,6 +49,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     [Header("임시 비주얼 (placeholder)")]
     public bool showHealthLabel = true;
+    public bool isBoss = false;          // 보스는 체력바 대신 숫자 유지(나중에 전용 UI)
     public float labelHeight = 1.2f;
 
     public bool FaceForward = true;      // 진행 방향 바라보기
@@ -333,16 +334,48 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         else                            sr.color = baseColor;
     }
 
+    private static Texture2D _barTex;
+    private static Texture2D BarTex()
+    {
+        if (_barTex == null) { _barTex = new Texture2D(1, 1); _barTex.SetPixel(0, 0, Color.white); _barTex.Apply(); }
+        return _barTex;
+    }
+
     private void OnGUI()
     {
         if (!showHealthLabel || Camera.main == null) return;
         Vector3 sp = Camera.main.WorldToScreenPoint(transform.position + Vector3.up * labelHeight);
         if (sp.z < 0) return;
-        if (labelStyle == null)
-            labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 13 };
-        labelStyle.normal.textColor = state == State.Groggy ? Color.cyan : Color.white;
-        string txt = $"HP {Mathf.Max(0, currentHealth):0}/{maxHealth:0}" + (state == State.Groggy ? "  (그로기)" : "");
-        GUI.Label(new Rect(sp.x - 60, Screen.height - sp.y - 22, 120, 20), txt, labelStyle);
+        float cx = sp.x, cy = Screen.height - sp.y;
+
+        if (isBoss)
+        {
+            // 보스: 숫자 유지(나중에 전용 UI로 교체)
+            if (labelStyle == null) labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 13 };
+            labelStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(cx - 60, cy - 24, 120, 20), $"HP {Mathf.Max(0, currentHealth):0}/{maxHealth:0}", labelStyle);
+        }
+        else if (currentHealth < maxHealth)
+        {
+            // 일반 적: 체력이 깎인 순간부터 체력바 표시(최대치면 숨김)
+            float bw = 54f, bh = 7f;
+            Rect bg = new Rect(cx - bw * 0.5f, cy - bh - 6f, bw, bh);
+            Color prev = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.7f);
+            GUI.DrawTexture(bg, BarTex());                                   // 배경
+            float frac = Mathf.Clamp01(currentHealth / maxHealth);
+            GUI.color = Color.Lerp(new Color(0.85f, 0.16f, 0.12f), new Color(0.45f, 0.85f, 0.2f), frac);
+            GUI.DrawTexture(new Rect(bg.x + 1f, bg.y + 1f, (bw - 2f) * frac, bh - 2f), BarTex());   // 남은 체력
+            GUI.color = prev;
+        }
+
+        // 그로기는 글자 유지(스프라이트 적용 전)
+        if (state == State.Groggy)
+        {
+            if (labelStyle == null) labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 13 };
+            labelStyle.normal.textColor = Color.cyan;
+            GUI.Label(new Rect(cx - 60, cy - 40, 120, 20), "그로기", labelStyle);
+        }
     }
 
     private void OnDrawGizmosSelected()

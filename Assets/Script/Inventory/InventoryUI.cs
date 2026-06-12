@@ -77,12 +77,16 @@ public class InventoryUI : MonoBehaviour
         int rows = Mathf.CeilToInt(slots.Count / (float)cols);
 
         float tabH = Mathf.Clamp(curSlot * 0.42f, 30f, 48f);
+        float gridH = rows * (curSlot + padding) + padding;
+        float equipH = 20f + curSlot + padding;            // 장신구 라벨 + 착용칸
         float w = cols * (curSlot + padding) + padding;
-        float h = rows * (curSlot + padding) + padding + tabH;
+        float h = tabH + gridH + equipH;
         float x0 = (Screen.width - w) * 0.5f;
         float y0 = (Screen.height - h) * 0.5f;
         Rect windowRect = new Rect(x0, y0, w, h);
         float gridTop = y0 + tabH;
+        float equipLabelY = gridTop + gridH;
+        float equipSlotY = equipLabelY + 20f;
 
         Vector2 mouse = Event.current.mousePosition;
 
@@ -95,7 +99,9 @@ public class InventoryUI : MonoBehaviour
             else
             {
                 int idx = SlotIndexAt(mouse, x0, gridTop, cols, slots.Count);
+                int eidx = EquipSlotIndexAt(mouse, x0, equipSlotY);
                 if (idx >= 0) HandleSlotClick(slots, idx);
+                else if (eidx >= 0) HandleEquipClick(eidx);
                 else if (!windowRect.Contains(mouse) && heldItem != null) DropHeld();
             }
             Event.current.Use();
@@ -132,7 +138,25 @@ public class InventoryUI : MonoBehaviour
             if (isHot) GUI.Label(new Rect(r.x + 5, r.y + 2, 22, 18), hkNum.ToString(), hotkeyNumStyle);
         }
 
+        // --- 장신구 착용칸 (격자 아래) ---
+        GUI.Label(new Rect(x0 + padding, equipLabelY + 1f, w - padding * 2f, 18f), "장신구 착용", tabStyle);
+        var eq = Equipment.Instance;
+        int hoverEquip = -1;
+        for (int i = 0; i < Equipment.SlotCount; i++)
+        {
+            Rect r = EquipSlotRect(i, x0, equipSlotY);
+            Fill(r, cSlot);
+            Border(r, 2f, cAccent);                        // 장신구칸은 주황 테두리로 구분
+            var it = eq != null ? eq.slots[i] : null;
+            if (it != null)
+            {
+                DrawItem(r, it, 1, false);
+                if (heldItem == null && r.Contains(mouse)) hoverEquip = i;
+            }
+        }
+
         if (hoverIdx >= 0) DrawTooltip(slots[hoverIdx].item, mouse);
+        else if (hoverEquip >= 0 && eq != null && eq.slots[hoverEquip] != null) DrawTooltip(eq.slots[hoverEquip], mouse);
 
         if (heldItem != null)
         {
@@ -274,6 +298,38 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < count; i++)
             if (SlotRect(i, x0, gridTop, cols).Contains(m)) return i;
         return -1;
+    }
+
+    // ── 장신구 착용칸 ──
+    private Rect EquipSlotRect(int i, float x0, float equipSlotY)
+        => new Rect(x0 + padding + i * (curSlot + padding), equipSlotY, curSlot, curSlot);
+
+    private int EquipSlotIndexAt(Vector2 m, float x0, float equipSlotY)
+    {
+        for (int i = 0; i < Equipment.SlotCount; i++)
+            if (EquipSlotRect(i, x0, equipSlotY).Contains(m)) return i;
+        return -1;
+    }
+
+    // 장신구칸 클릭: 손에 든 장신구 장착 / 착용 중인 것 집기(해제) / 교체
+    private void HandleEquipClick(int i)
+    {
+        var eq = Equipment.Instance;
+        if (eq == null) return;
+        var cur = eq.slots[i];
+        if (heldItem == null)
+        {
+            if (cur != null) { eq.Unequip(i); heldItem = cur; heldCount = 1; }
+        }
+        else
+        {
+            if (heldItem.kind != ItemData.ItemKind.Equipment) return;   // 장신구만 장착 가능
+            eq.slots[i] = heldItem;
+            eq.Recompute();
+            if (cur != null) { heldItem = cur; heldCount = 1; }          // 기존 장신구는 손에(교체)
+            else { heldItem = null; heldCount = 0; }
+        }
+        Inventory.Instance.RaiseChanged();
     }
 
     private void DrawItem(Rect r, ItemData item, int count, bool dim)
