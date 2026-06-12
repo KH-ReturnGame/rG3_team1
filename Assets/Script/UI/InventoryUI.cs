@@ -61,10 +61,10 @@ public class InventoryUI : MonoBehaviour
             open = !open;
             if (!open) ReturnHeld();
         }
-        Inventory.IsUIOpen = open;
+        Inventory.InvUIOpen = open;
     }
 
-    void OnDisable() { Inventory.IsUIOpen = false; }
+    void OnDisable() { Inventory.InvUIOpen = false; }
 
     void OnGUI()
     {
@@ -282,7 +282,7 @@ public class InventoryUI : MonoBehaviour
     {
         open = false;
         ReturnHeld();
-        Inventory.IsUIOpen = false;
+        Inventory.InvUIOpen = false;
     }
 
     private Rect SlotRect(int i, float x0, float gridTop, int cols)

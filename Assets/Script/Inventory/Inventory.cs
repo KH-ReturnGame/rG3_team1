@@ -6,9 +6,10 @@ public class Inventory : MonoBehaviour
 {
     public static Inventory Instance { get; private set; }
 
-    // 인벤토리/메뉴 UI가 열려있는지(플레이어 조작 잠금용).
-    // UI를 교체해도 새 UI에서 이 플래그만 켜고/끄면 플레이어 코드는 그대로 동작.
-    public static bool IsUIOpen;
+    // 각 UI가 '자기 플래그'만 켜고/끈다(서로 덮어쓰지 않게). 하나라도 열려 있으면 IsUIOpen = true.
+    // 플레이어 조작/공격/상호작용 잠금에 사용. 읽는 쪽은 IsUIOpen 그대로 사용.
+    public static bool InvUIOpen, ShopUIOpen, CraftUIOpen;
+    public static bool IsUIOpen => InvUIOpen || ShopUIOpen || CraftUIOpen;
 
     [System.Serializable]
     public class Slot
