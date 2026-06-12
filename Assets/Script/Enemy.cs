@@ -51,7 +51,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public bool showHealthLabel = true;
     public float labelHeight = 1.2f;
 
-    public bool FacePlayer = true;      // 플레이어 바라보기
+    public bool FaceForward = true;      // 진행 방향 바라보기
     public bool InvertSprite = true;    // 스프라이트 방향 뒤집기 (허수아비 이 ㅅㄲ가 스프라이트가 거꾸로임)
 
     private Rigidbody2D rb;
@@ -129,7 +129,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
         UpdateColor();
         // 이 부분 변경함
-        if (sr != null && FacePlayer == true)
+        if (sr != null && FaceForward == true)
         {
             if (InvertSprite == true)
             {
