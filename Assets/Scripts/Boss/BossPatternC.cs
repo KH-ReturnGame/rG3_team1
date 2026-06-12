@@ -76,10 +76,10 @@ namespace BossPatterns {
             ResetCageState();
 
             if (phaseTwoMode) {
-                Debug.Log("⚠️ 2 페이즈: 수축 공격! 패링 타이밍을 맞춰라!");
+                Debug.log("⚠️ 2 페이즈: 수축 공격! 패링 타이밍을 맞춰라!");
                 StartCoroutine(ExecutePhase2CageContraction());
                } else {
-                Debug.Log("✅ 1 페이즈: 홀로그램 가두리 형성!");
+                Debug.log("✅ 1 페이즈: 홀로그램 가두리 형성!");
                 StartCoroutine(ExecutePhase1CageFormation());
                 return;
                }
@@ -99,7 +99,7 @@ namespace BossPatterns {
                 if (audio != null) audio.Play(); // 사운드 효과!
                }
 
-              Debug.Log("🔄 [Pattern C] 가두리 상태 초기화 완료!");
+              Debug.log("🔄 [Pattern C] 가두리 상태 초기화 완료!");
            }
 
 
@@ -117,14 +117,14 @@ namespace BossPatterns {
                 cageClones = new GameObject[cageCloneCount];
                 GenerateHologramCage(isTriangleFormation);
 
-                Debug.Log($"🕸️ [Pattern C Phase 1] 가두리 " + cageCloneCount + " 개 홀로그램 형성 완료!");
+                Debug.log($"🕸️ [Pattern C Phase 1] 가두리 " + cageCloneCount + " 개 홀로그램 형성 완료!");
 
                   // 👀 시각적 효과 (홀로그램 색상)
                 HighlightCageFormation(cageClones, hologramColor);
 
              } else if (cageClones != null) {
                  // 이미 생성됨! 시각 효과만 표시.
-                Debug.Log("👁️ [Pattern C Phase 1] 가두리 클론이 이미 존재함 - 시각 효과!");
+                Debug.log("👁️ [Pattern C Phase 1] 가두리 클론이 이미 존재함 - 시각 효과!");
                 HighlightCageFormation(cageClones, hologramColor);
 
              }
@@ -133,7 +133,7 @@ namespace BossPatterns {
             PlaySoundEffect("cage_form_complete.wav", 0.8f);
 
               // 2️⃣ 수축 공격 시작 대기 (1.5 초)
-            Debug.Log($"⏰ [Pattern C Phase 1] 가두리 수축 공격 {contractionDelay} 초 후 시작!");
+            Debug.log($"⏰ [Pattern C Phase 1] 가두리 수축 공격 {contractionDelay} 초 후 시작!");
 
             yield return new WaitForSeconds(contractionDelay);
 
@@ -189,13 +189,13 @@ namespace BossPatterns {
                         cageClones[i] = null;
                        }
                     } else {
-                    Debug.Log($"🔄 [Pattern C Phase 1] 클론 #{i} 활성화 완료!");
+                    Debug.log($"🔄 [Pattern C Phase 1] 클론 #{i} 활성화 완료!");
                    }
                 }
 
              }
 
-             Debug.Log("✅ 가두리 클론 생성 완료! " + totalPoints + " 개!");
+             Debug.log("✅ 가두리 클론 생성 완료! " + totalPoints + " 개!");
            }
 
 
@@ -241,7 +241,7 @@ namespace BossPatterns {
                }
 
             rend.material.color = originalColor; // 원래 색 복원!
-            Debug.Log("👁️ [Pattern C] 시각 효과 완료!");
+            Debug.log("👁️ [Pattern C] 시각 효과 완료!");
              }
 
 
@@ -271,7 +271,7 @@ namespace BossPatterns {
            /// </summary>
         private void ApplyCageContractionDamage(Vector3 hitPos, string feedbackText) {
 
-            Debug.Log($"💥 [Pattern C] 수축 데미지 발생! " + feedbackText);
+            Debug.log($"💥 [Pattern C] 수축 데미지 발생! " + feedbackText);
 
               // 🔥 데미지 계산 (수축 속도 × 보스 최대 체력 multiplier)
             float damage = contractionSpeed * bossMaxHealth * 0.15f; // 약 15% 데미지!
@@ -288,7 +288,7 @@ namespace BossPatterns {
                      // 강력하게 밀기! (반동력 계산)
                     playerRb.AddForce(recoilDir * 10f, ForceMode.VelocityChange);
 
-                    Debug.Log("⚡ 플레이어가 수축력으로 밀려나기!");
+                    Debug.log("⚡ 플레이어가 수축력으로 밀려나기!");
                    }
 
                   // 시각적 피드백
@@ -308,9 +308,9 @@ namespace BossPatterns {
             
               if (player != null) {
                  player.TakeDamage(damageValue, false, this, hitPos); // 패링=false (일반 데미지)
-                Debug.Log($"💥 [Pattern C] Apply Damage: " + damageValue.ToString("F1"));
+                Debug.log($"💥 [Pattern C] Apply Damage: " + damageValue.ToString("F1"));
                } else {
-                Debug.Log("[Pattern C] PlayerController not found!");
+                Debug.log("[Pattern C] PlayerController not found!");
                }
 
              }
@@ -333,7 +333,7 @@ namespace BossPatterns {
                // 재진입 가능
              this.enabled = true;
 
-              Debug.Log("✅ [Pattern C] 재진입 완료!");
+              Debug.log("✅ [Pattern C] 재진입 완료!");
              yield break;
              }
 
@@ -343,7 +343,7 @@ namespace BossPatterns {
            /// </summary>
         private void StopCageContraction() {
 
-            Debug.Log("🔒 [Pattern C] 수축 중지! 패턴 종료!");
+            Debug.log("🔒 [Pattern C] 수축 중지! 패턴 종료!");
 
               // 가두리 클론 비활성화
             if (cageClones != null) {
@@ -356,7 +356,7 @@ namespace BossPatterns {
 
              phaseTwoMode = false; // 패턴 해제!
 
-              Debug.Log("🏁 [Pattern C] 수축 공격 중지 완료!");
+              Debug.log("🏁 [Pattern C] 수축 공격 중지 완료!");
            }
 
 
@@ -365,7 +365,7 @@ namespace BossPatterns {
             /// </summary>
         public void ResetToIdle() {
 
-            Debug.Log("🎯 [Pattern C] 보스 재진입 준비 (Idle 상태 복원)!");
+            Debug.log("🎯 [Pattern C] 보스 재진입 준비 (Idle 상태 복원)!");
 
                // 초기화 (컴포넌트 타입에 따라 Rigidbody/Rigidbody2D 차이 있음!)
             Rigidbody rb = GetComponent<Rigidbody>();
@@ -385,10 +385,10 @@ namespace BossPatterns {
             ResetCageState();
 
             if (phaseTwoMode) {
-                Debug.Log("[Pattern C] 2 페이즈에서 수축 공격!");
+                Debug.log("[Pattern C] 2 페이즈에서 수축 공격!");
                 StartCoroutine(ExecutePhase2CageContraction());
                } else {
-                Debug.Log("[Pattern C] 1 페이즈에서 홀로그램 가두리 형성!");
+                Debug.log("[Pattern C] 1 페이즈에서 홀로그램 가두리 형성!");
                 StartCoroutine(ExecutePhase1CageFormation());
                }
             }
