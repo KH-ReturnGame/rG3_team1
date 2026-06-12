@@ -1851,10 +1851,14 @@ MonoBehaviour:
   offset: {x: 0, y: 1}
   lookAheadX: 2.2
   lookAheadSmooth: 0.4
+  playerAnchorY: 0.33
+  verticalDeadZone: 1.2
   useBounds: 1
   boundsArea: {fileID: 1673741336}
   boundsMin: {x: -38.041763, y: -1000}
   boundsMax: {x: 46.958237, y: 1000}
+  fitZoomToBounds: 1
+  maxOrthoSize: 7
 --- !u!114 &1886267004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1942,7 +1946,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 7
+  orthographic size: 5.534013
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -1967,7 +1971,7 @@ Transform:
   m_GameObject: {fileID: 1886267002}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.037822, y: 4.312196, z: -10}
+  m_LocalPosition: {x: 4.037822, y: 1.6253451, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

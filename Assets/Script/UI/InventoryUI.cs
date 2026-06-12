@@ -381,7 +381,7 @@ public class InventoryUI : MonoBehaviour
 
         Color cream = new Color(0.97f, 0.93f, 0.83f);
         Color gold  = new Color(1f, 0.85f, 0.42f);
-        countStyle     = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerRight, fontStyle = FontStyle.Bold, fontSize = 14 };
+        countStyle     = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerRight, fontStyle = FontStyle.Bold, fontSize = 18 };
         countStyle.normal.textColor = Color.white;
         tipNameStyle   = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = 24 };
         tipNameStyle.normal.textColor = gold;

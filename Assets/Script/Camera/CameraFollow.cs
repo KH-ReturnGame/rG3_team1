@@ -18,11 +18,19 @@ public class CameraFollow : MonoBehaviour
     public float lookAheadX = 2.2f;          // 좌우로 미리 당겨 보는 거리
     public float lookAheadSmooth = 0.4f;
 
+    [Header("세로 프레이밍 (바닥 밑 빈 타일이 화면에 안 차게)")]
+    [Range(0f, 0.5f)] public float playerAnchorY = 0.35f;   // 플레이어를 화면 세로 어디에 둘지 (0=바닥, 0.5=중앙). 낮을수록 위쪽을 더 보여줌
+    public float verticalDeadZone = 1.2f;                  // 이 범위 안의 위아래 이동은 카메라 세로 고정(점프 떨림·불필요 스크롤 방지)
+
     [Header("맵 경계 (카메라가 벗어나지 않게)")]
     public bool useBounds = true;
     public Collider2D boundsArea;            // 있으면 이 콜라이더 범위를 경계로 사용
     public Vector2 boundsMin;                // boundsArea 없을 때 수동(왼쪽아래)
     public Vector2 boundsMax;                // 수동(오른쪽위)
+
+    [Header("세로 줌 맞춤 (화면이 Bounds 높이를 넘지 않게 — 위/아래 빈 공간 제거)")]
+    public bool fitZoomToBounds = true;
+    public float maxOrthoSize = 0f;          // 기본(최대) 줌아웃 크기. 0이면 시작 시 카메라 현재 크기를 사용
 
     private Camera cam;
     private Vector3 vel;
@@ -30,7 +38,11 @@ public class CameraFollow : MonoBehaviour
     private bool hasBounds;
     private Vector2 bMin, bMax;
 
-    void Awake() { cam = GetComponent<Camera>(); }
+    void Awake()
+    {
+        cam = GetComponent<Camera>();
+        if (maxOrthoSize <= 0f && cam != null) maxOrthoSize = cam.orthographicSize;
+    }
 
     void Start()
     {
@@ -53,14 +65,21 @@ public class CameraFollow : MonoBehaviour
         if (boundsArea != null) { bMin = boundsArea.bounds.min; bMax = boundsArea.bounds.max; hasBounds = true; }
         else if (boundsMax.x > boundsMin.x && boundsMax.y > boundsMin.y) { bMin = boundsMin; bMax = boundsMax; hasBounds = true; }
         else hasBounds = false;
+
+        // 화면 세로가 Bounds 높이보다 크면 그만큼 줌인 → 위/아래 빈(죽은) 공간 제거
+        if (hasBounds && fitZoomToBounds && cam != null && cam.orthographic)
+        {
+            if (maxOrthoSize <= 0f) maxOrthoSize = cam.orthographicSize;
+            cam.orthographicSize = Mathf.Min(maxOrthoSize, (bMax.y - bMin.y) * 0.5f);
+        }
     }
 
     private void SnapToTarget()
     {
         if (target == null) return;
-        Vector3 p = target.position + (Vector3)offset;
-        p.z = transform.position.z;
-        transform.position = p;
+        float halfH = (cam != null && cam.orthographic) ? cam.orthographicSize : 5f;
+        float y = target.position.y + halfH * (1f - 2f * Mathf.Clamp01(playerAnchorY));
+        transform.position = new Vector3(target.position.x + offset.x, y, transform.position.z);
     }
 
     void LateUpdate()
@@ -73,13 +92,24 @@ public class CameraFollow : MonoBehaviour
         lastX = target.position.x;
         curAhead = Mathf.SmoothDamp(curAhead, lookAheadX * lookDir, ref aheadVel, lookAheadSmooth);
 
-        Vector3 desired = target.position + (Vector3)(offset + new Vector2(curAhead, 0f));
-        desired.z = transform.position.z;
+        float halfH = (cam != null && cam.orthographic) ? cam.orthographicSize : 5f;
+
+        // 가로: 진행 방향 룩어헤드
+        float desiredX = target.position.x + offset.x + curAhead;
+
+        // 세로: 플레이어를 화면 아래쪽(playerAnchorY)에 두고, 데드존 안의 위아래 이동은 무시(고정)
+        float anchoredY = target.position.y + halfH * (1f - 2f * Mathf.Clamp01(playerAnchorY));
+        float camY = transform.position.y;
+        float dy = anchoredY - camY;
+        float goalY = camY;
+        if (dy > verticalDeadZone) goalY = anchoredY - verticalDeadZone;
+        else if (dy < -verticalDeadZone) goalY = anchoredY + verticalDeadZone;
+
+        Vector3 desired = new Vector3(desiredX, goalY, transform.position.z);
         Vector3 pos = Vector3.SmoothDamp(transform.position, desired, ref vel, smoothTime);
 
         if (useBounds && hasBounds && cam != null && cam.orthographic)
         {
-            float halfH = cam.orthographicSize;
             float halfW = halfH * cam.aspect;
             pos.x = (bMax.x - bMin.x >= 2f * halfW) ? Mathf.Clamp(pos.x, bMin.x + halfW, bMax.x - halfW) : (bMin.x + bMax.x) * 0.5f;
             pos.y = (bMax.y - bMin.y >= 2f * halfH) ? Mathf.Clamp(pos.y, bMin.y + halfH, bMax.y - halfH) : (bMin.y + bMax.y) * 0.5f;
