@@ -77,7 +77,7 @@ public static class SaveSystem
             Debug.LogError($"[SaveSystem] '{sceneName}' 씬을 로드할 수 없습니다. File ▸ Build Settings의 'Scenes In Build'에 이 씬이 추가·체크돼 있는지 확인하세요.");
             return;
         }
-        SceneManager.LoadScene(sceneName);
+        SceneFader.FadeToScene(sceneName);   // 페이드아웃 후 로드
     }
 
     // 현재 상태를 현재 슬롯에 저장(자동저장 등)
@@ -105,6 +105,7 @@ public static class SaveSystem
                 if (s != null && !s.IsEmpty)
                     data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count });
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
+        if (QuestManager.Instance != null) data.acceptedQuests = QuestManager.Instance.SaveAccepted();
     }
 
     private static void Apply(SaveSlotData data)
@@ -115,6 +116,8 @@ public static class SaveSystem
             Inventory.Instance.LoadFromSaved(data.items);
         if (Equipment.Instance != null)
             Equipment.Instance.LoadIds(data.equipped);   // 착용 장신구 복원(스탯 보너스 재적용)
+        if (QuestManager.Instance != null)
+            QuestManager.Instance.LoadAccepted(data.acceptedQuests);   // 수주 퀘스트 복원
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록

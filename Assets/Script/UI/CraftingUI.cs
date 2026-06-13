@@ -8,7 +8,7 @@ public class CraftingUI : MonoBehaviour
 {
     public static CraftingUI Instance { get; private set; }
 
-    private class Recipe { public string a, b, outId; public bool potion; }
+    private class Recipe { public string[] inIds; public int[] inCounts; public string outId; public bool potion; }
     private Recipe[] recipes;
 
     private bool open;
@@ -26,9 +26,13 @@ public class CraftingUI : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this; DontDestroyOnLoad(gameObject);
         recipes = new Recipe[] {
-            new Recipe { a = "lizard",           b = "underground_flower", outId = "heal_potion",    potion = true },
-            new Recipe { a = "lizard",           b = "slime_condensate",   outId = "defense_potion", potion = true },
-            new Recipe { a = "slime_condensate", b = "flame_flower",       outId = "combat_potion",  potion = true },
+            new Recipe { inIds = new[]{"lizard","underground_flower"},     inCounts = new[]{1,1}, outId = "heal_potion",    potion = true },
+            new Recipe { inIds = new[]{"lizard","slime_condensate"},       inCounts = new[]{1,1}, outId = "defense_potion", potion = true },
+            new Recipe { inIds = new[]{"slime_condensate","flame_flower"}, inCounts = new[]{1,1}, outId = "combat_potion",  potion = true },
+            // 일반 탭(비포션) — 재료 3종·다량으로 장신구 제작(상점 재료만으로 싸게 못 만들게)
+            new Recipe { inIds = new[]{"lizard","flame_flower","slime_condensate"},        inCounts = new[]{3,3,2}, outId = "warriors_ring",    potion = false },
+            new Recipe { inIds = new[]{"underground_flower","slime_condensate","lizard"},  inCounts = new[]{4,3,2}, outId = "rune_of_vitality", potion = false },
+            new Recipe { inIds = new[]{"underground_flower","flame_flower","lizard"},      inCounts = new[]{3,2,3}, outId = "charm_of_leaping", potion = false },
         };
     }
 
@@ -139,8 +143,8 @@ public class CraftingUI : MonoBehaviour
         if (inItem[0] == null || inItem[1] == null) return null;
         foreach (var rc in recipes)
         {
-            if (rc.potion != (tab == 1)) continue;
-            var ra = ItemDatabase.Get(rc.a); var rb = ItemDatabase.Get(rc.b);
+            if (rc.potion != (tab == 1) || rc.inIds.Length != 2) continue;
+            var ra = ItemDatabase.Get(rc.inIds[0]); var rb = ItemDatabase.Get(rc.inIds[1]);
             if ((ra == inItem[0] && rb == inItem[1]) || (ra == inItem[1] && rb == inItem[0])) return rc;
         }
         return null;
@@ -189,16 +193,21 @@ public class CraftingUI : MonoBehaviour
         {
             if (rc.potion) continue;
             var outIt = ItemDatabase.Get(rc.outId);
-            var a = ItemDatabase.Get(rc.a); var b = ItemDatabase.Get(rc.b);
-            int ha = (inv != null && a != null) ? inv.CountOf(a) : 0;
-            int hb = (inv != null && b != null) ? inv.CountOf(b) : 0;
-            GUI.Label(new Rect(rx + 14f, ry, panelW - 120f, 24f), outIt != null ? outIt.itemName : rc.outId, sec);
-            string req = (a != null ? a.itemName : rc.a) + "(" + ha + "/1)  +  " + (b != null ? b.itemName : rc.b) + "(" + hb + "/1)";
-            GUI.Label(new Rect(rx + 14f, ry + 24f, panelW - 120f, 22f), req, body);
-            GUI.enabled = ha >= 1 && hb >= 1;
-            if (GUI.Button(new Rect(rx + panelW - 104f, ry + 6f, 92f, 40f), "제작")) CraftFromList(rc);
+            bool can = inv != null;
+            string req = "";
+            for (int i = 0; i < rc.inIds.Length; i++)
+            {
+                var it = ItemDatabase.Get(rc.inIds[i]);
+                int have = (inv != null && it != null) ? inv.CountOf(it) : 0;
+                if (have < rc.inCounts[i]) can = false;
+                req += (i > 0 ? " + " : "") + (it != null ? it.itemName : rc.inIds[i]) + "(" + have + "/" + rc.inCounts[i] + ")";
+            }
+            GUI.Label(new Rect(rx + 14f, ry, panelW + 20f, 24f), outIt != null ? outIt.itemName : rc.outId, sec);
+            GUI.Label(new Rect(rx + 14f, ry + 24f, panelW + 20f, 22f), req, body);
+            GUI.enabled = can;
+            if (GUI.Button(new Rect(rx + panelW - 104f, ry + 6f, 92f, 40f), can ? "제작" : "제작 불가")) CraftFromList(rc);
             GUI.enabled = true;
-            ry += 60f; shown++;
+            ry += 64f; shown++;
         }
         if (shown == 0)
             GUI.Label(new Rect(rx + 14f, gy + 40f, panelW + 26f, 60f), "일반 제작 레시피가 아직 없습니다.\n(포션은 '포션' 탭에서 제작)", body);
@@ -207,9 +216,10 @@ public class CraftingUI : MonoBehaviour
     private void CraftFromList(Recipe rc)
     {
         var inv = Inventory.Instance; if (inv == null) return;
-        var a = ItemDatabase.Get(rc.a); var b = ItemDatabase.Get(rc.b);
-        if (a == null || b == null || inv.CountOf(a) < 1 || inv.CountOf(b) < 1) return;
-        inv.Remove(a, 1); inv.Remove(b, 1);
+        for (int i = 0; i < rc.inIds.Length; i++)
+        { var it = ItemDatabase.Get(rc.inIds[i]); if (it == null || inv.CountOf(it) < rc.inCounts[i]) return; }
+        for (int i = 0; i < rc.inIds.Length; i++)
+            inv.Remove(ItemDatabase.Get(rc.inIds[i]), rc.inCounts[i]);
         var outIt = ItemDatabase.Get(rc.outId);
         if (outIt != null) inv.Add(outIt, 1);
     }

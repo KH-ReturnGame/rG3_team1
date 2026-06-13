@@ -72,12 +72,40 @@ public class QuestManager : MonoBehaviour
         available.Add(new Quest { id = "combat_slime", category = QuestCategory.Combat, giver = "건터", title = "건터의 의뢰",
             description = "건터가 갱도에 늘어난 슬라임을 처치해 달라고 부탁했다.",
             goal = QuestGoal.Kill, targetId = "slime", targetName = "슬라임", targetCount = 7, rewardGold = 400 });
+        available.Add(new Quest { id = "gather_lizard", category = QuestCategory.Gather, giver = "요리사 핀", title = "핀의 식재료",
+            description = "요리사 핀이 도마뱀 고기가 필요하다며 채집을 부탁했다.",
+            goal = QuestGoal.Gather, targetId = "lizard", targetCount = 3, rewardGold = 250, rewardItemId = "heal_potion", rewardItemCount = 1 });
+        available.Add(new Quest { id = "gather_flame", category = QuestCategory.Gather, giver = "대장장이 보라", title = "보라의 불씨",
+            description = "대장장이 보라가 화로에 쓸 화염꽃을 모아달라고 했다.",
+            goal = QuestGoal.Gather, targetId = "flame_flower", targetCount = 4, rewardGold = 450 });
+        available.Add(new Quest { id = "gather_slime", category = QuestCategory.Gather, giver = "약초상 델", title = "델의 연구",
+            description = "약초상 델이 슬라임 응축액을 연구용으로 수집하고 있다.",
+            goal = QuestGoal.Gather, targetId = "slime_condensate", targetCount = 5, rewardGold = 400, rewardItemId = "defense_potion", rewardItemCount = 1 });
     }
 
     public bool IsAccepted(Quest q) => q != null && accepted.Contains(q);
 
     public void Accept(Quest q) { if (q == null || accepted.Contains(q)) return; q.progress = 0; accepted.Add(q); Toast.Show("퀘스트 수락! J키를 눌러 확인할 수 있습니다.", 4f); Changed(); }
     public void Abandon(Quest q) { if (q == null) return; q.progress = 0; accepted.Remove(q); Changed(); }
+
+    // 세이브/로드 (수주 퀘스트 id + 진행도)
+    public List<SavedQuest> SaveAccepted()
+    {
+        var list = new List<SavedQuest>();
+        foreach (var q in accepted) list.Add(new SavedQuest { id = q.id, progress = q.progress });
+        return list;
+    }
+    public void LoadAccepted(List<SavedQuest> saved)
+    {
+        accepted.Clear();
+        if (saved != null)
+            foreach (var s in saved)
+            {
+                var q = available.Find(x => x.id == s.id);
+                if (q != null) { q.progress = s.progress; if (!accepted.Contains(q)) accepted.Add(q); }
+            }
+        Changed();
+    }
 
     // 채집 진행(아이템 주울 때 호출)
     public void ReportGather(string itemId, int amount)

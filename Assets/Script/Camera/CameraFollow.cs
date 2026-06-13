@@ -33,6 +33,8 @@ public class CameraFollow : MonoBehaviour
     public float maxOrthoSize = 0f;          // 기본(최대) 줌아웃 크기. 0이면 시작 시 카메라 현재 크기를 사용
 
     private Camera cam;
+    public static CameraFollow Instance;                 // Juice(셰이크) 접근용
+    private float shakeAmt, shakeTimer, shakeDur;
     private Vector3 vel;
     private float lookDir = 1f, curAhead, aheadVel, lastX;
     private bool hasBounds;
@@ -40,6 +42,7 @@ public class CameraFollow : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         cam = GetComponent<Camera>();
         if (maxOrthoSize <= 0f && cam != null) maxOrthoSize = cam.orthographicSize;
     }
@@ -59,6 +62,8 @@ public class CameraFollow : MonoBehaviour
 
     // 절차 생성 스테이지 등에서 생성 직후 호출
     public void SetBounds(Vector2 min, Vector2 max) { boundsArea = null; boundsMin = min; boundsMax = max; useBounds = true; ResolveBounds(); }
+    public bool HasBounds => hasBounds;                                          // 낙사 판정용
+    public float BoundsBottom => hasBounds ? bMin.y : float.NegativeInfinity;
 
     private void ResolveBounds()
     {
@@ -120,7 +125,18 @@ public class CameraFollow : MonoBehaviour
             pos.y = (bMax.y - bMin.y >= 2f * halfH) ? Mathf.Clamp(pos.y, bMin.y + halfH, bMax.y - halfH) : (bMin.y + bMax.y) * 0.5f;
         }
         transform.position = pos;
+
+        // 화면 흔들림(타격감) — 따라간 위치 위에 감쇠 오프셋
+        if (shakeTimer > 0f)
+        {
+            shakeTimer -= Time.unscaledDeltaTime;
+            float s = shakeAmt * Mathf.Clamp01(shakeTimer / Mathf.Max(0.01f, shakeDur));
+            Vector2 off = Random.insideUnitCircle * s;
+            transform.position += new Vector3(off.x, off.y, 0f);
+        }
     }
+
+    public void AddShake(float amt, float dur) { shakeAmt = Mathf.Max(shakeAmt, amt); shakeDur = Mathf.Max(0.01f, dur); shakeTimer = shakeDur; }
 
     void OnDrawGizmosSelected()
     {

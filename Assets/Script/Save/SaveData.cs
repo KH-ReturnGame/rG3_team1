@@ -9,6 +9,13 @@ public class SavedItem
 }
 
 [System.Serializable]
+public class SavedQuest
+{
+    public string id;
+    public int progress;
+}
+
+[System.Serializable]
 public class SaveSlotData
 {
     public string saveName = "새 게임";
@@ -20,4 +27,5 @@ public class SaveSlotData
     public int gold;
     public List<SavedItem> items = new List<SavedItem>();
     public List<string> equipped = new List<string>();   // 착용한 장신구 id(빈칸은 "")
+    public List<SavedQuest> acceptedQuests = new List<SavedQuest>();   // 수주 중인 퀘스트(id+진행도)
 }

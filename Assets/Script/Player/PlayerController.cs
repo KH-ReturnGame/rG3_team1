@@ -136,6 +136,11 @@ public class PlayerController : MonoBehaviour
     private int baseMaxJumps;                         // 장신구 보너스 전 기본값
     private float baseStaminaRegen;
 
+    [Header("낙사")]
+    public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
+    public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
+    private Vector3 lastSafePos;
+
     void Awake()
     {
         Instance = this;
@@ -168,6 +173,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         ApplyEquipment();
+        lastSafePos = transform.position;
         currentJumps = maxJumps;
         currentDashes = maxDashes;
         isSwordDrawn = startDrawn;
@@ -182,6 +188,20 @@ public class PlayerController : MonoBehaviour
         maxJumps = baseMaxJumps + jb;
         staminaRegen = baseStaminaRegen + rgb;
         if (currentJumps > maxJumps) currentJumps = maxJumps;
+    }
+
+    // 낙사: 바닥에 서 있으면 안전지점 갱신, 카메라 경계 아래로 떨어지면 안전지점 복귀 + 패널티
+    private void CheckFall()
+    {
+        if (isGrounded && rb != null && Mathf.Abs(rb.linearVelocity.y) < 0.6f) lastSafePos = transform.position;
+        float killY = (CameraFollow.Instance != null && CameraFollow.Instance.HasBounds)
+            ? CameraFollow.Instance.BoundsBottom - fallMargin : -50f;
+        if (transform.position.y < killY)
+        {
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+            transform.position = lastSafePos;
+            if (GameManager.Instance != null) GameManager.Instance.TakeDamage(fallDamage);
+        }
     }
 
     void Update()
@@ -211,6 +231,8 @@ public class PlayerController : MonoBehaviour
         CheckGrounded();
 
         if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
+
+        CheckFall();   // 낙사 판정 + 안전지점 갱신
 
         if (isParrying)
         {
@@ -477,11 +499,13 @@ public class PlayerController : MonoBehaviour
     private void PerformAreaDamage(Vector2 center, Vector2 size, float damage)
     {
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f, enemyLayer);
+        bool anyHit = false;
         foreach (Collider2D hit in hits)
         {
             IDamageable target = hit.GetComponent<IDamageable>();
-            if (target != null) target.TakeDamage(damage * (GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f));
+            if (target != null) { target.TakeDamage(damage * (GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f)); anyHit = true; }
         }
+        if (anyHit) Juice.Hit();   // 적중 시 타격감(히트스톱 + 화면 흔들림)
     }
 
     // ── 공중 공격 ──
@@ -627,6 +651,8 @@ public class PlayerController : MonoBehaviour
             PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
             animBusyTimer = ClipLength(parrySuccessState);
             if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
+            skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
+            Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
             return;
         }
 

@@ -29,6 +29,10 @@ public class GameManager : MonoBehaviour
     public bool IsPotionReady(ItemData it) => PotionCooldownLeft(it) <= 0f;
     public void StartPotionCooldown(ItemData it) { if (it != null) potionCdEnd[PotionKey(it)] = Time.time + potionCooldown; }
 
+    // 영구 스탯 업그레이드(상점 골드 소모처). maxHearts/maxStamina에 반영 → 세이브로 유지.
+    public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHearts += amt; OnStatsChanged?.Invoke(); }
+    public void UpgradeMaxStamina(float amt) { maxStamina += amt; currentStamina += amt; OnStatsChanged?.Invoke(); }
+
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠
 

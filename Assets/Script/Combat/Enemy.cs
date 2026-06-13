@@ -15,7 +15,8 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     [Header("Detection / Attack")]
     public float detectRange = 6f;       // 이 안에 플레이어가 들어오면 추격
-    public float attackRange = 1.4f;     // 이 안이면 공격 시작
+    public float attackRange = 1.4f;     // 좌우 공격 도달 거리(가로)
+    public float attackHeight = 1.2f;    // 공격 세로 범위(±). 이보다 위로 점프하면 회피 가능
     public float attackDamage = 2f;      // 플레이어에게 주는 피해 = 하트 칸 수
     public float attackWindup = 0.45f;   // 예비동작(텔레그래프) — 플레이어가 패링 노리는 구간
     public float attackActive = 0.1f;    // 실제 타격 판정이 나가는 순간
@@ -25,6 +26,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     [Header("Groggy (패링당했을 때)")]
     public float groggyDuration = 2f;
     public float groggyDamageMultiplier = 1.5f;
+    public float groggyRecoverDelay = 1.2f;   // 그로기 풀린 직후 재공격까지 대기(없으면 풀자마자 공격)
 
     [Header("Movement Behavior")]
     public MoveBehavior moveBehavior = MoveBehavior.Patrol;
@@ -225,7 +227,9 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         if (!struck)
         {
             struck = true;
-            if (player != null && DistToPlayer() <= attackRange + 0.3f)
+            if (player != null
+                && Mathf.Abs(player.position.x - transform.position.x) <= attackRange + 0.3f   // 양옆
+                && Mathf.Abs(player.position.y - transform.position.y) <= attackHeight)         // 위/아래는 좁게 → 점프로 회피
             {
                 PlayerController pc = player.GetComponent<PlayerController>();
                 if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
@@ -247,7 +251,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     {
         SetMove(0);
         groggyTimer -= Time.deltaTime;
-        if (groggyTimer <= 0) state = State.Chase;
+        if (groggyTimer <= 0) { state = State.Chase; attackCdTimer = groggyRecoverDelay; }   // 풀린 뒤 바로 안 때리게
     }
 
     private void SetMove(float vx)

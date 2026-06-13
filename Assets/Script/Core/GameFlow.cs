@@ -200,7 +200,7 @@ public class GameFlow : MonoBehaviour
             return;
         }
         lockUntil = Time.unscaledTime + transitionLock;
-        SceneManager.LoadScene(scene);
+        SceneFader.FadeToScene(scene);   // 페이드아웃 후 로드
     }
 
     // ───────────────── 결과창 (임시 IMGUI) ─────────────────
