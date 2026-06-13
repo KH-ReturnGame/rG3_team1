@@ -10,6 +10,7 @@ public class InventoryUI : MonoBehaviour
     public KeyCode toggleKey = KeyCode.B;   // 배낭(인벤) 탭 열기
     public KeyCode hoodKey = KeyCode.C;     // 후드(레벨/스탯) 탭 열기
     private int panelTab;                    // 0=배낭, 1=후드
+    private int hoodSubTab;                  // 후드: 0=모듈, 1=기프트
 
     [Header("격자")]
     public int columns = 8;
@@ -42,7 +43,7 @@ public class InventoryUI : MonoBehaviour
     private static readonly Color cClose  = new Color(0.82f, 0.26f, 0.18f);   // 닫기(X) 버튼
 
     private Texture2D white;
-    private GUIStyle countStyle, tipNameStyle, tipDescStyle, tabStyle, tabSelStyle, goldStyle, itemLabelStyle, hotkeyNumStyle, closeStyle, hoodTitle, hoodStat;
+    private GUIStyle countStyle, tipNameStyle, tipDescStyle, tabStyle, tabSelStyle, goldStyle, itemLabelStyle, hotkeyNumStyle, closeStyle, hoodTitle, hoodStat, hoodCenter;
 
     void Awake() { SetupItemCollisions(); }
 
@@ -60,6 +61,7 @@ public class InventoryUI : MonoBehaviour
     {
         if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; } }
         if (Input.GetKeyDown(hoodKey))   { if (open && panelTab == 1) { open = false; ReturnHeld(); } else { open = true; panelTab = 1; } }
+        if (open && Input.GetKeyDown(KeyCode.Escape)) { open = false; ReturnHeld(); }   // ESC로도 닫기
         Inventory.InvUIOpen = open;
     }
 
@@ -420,57 +422,73 @@ public class InventoryUI : MonoBehaviour
         GUI.Label(new Rect(tx + 8f, ty + 6f, tw - 16f, th - 12f), text, tipDescStyle);
     }
 
-    // 후드 탭: 레벨 & 개조 포인트로 스탯 강화
+    // 후드 탭: [기프트/모듈] 서브탭 + 레벨(중앙) + (모듈) 캐릭터 자리 + 우측 스탯 강화
     private void DrawHoodPanel(Rect win, float topBarH)
     {
         var gm = GameManager.Instance;
         if (gm == null) return;
-        float x = win.x + 22f, y = win.y + topBarH + 12f, bw = win.width - 44f;
+        Vector2 mp = Event.current.mousePosition;
+        bool md = Event.current.type == EventType.MouseDown && Event.current.button == 0;
+        float pad = 14f, cx = win.x + pad, cy = win.y + topBarH + 8f, cw = win.width - pad * 2f;
 
-        GUI.Label(new Rect(x, y, bw * 0.5f, 26f), "Lv. " + gm.level, hoodTitle);
-        GUI.Label(new Rect(x, y, bw, 26f), "개조 포인트  " + gm.modPoints, goldStyle);   // 우측
-        y += 30f;
-        Rect bar = new Rect(x, y, bw, 14f);
+        // ── 서브탭(모듈/기프트) ──
+        float stw = 92f, sth = 30f;
+        Rect tMod = new Rect(cx, cy, stw, sth), tGift = new Rect(cx + stw + 6f, cy, stw, sth);
+        DrawSideTab(tMod, "모듈", hoodSubTab == 0);
+        DrawSideTab(tGift, "기프트", hoodSubTab == 1);
+        if (md && tMod.Contains(mp)) { hoodSubTab = 0; Event.current.Use(); }
+        else if (md && tGift.Contains(mp)) { hoodSubTab = 1; Event.current.Use(); }
+
+        // 레벨(중앙) + 개조 포인트(우측)
+        GUI.Label(new Rect(cx, cy, cw, sth), "Lv. " + gm.level, hoodCenter);
+        GUI.Label(new Rect(cx, cy, cw, sth), "개조 포인트 " + gm.modPoints, goldStyle);
+
+        // XP 바
+        float topY = cy + sth + 8f;
+        Rect bar = new Rect(cx, topY, cw, 12f);
         Fill(bar, cSlot); Border(bar, 1f, cSlotBd);
         float frac = gm.XpToNext > 0 ? (float)gm.xp / gm.XpToNext : 0f;
-        Fill(new Rect(bar.x + 2f, bar.y + 2f, (bw - 4f) * Mathf.Clamp01(frac), 10f), cAccent);
+        Fill(new Rect(bar.x + 2f, bar.y + 2f, (cw - 4f) * Mathf.Clamp01(frac), 8f), cAccent);
         GUI.Label(bar, "XP " + gm.xp + " / " + gm.XpToNext, tabStyle);
-        y += 22f;
+        float bodyY = topY + 18f, bodyH = win.yMax - 14f - bodyY;
 
+        if (hoodSubTab == 1)   // ── 기프트 탭(추후) ──
+        {
+            Rect g = new Rect(cx, bodyY, cw, bodyH);
+            Fill(g, cSlot); Border(g, 2f, cSlotBd);
+            GUI.Label(g, "[???]", hoodCenter);
+            return;
+        }
+
+        // ── 모듈 탭: 왼쪽 캐릭터 자리 + 오른쪽 스탯 ──
+        float spriteW = cw * 0.36f;
+        Rect spriteBox = new Rect(cx, bodyY, spriteW, bodyH);
+        Fill(spriteBox, cSlot); Border(spriteBox, 2f, cSlotBd);
+        GUI.Label(spriteBox, "캐릭터\n(레드 후드)\n— 추후 —", tabStyle);
+
+        float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
         string[] names = { "체력 모듈", "스태미나 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈" };
         string[] descs = {
-            "체력 한 칸씩 증가",
-            "스태미나 최대치 증가",
-            "체력 재생력 + 스태미나 재생력 증가",
-            "물리 공격력 증가",
-            "마법 공격력 + 기프트 효율 상승",
-            "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승"
+            "체력 한 칸씩 증가", "스태미나 최대치 증가", "체력 재생력 + 스태미나 재생력 증가",
+            "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승"
         };
-        int[] levels = {
-            Mathf.Max(0, gm.maxHearts - 3),
-            Mathf.Max(0, Mathf.RoundToInt((gm.maxStamina - 100f) / 20f)),
-            gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck
-        };
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), Mathf.Max(0, Mathf.RoundToInt((gm.maxStamina - 100f) / 20f)), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck };
         int[] costs = { 5, 1, 2, 1, 1, 2 };
-
-        float rh = Mathf.Clamp((win.yMax - 12f - y) / 6f, 28f, 46f);
-        Vector2 mp = Event.current.mousePosition;
+        float rh = Mathf.Clamp(bodyH / 6f, 28f, 46f);
         string hoverDesc = null;
         for (int i = 0; i < 6; i++)
         {
-            Rect row = new Rect(x, y + i * rh, bw, rh - 4f);
+            Rect row = new Rect(sx, bodyY + i * rh, sw, rh - 4f);
             Fill(row, cSlot); Border(row, 1f, cSlotBd);
-            Rect nameRect = new Rect(row.x + 12f, row.y, bw * 0.5f, row.height);
+            Rect nameRect = new Rect(row.x + 10f, row.y, sw * 0.5f, row.height);
             GUI.Label(nameRect, names[i], hoodStat);
             if (nameRect.Contains(mp)) hoverDesc = descs[i] + "\n필요 개조 포인트: " + costs[i];
-            GUI.Label(new Rect(row.x + bw * 0.55f, row.y, bw * 0.28f, row.height), "Lv." + levels[i], hoodStat);
-            Rect plus = new Rect(row.xMax - 44f, row.y + 3f, 38f, row.height - 6f);
+            GUI.Label(new Rect(row.x + sw * 0.52f, row.y, sw * 0.3f, row.height), "Lv." + levels[i], hoodStat);
+            Rect plus = new Rect(row.xMax - 42f, row.y + 3f, 36f, row.height - 6f);
             bool can = gm.modPoints >= costs[i];
-            Fill(plus, can ? cAccent : cTabOff);
-            Border(plus, 2f, cBorder);
+            Fill(plus, can ? cAccent : cTabOff); Border(plus, 2f, cBorder);
             GUI.Label(plus, "+", closeStyle);
-            if (can && Event.current.type == EventType.MouseDown && Event.current.button == 0 && plus.Contains(mp))
-            { gm.SpendStat(i); Event.current.Use(); }
+            if (can && md && plus.Contains(mp)) { gm.SpendStat(i); Event.current.Use(); }
         }
         if (hoverDesc != null) DrawStatTooltip(hoverDesc, mp);
     }
@@ -498,6 +516,8 @@ public class InventoryUI : MonoBehaviour
         hoodTitle.normal.textColor = gold;
         hoodStat = new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleLeft };
         hoodStat.normal.textColor = cream;
+        hoodCenter = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        hoodCenter.normal.textColor = gold;
         itemLabelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 11, wordWrap = true };
         itemLabelStyle.normal.textColor = cream;
         hotkeyNumStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold };
