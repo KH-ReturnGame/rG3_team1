@@ -28,4 +28,5 @@ public class SaveSlotData
     public List<SavedItem> items = new List<SavedItem>();
     public List<string> equipped = new List<string>();   // 착용한 장신구 id(빈칸은 "")
     public List<SavedQuest> acceptedQuests = new List<SavedQuest>();   // 수주 중인 퀘스트(id+진행도)
+    public int bonusJumps;   // 상점 영구 점프 업그레이드
 }

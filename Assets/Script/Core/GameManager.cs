@@ -33,6 +33,16 @@ public class GameManager : MonoBehaviour
     public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHearts += amt; OnStatsChanged?.Invoke(); }
     public void UpgradeMaxStamina(float amt) { maxStamina += amt; currentStamina += amt; OnStatsChanged?.Invoke(); }
 
+    [Header("점프 업그레이드(영구·세이브 유지)")]
+    public int bonusJumps = 0;        // 상점에서 산 추가 점프 횟수
+    public int maxBonusJumps = 1;     // 상점 점프 업그레이드 상한
+    public void UpgradeJumps(int amt)
+    {
+        bonusJumps = Mathf.Clamp(bonusJumps + amt, 0, maxBonusJumps);
+        if (PlayerController.Instance != null) PlayerController.Instance.ApplyEquipment();
+        OnStatsChanged?.Invoke();
+    }
+
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠
 

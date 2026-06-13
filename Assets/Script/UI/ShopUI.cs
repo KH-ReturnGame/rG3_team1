@@ -17,7 +17,7 @@ public class ShopUI : MonoBehaviour
     private bool open;
     private ItemData held; private int heldCount;            // 손에 든 아이템(판매 탭)
     private string hoverInfo;                                // 판매탭 호버 시 가격 줄(구매탭은 null)
-    private GUIStyle title, sec, tipName, body, count, gold, slotName, price, tabOn, tabOff, val, heldNum;
+    private GUIStyle title, sec, tipName, body, count, gold, slotName, price, tabOn, tabOff, val, heldNum, svc;
     private Texture2D white;
     private const int Cols = 6, Rows = 4, Cap = 24;
 
@@ -134,35 +134,37 @@ public class ShopUI : MonoBehaviour
             }
         }
 
-        // ── 골드 소모 서비스(영구) ──
+        // ── 골드 소모 서비스(영구) — 2열×2행 ──
+        if (GameManager.Instance != null)
         {
-            float rx2 = x + 20f + panelW + gap;
-            int rows = Mathf.CeilToInt(buyItems.Count / (float)Cols);
-            float sy = gy + 6f + rows * (ss + 6f) + 16f, sw = panelW - 12f, shh = 40f;
             var gm = GameManager.Instance;
-            GUI.Label(new Rect(rx2 + 6f, sy - 22f, sw, 20f), "골드 소모 (영구 강화)", sec);
+            float rx2 = x + 20f + panelW + gap;
+            int brows = Mathf.CeilToInt(buyItems.Count / (float)Cols);
+            float sy0 = gy + 6f + brows * (ss + 6f) + 18f;
+            float colW = (panelW - 18f) * 0.5f, shh = 38f, sgap = 6f;
+            GUI.Label(new Rect(rx2 + 6f, sy0 - 22f, panelW - 12f, 20f), "골드 소모 (영구 강화)", sec);
 
-            if (Hotbar.Instance != null)
+            // 0:단축키 1:점프 / 2:체력 3:기력
+            for (int i = 0; i < 4; i++)
             {
-                int cur = Hotbar.Instance.hotkeySlots, mx = Hotbar.Instance.hotbarColumns, price = 300;
-                bool maxed = cur >= mx;
-                Rect r = new Rect(rx2 + 6f, sy, sw, shh); DrawSlotBg(r, true);
-                GUI.Label(new Rect(r.x + 12f, r.y, r.width - 24f, r.height), maxed ? ("단축키 슬롯 최대  " + cur + "/" + mx) : ("단축키 슬롯 +1     " + cur + "/" + mx + "     " + price + "G"), sec);
-                if (!maxed && click && r.Contains(m)) { if (gm != null && gm.TrySpendGold(price)) { Hotbar.Instance.AddHotkeySlot(1); Toast.Show("단축키 슬롯 +1!", 2f); } else Toast.Show("골드가 부족합니다.", 1.5f); Event.current.Use(); }
-                sy += shh + 6f;
-            }
-            if (gm != null)
-            {
-                int price = 400 + (gm.maxHearts - 6) * 200;
-                Rect r = new Rect(rx2 + 6f, sy, sw, shh); DrawSlotBg(r, true);
-                GUI.Label(new Rect(r.x + 12f, r.y, r.width - 24f, r.height), "최대 체력 +1     (현재 " + gm.maxHearts + ")     " + price + "G", sec);
-                if (click && r.Contains(m)) { if (gm.TrySpendGold(price)) { gm.UpgradeMaxHearts(1); Toast.Show("최대 체력 +1!", 2f); } else Toast.Show("골드가 부족합니다.", 1.5f); Event.current.Use(); }
-                sy += shh + 6f;
-
-                int price2 = 300 + ((int)gm.maxStamina - 100) / 20 * 150;
-                Rect r2 = new Rect(rx2 + 6f, sy, sw, shh); DrawSlotBg(r2, true);
-                GUI.Label(new Rect(r2.x + 12f, r2.y, r2.width - 24f, r2.height), "최대 기력 +20     (현재 " + (int)gm.maxStamina + ")     " + price2 + "G", sec);
-                if (click && r2.Contains(m)) { if (gm.TrySpendGold(price2)) { gm.UpgradeMaxStamina(20f); Toast.Show("최대 기력 +20!", 2f); } else Toast.Show("골드가 부족합니다.", 1.5f); Event.current.Use(); }
+                int row = i / 2, col = i % 2;
+                Rect r = new Rect(rx2 + 6f + col * (colW + sgap), sy0 + row * (shh + sgap), colW, shh);
+                DrawSlotBg(r, true);
+                string label; bool maxed = false; int price = 0;
+                if (i == 0) { int cur = Hotbar.Instance != null ? Hotbar.Instance.hotkeySlots : 0, mx2 = Hotbar.Instance != null ? Hotbar.Instance.hotbarColumns : 8; maxed = cur >= mx2; price = 300; label = maxed ? "단축키 최대" : ("단축키 +1  " + price + "G"); }
+                else if (i == 1) { maxed = gm.bonusJumps >= gm.maxBonusJumps; price = 800; label = maxed ? "점프 최대" : ("점프 +1  " + price + "G"); }
+                else if (i == 2) { price = 400 + (gm.maxHearts - 6) * 200; label = "체력 +1  " + price + "G"; }
+                else { price = 300 + ((int)gm.maxStamina - 100) / 20 * 150; label = "기력 +20  " + price + "G"; }
+                GUI.Label(new Rect(r.x + 6f, r.y, r.width - 12f, r.height), label, svc);
+                if (!maxed && click && r.Contains(m))
+                {
+                    if (!gm.TrySpendGold(price)) Toast.Show("골드가 부족합니다.", 1.5f);
+                    else if (i == 0) { if (Hotbar.Instance != null) Hotbar.Instance.AddHotkeySlot(1); Toast.Show("단축키 슬롯 +1!", 2f); }
+                    else if (i == 1) { gm.UpgradeJumps(1); Toast.Show("점프 횟수 +1!", 2f); }
+                    else if (i == 2) { gm.UpgradeMaxHearts(1); Toast.Show("최대 체력 +1!", 2f); }
+                    else { gm.UpgradeMaxStamina(20f); Toast.Show("최대 기력 +20!", 2f); }
+                    Event.current.Use();
+                }
             }
         }
         return hover;
@@ -354,5 +356,6 @@ public class ShopUI : MonoBehaviour
         tabOff = new GUIStyle(tabOn); tabOff.normal.textColor = cream;
         val = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold }; val.normal.textColor = goldC;
         heldNum = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        svc = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; svc.normal.textColor = cream;
     }
 }

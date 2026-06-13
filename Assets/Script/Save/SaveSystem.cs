@@ -98,6 +98,7 @@ public static class SaveSystem
             data.maxHearts = GameManager.Instance.maxHearts;       // 장신구 보너스 제외(기본 최대)
             data.maxStamina = GameManager.Instance.maxStamina;
             data.gold = GameManager.Instance.Gold;
+            data.bonusJumps = GameManager.Instance.bonusJumps;
         }
         data.items = new List<SavedItem>();
         if (Inventory.Instance != null)
@@ -111,7 +112,10 @@ public static class SaveSystem
     private static void Apply(SaveSlotData data)
     {
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.LoadStats(data.hearts, data.maxHearts, data.maxStamina, data.gold);
+            GameManager.Instance.bonusJumps = data.bonusJumps;   // 점프 업그레이드 복원(Equipment.LoadIds가 ApplyEquipment로 반영)
+        }
         if (Inventory.Instance != null)
             Inventory.Instance.LoadFromSaved(data.items);
         if (Equipment.Instance != null)

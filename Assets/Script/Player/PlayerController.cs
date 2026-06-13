@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 2;       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
+    public int maxJumps = 1;   // 기본 1단. 장신구 +1, 상점(영구) +1 → 최대 3단       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
 
@@ -185,7 +185,8 @@ public class PlayerController : MonoBehaviour
     {
         int jb = Equipment.Instance != null ? Equipment.Instance.MaxJumpBonus : 0;
         float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
-        maxJumps = baseMaxJumps + jb;
+        int sb = GameManager.Instance != null ? GameManager.Instance.bonusJumps : 0;   // 상점 영구 점프 업그레이드
+        maxJumps = baseMaxJumps + sb + jb;
         staminaRegen = baseStaminaRegen + rgb;
         if (currentJumps > maxJumps) currentJumps = maxJumps;
     }

@@ -196,7 +196,7 @@ MonoBehaviour:
   moveSpeed: 5
   guardSpeedMultiplier: 0.2
   jumpForce: 10
-  maxJumps: 2
+  maxJumps: 1
   doubleJumpState: FrontFlip
   chargeJumpTime: 1.5
   tapJumpTime: 0.1
