@@ -19,6 +19,7 @@ public class ItemData : ScriptableObject
     [Header("소비 효과 (Consumable)")]
     public int healHearts = 0;
     public float restoreStamina = 0f;
+    public bool escapeToHub = false;         // 사용 시 마을로 복귀(동굴탈출로프)
     public float tempAttackMult = 0f;        // 전투 포션: 공격력 +배수 (0.5 = +50%)
     public float tempDamageReduction = 0f;   // 방어력 포션: 피해 감량 (0~1, 0.5 = 50%)
     public float buffDuration = 0f;          // 위 버프 지속(초)
@@ -53,7 +54,9 @@ public class ItemData : ScriptableObject
     // 소비 아이템 사용 → 효과 적용. 실제로 효과가 들어가 소모됐으면 true(가득 차면 낭비 안 함).
     public bool Use()
     {
-        if (kind != ItemKind.Consumable || GameManager.Instance == null) return false;
+        if (kind != ItemKind.Consumable) return false;
+        if (escapeToHub && GameFlow.Instance != null) { GameFlow.Instance.ReturnToHub(); return true; }   // 동굴탈출로프
+        if (GameManager.Instance == null) return false;
         var gm = GameManager.Instance;
         bool did = false;
         if (healHearts > 0 && gm.CurrentHearts < gm.MaxHearts) { gm.Heal(healHearts); did = true; }

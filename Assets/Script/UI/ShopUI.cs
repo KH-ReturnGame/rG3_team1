@@ -11,9 +11,9 @@ public class ShopUI : MonoBehaviour
     private class SSlot { public ItemData item; public int count; }
     private readonly List<SSlot> sold = new List<SSlot>();   // 판매란(되사기 가능)
 
-    private string[] buyIds;
     private List<ItemData> buyItems;                         // 희귀도순 정렬 캐시
     private int tab;                                          // 0=구매, 1=판매
+    private int merchant;                                     // 0=재료 1=포션 2=탐험가
     private bool open;
     private ItemData held; private int heldCount;            // 손에 든 아이템(판매 탭)
     private string hoverInfo;                                // 판매탭 호버 시 가격 줄(구매탭은 null)
@@ -25,17 +25,23 @@ public class ShopUI : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this; DontDestroyOnLoad(gameObject);
-        buyIds = new[] {
-            "heal_potion","combat_potion","defense_potion",
-            "lizard","underground_flower","slime_condensate","flame_flower"
-            // 장신구는 상점 판매 제외 — 제작/퀘스트로만 획득
-        };
     }
+
+    private static string[] MerchantIds(int m)
+    {
+        switch (m)
+        {
+            case 0: return new[] { "lizard", "underground_flower", "slime_condensate", "flame_flower" };   // 재료 상인
+            case 1: return new[] { "heal_potion", "combat_potion", "defense_potion" };                      // 포션 상인
+            default: return new[] { "escape_rope" };                                                        // 탐험가(탐험 물품)
+        }
+    }
+    private static string MerchantName(int m) => m == 0 ? "재료 상인" : (m == 1 ? "포션 상인" : "탐험가");
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap() { if (Instance == null) new GameObject("ShopUI").AddComponent<ShopUI>(); }
 
-    public void Open() { open = true; Inventory.ShopUIOpen = true; }
+    public void Open(int m = 0) { merchant = m; buyItems = null; tab = 0; open = true; Inventory.ShopUIOpen = true; }
     public void Close() { ReturnHeld(); open = false; Inventory.ShopUIOpen = false; }
     void Update() { if (open && Input.GetKeyDown(KeyCode.Escape)) Close(); }
 
@@ -61,7 +67,7 @@ public class ShopUI : MonoBehaviour
         GUI.color = new Color(0.86f, 0.63f, 0.30f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
 
         int g = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
-        GUI.Label(new Rect(x, y + 12f, w, 32f), "상점", title);
+        GUI.Label(new Rect(x, y + 12f, w, 32f), MerchantName(merchant), title);
         GUI.Label(new Rect(x, y + 16f, w - 18f, 26f), g + " G", gold);
 
         // 탭
@@ -134,8 +140,8 @@ public class ShopUI : MonoBehaviour
             }
         }
 
-        // ── 골드 소모 서비스(영구) — 2열×2행 ──
-        if (GameManager.Instance != null)
+        // ── 골드 소모 서비스(영구) — 탐험가에서만 ──
+        if (merchant == 2 && GameManager.Instance != null)
         {
             var gm = GameManager.Instance;
             float rx2 = x + 20f + panelW + gap;
@@ -174,7 +180,7 @@ public class ShopUI : MonoBehaviour
     {
         if (buyItems != null) return;
         var list = new List<ItemData>();
-        foreach (var id in buyIds) { var it = ItemDatabase.Get(id); if (it != null) list.Add(it); }
+        foreach (var id in MerchantIds(merchant)) { var it = ItemDatabase.Get(id); if (it != null) list.Add(it); }
         if (list.Count == 0) return;                          // DB 준비 전 → 다음 프레임 재시도
         list.Sort((a, b) => b.rarity.CompareTo(a.rarity));    // 높은 희귀도 먼저
         buyItems = list;

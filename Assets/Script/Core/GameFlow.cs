@@ -104,6 +104,7 @@ public class GameFlow : MonoBehaviour
     }
 
     public void GoToScene(string scene) => LoadSceneLocked(scene);
+    public void ReturnToHub() => GoToScene(hubScene);   // 동굴탈출로프 등으로 마을 복귀
 
     // ───────────────── 보상/손실 집계 ─────────────────
 
