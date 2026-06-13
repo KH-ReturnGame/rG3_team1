@@ -25,7 +25,8 @@ public class Hotbar : MonoBehaviour
     public bool showBar = true;
     public float slotSizeRatio = 0.07f;   // 화면 높이 대비 칸 크기
 
-    private GUIStyle keyStyle, countStyle;
+    private GUIStyle keyStyle, countStyle, cdStyle;
+    private Texture2D dim;
 
     private int BottomRowStart
     {
@@ -49,8 +50,18 @@ public class Hotbar : MonoBehaviour
         if (Inventory.Instance == null || i < 0 || i >= hotkeySlots) return;
         int index = BottomRowStart + i;
         ItemData item = Inventory.Instance.ItemAt(index);
-        if (item != null && item.Use())
+        if (item == null) return;
+        // 포션(소비)은 종류별 쿨타임 체크
+        if (item.kind == ItemData.ItemKind.Consumable && GameManager.Instance != null && !GameManager.Instance.IsPotionReady(item))
+        {
+            Toast.Show(item.itemName + " 쿨타임 " + Mathf.CeilToInt(GameManager.Instance.PotionCooldownLeft(item)) + "초", 1.5f);
+            return;
+        }
+        if (item.Use())
+        {
             Inventory.Instance.ConsumeAt(index, 1);
+            if (item.kind == ItemData.ItemKind.Consumable && GameManager.Instance != null) GameManager.Instance.StartPotionCooldown(item);
+        }
     }
 
     // 단축키 슬롯 늘리기(상점 구매 등). 최대 = 한 줄 너비.
@@ -84,6 +95,17 @@ public class Hotbar : MonoBehaviour
                     GUI.Label(r, s.item.itemName);
                 if (s.count > 1)
                     GUI.Label(new Rect(r.x, r.yMax - 22, r.width - 5, 20), s.count.ToString(), countStyle);
+
+                // 포션 쿨타임 오버레이(남은 초)
+                if (GameManager.Instance != null && s.item.kind == ItemData.ItemKind.Consumable)
+                {
+                    float cl = GameManager.Instance.PotionCooldownLeft(s.item);
+                    if (cl > 0f)
+                    {
+                        var pc = GUI.color; GUI.color = new Color(0f, 0f, 0f, 0.6f); GUI.DrawTexture(r, dim); GUI.color = pc;
+                        GUI.Label(r, Mathf.CeilToInt(cl).ToString(), cdStyle);
+                    }
+                }
             }
             GUI.Label(new Rect(r.x + 4, r.y + 2, 22, 18), (i + 1).ToString(), keyStyle);   // 단축키 번호
         }
@@ -96,5 +118,8 @@ public class Hotbar : MonoBehaviour
         keyStyle.normal.textColor = Color.yellow;
         countStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight };
         countStyle.normal.textColor = Color.white;
+        cdStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        cdStyle.normal.textColor = new Color(1f, 0.95f, 0.8f);
+        dim = new Texture2D(1, 1); dim.SetPixel(0, 0, Color.white); dim.Apply();
     }
 }

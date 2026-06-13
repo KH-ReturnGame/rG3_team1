@@ -48,7 +48,7 @@ public class CameraFollow : MonoBehaviour
     {
         if (target == null)
         {
-            var pc = FindAnyObjectByType<PlayerController>();
+            var pc = PlayerController.Instance != null ? PlayerController.Instance : FindAnyObjectByType<PlayerController>();
             if (pc != null) target = pc.transform;
         }
         if (target != null) { lastX = target.position.x; SnapToTarget(); }
@@ -84,7 +84,12 @@ public class CameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
-        if (target == null) return;
+        if (target == null)   // Start에서 못 찾았어도 매 프레임 재시도(플레이어가 늦게 생성/씬 전환 대비)
+        {
+            var pc = PlayerController.Instance != null ? PlayerController.Instance : FindAnyObjectByType<PlayerController>();
+            if (pc == null) return;
+            target = pc.transform; lastX = target.position.x; SnapToTarget();
+        }
 
         // 룩어헤드: 이동 방향으로 카메라를 미리 당김(부드럽게)
         float dx = target.position.x - lastX;

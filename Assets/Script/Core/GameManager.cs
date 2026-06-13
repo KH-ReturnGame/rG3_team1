@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // 게임 전역 스탯 관리 (체력=하트 칸, 기력, 골드). 씬을 넘어가도 유지되는 싱글톤.
@@ -19,6 +20,14 @@ public class GameManager : MonoBehaviour
 
     [Header("진행도")]
     public int currentStage = 0;   // 로그라이크 스테이지 진행 (스테이지 쪽 GameManager 통합)
+
+    [Header("포션 쿨타임")]
+    public float potionCooldown = 30f;   // 포션(소비 아이템) 사용 후 쿨타임(초) — 아이템 종류별로 각각
+    private readonly Dictionary<string, float> potionCdEnd = new Dictionary<string, float>();
+    private static string PotionKey(ItemData it) => !string.IsNullOrEmpty(it.id) ? it.id : it.name;
+    public float PotionCooldownLeft(ItemData it) { if (it == null) return 0f; float end; return potionCdEnd.TryGetValue(PotionKey(it), out end) ? Mathf.Max(0f, end - Time.time) : 0f; }
+    public bool IsPotionReady(ItemData it) => PotionCooldownLeft(it) <= 0f;
+    public void StartPotionCooldown(ItemData it) { if (it != null) potionCdEnd[PotionKey(it)] = Time.time + potionCooldown; }
 
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠

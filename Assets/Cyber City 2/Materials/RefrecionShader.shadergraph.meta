@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: d587fc594c06d6c468ab5fad3f34ef8e
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 296035
+  packageName: Cyber City 2.0
+  packageVersion: 1.0
+  assetPath: Assets/Cyber City 2/Materials/RefrecionShader.shadergraph
+  uploadId: 694093

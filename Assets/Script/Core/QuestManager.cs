@@ -76,7 +76,7 @@ public class QuestManager : MonoBehaviour
 
     public bool IsAccepted(Quest q) => q != null && accepted.Contains(q);
 
-    public void Accept(Quest q) { if (q == null || accepted.Contains(q)) return; q.progress = 0; accepted.Add(q); Changed(); }
+    public void Accept(Quest q) { if (q == null || accepted.Contains(q)) return; q.progress = 0; accepted.Add(q); Toast.Show("퀘스트 수락! J키를 눌러 확인할 수 있습니다.", 4f); Changed(); }
     public void Abandon(Quest q) { if (q == null) return; q.progress = 0; accepted.Remove(q); Changed(); }
 
     // 채집 진행(아이템 주울 때 호출)

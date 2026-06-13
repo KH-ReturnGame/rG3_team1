@@ -78,7 +78,7 @@ public class CraftingUI : MonoBehaviour
         float gy = y + headH;
         float lx = x + 20f, rx = x + 20f + panelW + gap;
         GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리", sec);
-        GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), tab == 1 ? "포션 제작  (재료 2칸 → 결과칸 클릭)" : "일반 제작", sec);
+        GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), tab == 1 ? "포션 제작" : "일반 제작", sec);
 
         ItemData hover = null;
 
