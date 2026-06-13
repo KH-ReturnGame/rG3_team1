@@ -29,6 +29,7 @@ public class QuestBoardUI : MonoBehaviour
         if (QuestManager.Instance == null) return list;
         foreach (var q in QuestManager.Instance.available)
         {
+            if (QuestManager.Instance.IsCompleted(q) || !QuestManager.Instance.IsUnlocked(q)) continue;   // 완료/미해금(선행 미완) 숨김
             if (tab == 1 && q.category != QuestCategory.Main) continue;
             if (tab == 2 && q.category == QuestCategory.Main) continue;
             list.Add(q);

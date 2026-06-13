@@ -187,7 +187,7 @@ public class PlayerController : MonoBehaviour
         float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
         int sb = GameManager.Instance != null ? GameManager.Instance.bonusJumps : 0;   // 상점 영구 점프 업그레이드
         maxJumps = baseMaxJumps + sb + jb;
-        staminaRegen = baseStaminaRegen + rgb;
+        staminaRegen = baseStaminaRegen + rgb + (GameManager.Instance != null ? GameManager.Instance.StaminaRegenBonus : 0f);   // 재생력 스탯 반영
         if (currentJumps > maxJumps) currentJumps = maxJumps;
     }
 

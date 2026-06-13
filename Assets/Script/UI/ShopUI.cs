@@ -144,8 +144,8 @@ public class ShopUI : MonoBehaviour
             float colW = (panelW - 18f) * 0.5f, shh = 38f, sgap = 6f;
             GUI.Label(new Rect(rx2 + 6f, sy0 - 22f, panelW - 12f, 20f), "골드 소모 (영구 강화)", sec);
 
-            // 0:단축키 1:점프 / 2:체력 3:기력
-            for (int i = 0; i < 4; i++)
+            // 0:단축키 1:점프 (체력·기력은 후드 탭의 개조 포인트로 강화)
+            for (int i = 0; i < 2; i++)
             {
                 int row = i / 2, col = i % 2;
                 Rect r = new Rect(rx2 + 6f + col * (colW + sgap), sy0 + row * (shh + sgap), colW, shh);

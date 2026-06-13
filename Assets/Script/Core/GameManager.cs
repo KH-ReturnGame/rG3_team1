@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [Header("체력 (하트 칸)")]
-    public int maxHearts = 6;
+    public int maxHearts = 3;   // 기본 체력 3칸(개조 포인트 '체력'으로 +1칸씩)
     private int currentHearts;
 
     [Header("기력 (스태미나)")]
@@ -43,6 +43,45 @@ public class GameManager : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
+    [Header("레벨 / 경험치 / 개조 포인트")]
+    public int level = 1;
+    public int xp = 0;
+    public int modPoints = 0;          // 개조 포인트(스탯 강화) — 레벨업 시 획득
+    public int pointsPerLevel = 2;
+    public int statRegen, statAttack, statAdapt, statLuck;   // 투자 레벨(체력=maxHearts, 스태미나=maxStamina로 반영)
+    public int XpToNext => level * 120;
+
+    public float StaminaRegenBonus => statRegen * 3f;        // 재생력 → 기력 회복 보너스(PlayerController가 합산)
+    public float GoldMultiplier => 1f + statLuck * 0.1f;     // 행운 → 골드 획득량
+
+    public void AddXp(int amt)
+    {
+        if (amt <= 0) return;
+        xp += amt;
+        while (xp >= XpToNext) { xp -= XpToNext; level++; modPoints += pointsPerLevel; currentHearts = MaxHearts; Toast.Show("레벨 업! Lv." + level + "  (개조 포인트 +" + pointsPerLevel + ")", 3f); }
+        OnStatsChanged?.Invoke();
+    }
+
+    // 개조 포인트로 스탯 강화. 0체력 1스태미나 2재생력 3공격력 4적응력 5행운
+    public int StatCost(int i) { switch (i) { case 0: return 5; case 2: return 2; case 5: return 2; default: return 1; } }
+    public bool SpendStat(int i)
+    {
+        int cost = StatCost(i);
+        if (modPoints < cost) return false;
+        modPoints -= cost;
+        switch (i)
+        {
+            case 0: UpgradeMaxHearts(1); break;       // 체력 +1칸
+            case 1: UpgradeMaxStamina(20f); break;    // 스태미나 +20
+            case 2: statRegen++; if (PlayerController.Instance != null) PlayerController.Instance.ApplyEquipment(); break;  // 재생력(기력회복 반영)
+            case 3: statAttack++; break;              // 공격력(물리)
+            case 4: statAdapt++; break;               // 적응력(마법/기프트 — 시스템 추후 연동)
+            case 5: statLuck++; break;                // 행운(골드 등)
+        }
+        OnStatsChanged?.Invoke();
+        return true;
+    }
+
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠
 
@@ -63,7 +102,7 @@ public class GameManager : MonoBehaviour
     private float atkBuffMult, atkBuffTimer, defReduction, defBuffTimer;
     private int equipHeartBonus;
     private float equipStaminaBonus, equipAttackBonus;
-    public float AttackMultiplier => 1f + (atkBuffTimer > 0f ? atkBuffMult : 0f) + equipAttackBonus;  // 플레이어 공격력 배수
+    public float AttackMultiplier => 1f + (atkBuffTimer > 0f ? atkBuffMult : 0f) + equipAttackBonus + statAttack * 0.05f;  // 공격력 스탯 5%/레벨
     public float DamageReduction => defBuffTimer > 0f ? defReduction : 0f;        // 피해 감량(0~1)
 
     void Awake()
@@ -142,15 +181,21 @@ public class GameManager : MonoBehaviour
     }
 
     // ───────── 재화 ─────────
-    public void AddGold(int amount) { gold = Mathf.Max(0, gold + amount); OnStatsChanged?.Invoke(); }
+    public void AddGold(int amount) { if (amount > 0) amount = Mathf.RoundToInt(amount * GoldMultiplier); gold = Mathf.Max(0, gold + amount); OnStatsChanged?.Invoke(); }   // 행운 → 골드 획득량↑
 
     // ───────── 일시 버프 ─────────
     public void ApplyAttackBuff(float mult, float dur) { atkBuffMult = mult; atkBuffTimer = dur; OnStatsChanged?.Invoke(); }
     public void ApplyDefenseBuff(float reduction, float dur) { defReduction = Mathf.Clamp01(reduction); defBuffTimer = dur; OnStatsChanged?.Invoke(); }
+    private float hpRegenAccum;
     void Update()
     {
         if (atkBuffTimer > 0f) atkBuffTimer -= Time.deltaTime;
         if (defBuffTimer > 0f) defBuffTimer -= Time.deltaTime;
+        if (statRegen > 0 && currentHearts > 0 && currentHearts < MaxHearts)   // 재생력 → 체력 느린 자동 회복
+        {
+            hpRegenAccum += statRegen * 0.06f * Time.deltaTime;
+            if (hpRegenAccum >= 1f) { int h = (int)hpRegenAccum; hpRegenAccum -= h; Heal(h); }
+        }
     }
 
     // 장신구 보너스 적용(Equipment가 호출). 최대치 변동 시 현재값 클램프.

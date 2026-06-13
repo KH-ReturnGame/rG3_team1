@@ -38,7 +38,8 @@ public class QuestLogUI : MonoBehaviour
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.Label(new Rect(p.x, p.y + 10f, p.width, 34f), "진행 중인 의뢰", title);
+        string lv = GameManager.Instance != null ? ("   ·   Lv." + GameManager.Instance.level + "  (XP " + GameManager.Instance.xp + "/" + GameManager.Instance.XpToNext + ")") : "";
+        GUI.Label(new Rect(p.x, p.y + 10f, p.width, 34f), "진행 중인 의뢰" + lv, title);
         Rect cb = new Rect(p.xMax - 48f, p.y + 12f, 34f, 34f);
         Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, new Color(0.86f, 0.63f, 0.30f)); GUI.Label(cb, "X", closeS);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }
