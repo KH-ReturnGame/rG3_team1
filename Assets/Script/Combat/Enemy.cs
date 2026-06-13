@@ -51,6 +51,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public bool showHealthLabel = true;
     public bool isBoss = false;          // 보스는 체력바 대신 숫자 유지(나중에 전용 UI)
     public float labelHeight = 1.2f;
+    public string questKillId = "";      // 퀘스트 처치 집계용 id(예: slime). 비우면 집계 안 함
 
     private Rigidbody2D rb;
     private SpriteRenderer sr;
@@ -280,6 +281,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         state = State.Dead;
         SetMove(0);
         GrantRewards();
+        if (!string.IsNullOrEmpty(questKillId) && QuestManager.Instance != null) QuestManager.Instance.ReportKill(questKillId);   // 처치 퀘스트 진행
         Destroy(gameObject);
     }
 

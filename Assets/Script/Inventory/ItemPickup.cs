@@ -14,6 +14,8 @@ public class ItemPickup : MonoBehaviour, IInteractable
         if (item == null || Inventory.Instance == null) return;
 
         int left = Inventory.Instance.Add(item, count);
+        int picked = count - left;
+        if (picked > 0 && QuestManager.Instance != null) QuestManager.Instance.ReportGather(item.id, picked);   // 채집 퀘스트 진행
         if (left <= 0)
         {
             Destroy(gameObject);   // 전부 주웠으면 제거
