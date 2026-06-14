@@ -55,6 +55,9 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float labelHeight = 1.2f;
     public string questKillId = "";      // 퀘스트 처치 집계용 id(예: slime). 비우면 집계 안 함
 
+    public bool FaceForward = true;      // 진행 방향 바라보기
+    public bool InvertSprite = true;    // 스프라이트 방향 뒤집기 (허수아비 이 ㅅㄲ가 스프라이트가 거꾸로임)
+
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private Color baseColor;
@@ -71,6 +74,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private bool struck;            // 이번 공격에서 이미 타격을 줬는지
     private float wanderTimer;
     private bool wanderPausing;
+    
 
     // 임시 색 구분
     private readonly Color windupColor = new Color(1f, 0.85f, 0.2f); // 노랑(예비동작)
@@ -128,7 +132,18 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         }
 
         UpdateColor();
-        if (sr != null) sr.flipX = dir < 0;
+        // 이 부분 변경함
+        if (sr != null && FaceForward == true)
+        {
+            if (InvertSprite == true)
+            {
+                sr.flipX = -dir < 0;
+            }
+            else
+            {
+                sr.flipX = dir < 0;
+            }
+        }
     }
 
     private float DistToPlayer()
