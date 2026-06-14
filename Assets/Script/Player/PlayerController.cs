@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 1;   // 기본 1단. 장신구 +1, 상점(영구) +1 → 최대 3단       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
+    public int maxJumps = 2;   // 기본 더블 점프. 장신구 +1, 상점(영구) +1 로 더 늘릴 수 있음
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
 

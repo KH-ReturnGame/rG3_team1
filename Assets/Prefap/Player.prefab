@@ -196,7 +196,7 @@ MonoBehaviour:
   moveSpeed: 5
   guardSpeedMultiplier: 0.2
   jumpForce: 10
-  maxJumps: 1
+  maxJumps: 2
   doubleJumpState: FrontFlip
   chargeJumpTime: 1.5
   tapJumpTime: 0.1
@@ -269,6 +269,8 @@ MonoBehaviour:
   parrySuccessState: SwordStandingSlash
   fallMargin: 6
   fallDamage: 1
+  dropThroughTime: 0.35
+  dropDoubleTapTime: 0.3
 --- !u!50 &6778775217546913723
 Rigidbody2D:
   serializedVersion: 5

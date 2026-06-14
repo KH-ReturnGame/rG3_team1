@@ -660,11 +660,25 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 70e4f80265d902443a6249697d613d81, type: 3}
---- !u!1 &412375958 stripped
+--- !u!1 &412375958
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 4106967144069191874, guid: 7fc30cd74f5aa724387df7546e0f3d5b, type: 3}
-  m_PrefabInstance: {fileID: 867770890}
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 412375962}
+  - component: {fileID: 412375961}
+  - component: {fileID: 412375959}
+  - component: {fileID: 412375960}
+  m_Layer: 0
+  m_Name: 
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
 --- !u!61 &412375959
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -727,6 +741,7 @@ MonoBehaviour:
   moveSpeed: 2
   detectRange: 6
   attackRange: 1.4
+  attackHeight: 1.2
   attackDamage: 2
   attackWindup: 0.45
   attackActive: 0.1
@@ -734,6 +749,7 @@ MonoBehaviour:
   attackCooldown: 1
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
+  groggyRecoverDelay: 1.2
   moveBehavior: 0
   randomizeStats: 1
   randomizeRange: 0.25
@@ -753,6 +769,8 @@ MonoBehaviour:
   isBoss: 0
   labelHeight: 1.2
   questKillId: 
+  FaceForward: 1
+  InvertSprite: 1
 --- !u!50 &412375961
 Rigidbody2D:
   serializedVersion: 5
@@ -780,6 +798,21 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!4 &412375962
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 412375958}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &434272082
 GameObject:
   m_ObjectHideFlags: 0
@@ -14917,6 +14950,7 @@ MonoBehaviour:
   moveSpeed: 0
   detectRange: 6
   attackRange: 1.5
+  attackHeight: 1.2
   attackDamage: 1
   attackWindup: 1
   attackActive: 0.1
@@ -14924,6 +14958,7 @@ MonoBehaviour:
   attackCooldown: 1.5
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
+  groggyRecoverDelay: 1.2
   moveBehavior: 1
   randomizeStats: 0
   randomizeRange: 0.25
@@ -14942,6 +14977,7 @@ MonoBehaviour:
   showHealthLabel: 1
   isBoss: 0
   labelHeight: 1.2
+  questKillId: 
   FaceForward: 0
   InvertSprite: 0
 --- !u!50 &703056980
@@ -17521,11 +17557,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 101.95
+      value: -24.2
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -2.02
+      value: -2.9
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.z
@@ -17747,6 +17783,7 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 412375962}
   - {fileID: 619394802}
   - {fileID: 5427526520944274675}
   - {fileID: 2104015407}
@@ -17767,3 +17804,6 @@ SceneRoots:
   - {fileID: 1485234175}
   - {fileID: 1008872208}
   - {fileID: 832602428}
+  - {fileID: 475711511}
+  - {fileID: 1085659239}
+  - {fileID: 480232251}
