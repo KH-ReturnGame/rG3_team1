@@ -11,16 +11,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Enemy.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Enemy.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Inventory/Inventory.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Inventory/Inventory.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Inventory/InventoryUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Inventory/InventoryUI.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/ItemData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/ItemData.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/ItemPickup.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/ItemPickup.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkA.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkA.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkB.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkB.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkC.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TilemapPrefab/ChunkC.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/GameManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/GameManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Save/SaveData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Save/SaveData.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Save/SaveSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Save/SaveSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/InventoryUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/InventoryUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/QuestBoardUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/QuestBoardUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/QuestLogUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/QuestLogUI.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -146,6 +143,7 @@
       <workItem from="1779977091480" duration="2549000" />
       <workItem from="1780880524006" duration="1480000" />
       <workItem from="1781178123487" duration="2000" />
+      <workItem from="1781317934715" duration="1343000" />
     </task>
     <servers />
   </component>

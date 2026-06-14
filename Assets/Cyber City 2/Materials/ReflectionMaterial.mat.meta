@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: be9e27e2bd70d4241be6e295750209f6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 296035
+  packageName: Cyber City 2.0
+  packageVersion: 1.0
+  assetPath: Assets/Cyber City 2/Materials/ReflectionMaterial.mat
+  uploadId: 694093

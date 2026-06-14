@@ -18,7 +18,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 2;       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
+    public int maxJumps = 1;   // 기본 1단. 장신구 +1, 상점(영구) +1 → 최대 3단       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
 
@@ -136,6 +136,17 @@ public class PlayerController : MonoBehaviour
     private int baseMaxJumps;                         // 장신구 보너스 전 기본값
     private float baseStaminaRegen;
 
+    [Header("낙사")]
+    public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
+    public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
+    private Vector3 lastSafePos;
+
+    [Header("원웨이 플랫폼 (아래키 더블탭으로 통과)")]
+    public float dropThroughTime = 0.35f;            // 통과하는 동안 발판과 충돌을 끄는 시간
+    public float dropDoubleTapTime = 0.3f;           // 이 시간 안에 아래키를 두 번 누르면 통과
+    private float lastDownTapTime = -1f;              // 마지막 아래키 탭 시각(더블탭 판정)
+    private Collider2D bodyCollider;                  // 플레이어 몸 콜라이더(통과 처리용)
+
     void Awake()
     {
         Instance = this;
@@ -145,6 +156,8 @@ public class PlayerController : MonoBehaviour
         defaultGravityScale = rb.gravityScale;
         baseMaxJumps = maxJumps;
         baseStaminaRegen = staminaRegen;
+        foreach (Collider2D c in GetComponentsInChildren<Collider2D>())   // 트리거 아닌 첫 몸 콜라이더(통과 처리용)
+            if (c != null && !c.isTrigger) { bodyCollider = c; break; }
         BuildClipLengthTable();
     }
 
@@ -168,6 +181,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         ApplyEquipment();
+        lastSafePos = transform.position;
         currentJumps = maxJumps;
         currentDashes = maxDashes;
         isSwordDrawn = startDrawn;
@@ -179,9 +193,24 @@ public class PlayerController : MonoBehaviour
     {
         int jb = Equipment.Instance != null ? Equipment.Instance.MaxJumpBonus : 0;
         float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
-        maxJumps = baseMaxJumps + jb;
-        staminaRegen = baseStaminaRegen + rgb;
+        int sb = GameManager.Instance != null ? GameManager.Instance.bonusJumps : 0;   // 상점 영구 점프 업그레이드
+        maxJumps = baseMaxJumps + sb + jb;
+        staminaRegen = baseStaminaRegen + rgb + (GameManager.Instance != null ? GameManager.Instance.StaminaRegenBonus : 0f);   // 재생력 스탯 반영
         if (currentJumps > maxJumps) currentJumps = maxJumps;
+    }
+
+    // 낙사: 바닥에 서 있으면 안전지점 갱신, 카메라 경계 아래로 떨어지면 안전지점 복귀 + 패널티
+    private void CheckFall()
+    {
+        if (isGrounded && rb != null && Mathf.Abs(rb.linearVelocity.y) < 0.6f) lastSafePos = transform.position;
+        float killY = (CameraFollow.Instance != null && CameraFollow.Instance.HasBounds)
+            ? CameraFollow.Instance.BoundsBottom - fallMargin : -50f;
+        if (transform.position.y < killY)
+        {
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+            transform.position = lastSafePos;
+            if (GameManager.Instance != null) GameManager.Instance.TakeDamage(fallDamage);
+        }
     }
 
     void Update()
@@ -211,6 +240,8 @@ public class PlayerController : MonoBehaviour
         CheckGrounded();
 
         if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
+
+        CheckFall();   // 낙사 판정 + 안전지점 갱신
 
         if (isParrying)
         {
@@ -321,6 +352,15 @@ public class PlayerController : MonoBehaviour
             UseSkill();
 
         // 점프: 스페이스 탭=누르는 즉시 일반 점프(반응 즉각) / 아래(S)+스페이스=차지 높은 점프 / 공중=즉시 2단 점프
+        // 아래키 더블탭 → 발밑 원웨이 플랫폼 아래로 통과
+        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            if (isGrounded && Time.time - lastDownTapTime <= dropDoubleTapTime && TryDropThroughPlatform())
+                lastDownTapTime = -1f;            // 통과 성공 → 더블탭 리셋
+            else
+                lastDownTapTime = Time.time;      // 첫 탭(또는 통과 대상 없음) → 다음 탭 대기
+        }
+
         if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && !isChargingJump)
         {
             bool wantCharge = isGrounded &&
@@ -477,11 +517,13 @@ public class PlayerController : MonoBehaviour
     private void PerformAreaDamage(Vector2 center, Vector2 size, float damage)
     {
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, 0f, enemyLayer);
+        bool anyHit = false;
         foreach (Collider2D hit in hits)
         {
             IDamageable target = hit.GetComponent<IDamageable>();
-            if (target != null) target.TakeDamage(damage * (GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f));
+            if (target != null) { target.TakeDamage(damage * (GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f)); anyHit = true; }
         }
+        if (anyHit) Juice.Hit();   // 적중 시 타격감(히트스톱 + 화면 흔들림)
     }
 
     // ── 공중 공격 ──
@@ -599,6 +641,34 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // 아래키+점프: 발밑이 원웨이 플랫폼이면 잠깐 충돌을 꺼서 아래로 내려간다. 통과 처리했으면 true.
+    private bool TryDropThroughPlatform()
+    {
+        if (groundCheck == null || bodyCollider == null) return false;
+        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.05f, groundLayer);
+        bool dropped = false;
+        foreach (Collider2D c in unders)
+        {
+            if (c == null) continue;
+            PlatformEffector2D eff = c.GetComponent<PlatformEffector2D>();
+            if (eff != null && eff.useOneWay)
+            {
+                StartCoroutine(DropThroughRoutine(c));
+                dropped = true;
+            }
+        }
+        return dropped;
+    }
+
+    private System.Collections.IEnumerator DropThroughRoutine(Collider2D platform)
+    {
+        Physics2D.IgnoreCollision(bodyCollider, platform, true);
+        isGrounded = false;
+        currentJumps = maxJumps;   // 통과 후 공중에서도 점프 가능하게
+        yield return new WaitForSeconds(dropThroughTime);
+        if (platform != null && bodyCollider != null) Physics2D.IgnoreCollision(bodyCollider, platform, false);
+    }
+
     // ───────────────────────── 가드 / 패링 / 피격 ─────────────────────────
 
     private void StartGuard()
@@ -627,6 +697,8 @@ public class PlayerController : MonoBehaviour
             PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
             animBusyTimer = ClipLength(parrySuccessState);
             if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
+            skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
+            Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
             return;
         }
 

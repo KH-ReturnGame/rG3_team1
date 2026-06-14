@@ -196,7 +196,7 @@ MonoBehaviour:
   moveSpeed: 5
   guardSpeedMultiplier: 0.2
   jumpForce: 10
-  maxJumps: 2
+  maxJumps: 1
   doubleJumpState: FrontFlip
   chargeJumpTime: 1.5
   tapJumpTime: 0.1
@@ -231,8 +231,8 @@ MonoBehaviour:
   comboStates:
   - ComboAttackA
   - ComboAttackB
-  - ComboAttackC
   - ComboAttackD
+  - ComboAttackC
   comboFinisherMultiplier: 2
   comboContinueBuffer: 0.35
   attackInputBuffer: 0.25
@@ -267,6 +267,8 @@ MonoBehaviour:
   swordJumpFallState: SwordJumpFall
   guardState: SwordGuard
   parrySuccessState: SwordStandingSlash
+  fallMargin: 6
+  fallDamage: 1
 --- !u!50 &6778775217546913723
 Rigidbody2D:
   serializedVersion: 5
@@ -290,7 +292,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
@@ -304,7 +306,7 @@ CapsuleCollider2D:
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: c911ba87d619c6d4fa1694593f2b3c9b, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0

@@ -43,7 +43,7 @@ public static class SaveSystem
             saveName = $"슬롯 {slot + 1}",
             sceneName = startScene,
             hearts = -1,            // -1 = 최대치로 시작
-            maxHearts = 6,
+            maxHearts = 3,
             maxStamina = 100f,
             gold = 0,
             items = new List<SavedItem>()
@@ -77,7 +77,7 @@ public static class SaveSystem
             Debug.LogError($"[SaveSystem] '{sceneName}' 씬을 로드할 수 없습니다. File ▸ Build Settings의 'Scenes In Build'에 이 씬이 추가·체크돼 있는지 확인하세요.");
             return;
         }
-        SceneManager.LoadScene(sceneName);
+        SceneFader.FadeToScene(sceneName);   // 페이드아웃 후 로드
     }
 
     // 현재 상태를 현재 슬롯에 저장(자동저장 등)
@@ -98,6 +98,12 @@ public static class SaveSystem
             data.maxHearts = GameManager.Instance.maxHearts;       // 장신구 보너스 제외(기본 최대)
             data.maxStamina = GameManager.Instance.maxStamina;
             data.gold = GameManager.Instance.Gold;
+            data.bonusJumps = GameManager.Instance.bonusJumps;
+            data.level = GameManager.Instance.level;
+            data.xp = GameManager.Instance.xp;
+            data.modPoints = GameManager.Instance.modPoints;
+            data.statRegen = GameManager.Instance.statRegen; data.statAttack = GameManager.Instance.statAttack;
+            data.statAdapt = GameManager.Instance.statAdapt; data.statLuck = GameManager.Instance.statLuck;
         }
         data.items = new List<SavedItem>();
         if (Inventory.Instance != null)
@@ -105,16 +111,30 @@ public static class SaveSystem
                 if (s != null && !s.IsEmpty)
                     data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count });
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
+        if (QuestManager.Instance != null) { data.acceptedQuests = QuestManager.Instance.SaveAccepted(); data.completedQuests = new List<string>(QuestManager.Instance.completed); }
     }
 
     private static void Apply(SaveSlotData data)
     {
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.LoadStats(data.hearts, data.maxHearts, data.maxStamina, data.gold);
+            GameManager.Instance.bonusJumps = data.bonusJumps;   // 점프 업그레이드 복원(Equipment.LoadIds가 ApplyEquipment로 반영)
+            GameManager.Instance.level = Mathf.Max(1, data.level);
+            GameManager.Instance.xp = data.xp;
+            GameManager.Instance.modPoints = data.modPoints;
+            GameManager.Instance.statRegen = data.statRegen; GameManager.Instance.statAttack = data.statAttack;
+            GameManager.Instance.statAdapt = data.statAdapt; GameManager.Instance.statLuck = data.statLuck;
+        }
         if (Inventory.Instance != null)
             Inventory.Instance.LoadFromSaved(data.items);
         if (Equipment.Instance != null)
             Equipment.Instance.LoadIds(data.equipped);   // 착용 장신구 복원(스탯 보너스 재적용)
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.LoadCompleted(data.completedQuests);   // 완료 퀘스트(연계 해금) 복원
+            QuestManager.Instance.LoadAccepted(data.acceptedQuests);     // 수주 퀘스트 복원
+        }
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록
