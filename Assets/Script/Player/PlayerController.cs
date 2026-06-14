@@ -141,6 +141,12 @@ public class PlayerController : MonoBehaviour
     public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
     private Vector3 lastSafePos;
 
+    [Header("원웨이 플랫폼 (아래키 더블탭으로 통과)")]
+    public float dropThroughTime = 0.35f;            // 통과하는 동안 발판과 충돌을 끄는 시간
+    public float dropDoubleTapTime = 0.3f;           // 이 시간 안에 아래키를 두 번 누르면 통과
+    private float lastDownTapTime = -1f;              // 마지막 아래키 탭 시각(더블탭 판정)
+    private Collider2D bodyCollider;                  // 플레이어 몸 콜라이더(통과 처리용)
+
     void Awake()
     {
         Instance = this;
@@ -150,6 +156,8 @@ public class PlayerController : MonoBehaviour
         defaultGravityScale = rb.gravityScale;
         baseMaxJumps = maxJumps;
         baseStaminaRegen = staminaRegen;
+        foreach (Collider2D c in GetComponentsInChildren<Collider2D>())   // 트리거 아닌 첫 몸 콜라이더(통과 처리용)
+            if (c != null && !c.isTrigger) { bodyCollider = c; break; }
         BuildClipLengthTable();
     }
 
@@ -344,6 +352,15 @@ public class PlayerController : MonoBehaviour
             UseSkill();
 
         // 점프: 스페이스 탭=누르는 즉시 일반 점프(반응 즉각) / 아래(S)+스페이스=차지 높은 점프 / 공중=즉시 2단 점프
+        // 아래키 더블탭 → 발밑 원웨이 플랫폼 아래로 통과
+        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            if (isGrounded && Time.time - lastDownTapTime <= dropDoubleTapTime && TryDropThroughPlatform())
+                lastDownTapTime = -1f;            // 통과 성공 → 더블탭 리셋
+            else
+                lastDownTapTime = Time.time;      // 첫 탭(또는 통과 대상 없음) → 다음 탭 대기
+        }
+
         if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && !isChargingJump)
         {
             bool wantCharge = isGrounded &&
@@ -622,6 +639,34 @@ public class PlayerController : MonoBehaviour
             currentJumps = maxJumps;
             currentDashes = maxDashes;
         }
+    }
+
+    // 아래키+점프: 발밑이 원웨이 플랫폼이면 잠깐 충돌을 꺼서 아래로 내려간다. 통과 처리했으면 true.
+    private bool TryDropThroughPlatform()
+    {
+        if (groundCheck == null || bodyCollider == null) return false;
+        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.05f, groundLayer);
+        bool dropped = false;
+        foreach (Collider2D c in unders)
+        {
+            if (c == null) continue;
+            PlatformEffector2D eff = c.GetComponent<PlatformEffector2D>();
+            if (eff != null && eff.useOneWay)
+            {
+                StartCoroutine(DropThroughRoutine(c));
+                dropped = true;
+            }
+        }
+        return dropped;
+    }
+
+    private System.Collections.IEnumerator DropThroughRoutine(Collider2D platform)
+    {
+        Physics2D.IgnoreCollision(bodyCollider, platform, true);
+        isGrounded = false;
+        currentJumps = maxJumps;   // 통과 후 공중에서도 점프 가능하게
+        yield return new WaitForSeconds(dropThroughTime);
+        if (platform != null && bodyCollider != null) Physics2D.IgnoreCollision(bodyCollider, platform, false);
     }
 
     // ───────────────────────── 가드 / 패링 / 피격 ─────────────────────────
