@@ -39,9 +39,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     [Header("Drops (처치 보상)")]
     public int goldMin = 1;
     public int goldMax = 5;
-    public Sprite goldSprite;            // 골드 코인 스프라이트(비우면 노란 원 자동 생성)
-    public int goldCoinMin = 2;          // 떨어지는 코인 개수(연출용)
-    public int goldCoinMax = 3;
+    public Sprite goldSprite;            // 폴백 코인 스프라이트(Resources/GoldCoin.prefab 있으면 그게 우선)
     public LootDrop[] loot;              // 사망 시 확률로 떨어지는 채집물/전리품(바닥에 떨궈 F로 줍기)
     public float dropSize = 0.5f;        // 떨군 아이템 월드 크기
     public float dropScatter = 0.3f;     // 여러 개일 때 퍼지는 정도
@@ -321,13 +319,10 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         }
     }
 
-    // 골드를 코인 여러 개로 떨궈 인벤토리(우상단)로 빨려가게 — 도착 시 적립
+    // 골드를 코인 여러 개로 떨궈 플레이어에게 빨려가게(도착 시 적립). 골드량에 비례해 코인 개수 증가.
     private void DropGoldCoins(int amount)
     {
-        int coins = Mathf.Clamp(Random.Range(goldCoinMin, goldCoinMax + 1), 1, amount);
-        int per = amount / coins, rem = amount % coins;
-        for (int i = 0; i < coins; i++)
-            GoldCoin.Spawn(transform.position + Vector3.up * 0.3f, per + (i < rem ? 1 : 0), goldSprite, player);
+        GoldCoin.SpawnGold(amount, transform.position + Vector3.up * 0.3f, player, goldSprite);
     }
 
     private void UpdateColor()

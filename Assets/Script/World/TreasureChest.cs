@@ -20,9 +20,7 @@ public class TreasureChest : MonoBehaviour, IInteractable
     public int lootGold = 0;
 
     [Header("드랍 연출 (몬스터 처치와 동일)")]
-    public Sprite goldSprite;        // 코인 스프라이트(비우면 노란 원 자동)
-    public int coinMin = 5;          // 골드를 흩뿌릴 코인 개수 범위
-    public int coinMax = 9;
+    public Sprite goldSprite;        // 폴백 코인 스프라이트(Resources/GoldCoin.prefab 있으면 그게 우선)
     public float dropSize = 0.5f;    // 떨군 아이템 월드 크기
     public float dropScatter = 0.4f; // 흩어지는 정도
 
@@ -70,14 +68,8 @@ public class TreasureChest : MonoBehaviour, IInteractable
             }
         }
 
-        // 골드: 코인 여러 개로 흩뿌려 플레이어에게 빨려가게(도착 시 적립)
-        if (lootGold > 0)
-        {
-            int coins = Mathf.Clamp(Random.Range(coinMin, coinMax + 1), 1, lootGold);
-            int per = lootGold / coins, rem = lootGold % coins;
-            for (int i = 0; i < coins; i++)
-                GoldCoin.Spawn(origin, per + (i < rem ? 1 : 0), goldSprite, player);
-        }
+        // 골드: 코인 여러 개로 흩뿌려 플레이어에게 빨려가게(도착 시 적립). 골드량에 비례해 코인 개수 증가.
+        if (lootGold > 0) GoldCoin.SpawnGold(lootGold, origin, player, goldSprite);
 
         Toast.Show("보물 상자를 열었다!", 2f);
         ApplyOpenedVisual();
