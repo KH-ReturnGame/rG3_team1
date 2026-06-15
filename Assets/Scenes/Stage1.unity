@@ -30745,7 +30745,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5994272772996261918, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: jumpForce
-      value: 10.7
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 5994272772996261918, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: chargeJumpTime
@@ -31471,6 +31471,10 @@ PrefabInstance:
     - target: {fileID: 705529671113030657, guid: a1e8d98fb0423274abd09e0d4f861e14, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3321963881908251708, guid: a1e8d98fb0423274abd09e0d4f861e14, type: 3}
+      propertyPath: targetScene
+      value: Stage2
       objectReference: {fileID: 0}
     - target: {fileID: 5742438316261039442, guid: a1e8d98fb0423274abd09e0d4f861e14, type: 3}
       propertyPath: m_Name
