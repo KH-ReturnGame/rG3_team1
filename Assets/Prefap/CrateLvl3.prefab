@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 616971702380438728}
   - component: {fileID: 3612416038410769473}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Chest
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -103,7 +103,7 @@ GameObject:
   - component: {fileID: 2713399128485299179}
   - component: {fileID: 3658921129687414537}
   - component: {fileID: 3349641594567174327}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: CrateLvl3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -160,16 +160,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03eb291d2d2a3d5459f5fb7da0031e49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OpenCrate
-  player: {fileID: 0}
   CrateMultiplier: 1
   goldMin: 30
   goldMax: 50
-  goldSprite: {fileID: 0}
-  goldCoinMin: 2
-  goldCoinMax: 5
   loot: []
   dropSize: 0.5
-  dropScatter: 0.3
+  dropSpacing: 0.6
 --- !u!61 &3349641594567174327
 BoxCollider2D:
   m_ObjectHideFlags: 0

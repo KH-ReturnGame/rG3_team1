@@ -151,6 +151,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemPickup
   item: {fileID: 11400000, guid: 346ccd0060a973240a94fb9ca014f706, type: 2}
   count: 5
+  hover: 0
+  bobAmplitude: 0.22
+  bobSpeed: 2.2
 --- !u!61 &102589112
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1631,11 +1634,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.0778217
+      value: -25.65
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.5678043
+      value: -2.64
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2985,6 +2988,8 @@ MonoBehaviour:
   boundsMax: {x: 46.958237, y: 1000}
   fitZoomToBounds: 1
   maxOrthoSize: 7
+  useZones: 1
+  zoneTransition: 0.35
 --- !u!114 &1886267004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11067,3 +11072,6 @@ SceneRoots:
   - {fileID: 996989181}
   - {fileID: 1847367167}
   - {fileID: 208597655}
+  - {fileID: 798501461}
+  - {fileID: 1267859743}
+  - {fileID: 2033527292}

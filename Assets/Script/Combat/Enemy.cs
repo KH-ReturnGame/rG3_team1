@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Enemy : MonoBehaviour, IDamageable, IParryable
 {
-    private enum State { Patrol, Chase, Windup, Strike, Recover, Groggy, Dead }
+    protected enum State { Patrol, Chase, Windup, Strike, Recover, Groggy, Dead }
     public enum MoveBehavior { Patrol, Stationary, Wander }   // 비전투 시 이동 방식
 
     [Header("Stats")]
@@ -53,20 +53,20 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public bool FaceForward = true;      // 진행 방향 바라보기
     public bool InvertSprite = true;    // 스프라이트 방향 뒤집기 (허수아비 이 ㅅㄲ가 스프라이트가 거꾸로임)
 
-    private Rigidbody2D rb;
+    protected Rigidbody2D rb;
     private SpriteRenderer sr;
     private Color baseColor;
     private GUIStyle labelStyle;
 
-    private float currentHealth;
-    private State state;
-    private float stateTimer;       // 공격 단계 잔여 시간
-    private float attackCdTimer;    // 공격 쿨다운
+    protected float currentHealth;
+    protected State state;
+    protected float stateTimer;       // 공격 단계 잔여 시간
+    protected float attackCdTimer;    // 공격 쿨다운
     private float groggyTimer;
     private float hitFlashTimer;
-    private Vector2 spawnPos;
-    private int dir = 1;            // 이동/바라보는 방향(1=오른쪽)
-    private bool struck;            // 이번 공격에서 이미 타격을 줬는지
+    protected Vector2 spawnPos;
+    protected int dir = 1;            // 이동/바라보는 방향(1=오른쪽)
+    protected bool struck;            // 이번 공격에서 이미 타격을 줬는지
     private float wanderTimer;
     private bool wanderPausing;
     
@@ -83,7 +83,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         sr = GetComponent<SpriteRenderer>();
     }
 
-    void Start()
+    protected virtual void Start()
     {
         currentHealth = maxHealth;
         spawnPos = transform.position;
@@ -141,12 +141,12 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         }
     }
 
-    private float DistToPlayer()
+    protected float DistToPlayer()
     {
         return player == null ? Mathf.Infinity : Mathf.Abs(player.position.x - transform.position.x);
     }
 
-    private void TickPatrol()   // 비전투(논어그로) 상태: 행동 방식에 따라 이동
+    protected virtual void TickPatrol()   // 비전투(논어그로) 상태: 행동 방식에 따라 이동
     {
         switch (moveBehavior)
         {
@@ -198,7 +198,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         SetMove(wanderPausing ? 0f : dir * moveSpeed);
     }
 
-    private void TickChase()
+    protected virtual void TickChase()
     {
         if (DistToPlayer() > detectRange) { state = State.Patrol; return; }
 
@@ -215,7 +215,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         SetMove(dir * moveSpeed);
     }
 
-    private void BeginAttack()
+    protected virtual void BeginAttack()
     {
         // 방향 재조정 안 함 — 사거리에 들어올 때 향한 방향 그대로 공격(공격 직전 방향 전환 X)
         SetMove(0);
@@ -224,49 +224,60 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         stateTimer = attackWindup;
     }
 
-    private void TickWindup()
+    protected virtual void TickWindup()
     {
         SetMove(0);
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0) { state = State.Strike; stateTimer = attackActive; }
     }
 
-    private void TickStrike()
+    protected virtual void TickStrike()
     {
         SetMove(0);
         if (!struck)
         {
             struck = true;
-            if (player != null
-                && Mathf.Abs(player.position.x - transform.position.x) <= attackRange + 0.3f   // 양옆
-                && Mathf.Abs(player.position.y - transform.position.y) <= attackHeight)         // 위/아래는 좁게 → 점프로 회피
-            {
-                PlayerController pc = player.GetComponent<PlayerController>();
-                if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
-            }
+            DoStrikeHit();
             if (state != State.Strike) return;   // 패링당해 그로기로 바뀌면 중단
         }
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0) { state = State.Recover; stateTimer = attackRecover; }
     }
 
-    private void TickRecover()
+    // 실제 타격(근접 박스). 원거리/공중은 이 메서드를 오버라이드해 투사체·돌진 등으로 교체.
+    protected virtual void DoStrikeHit()
+    {
+        if (player != null
+            && Mathf.Abs(player.position.x - transform.position.x) <= attackRange + 0.3f   // 양옆
+            && Mathf.Abs(player.position.y - transform.position.y) <= attackHeight)         // 위/아래는 좁게 → 점프로 회피
+        {
+            PlayerController pc = player.GetComponent<PlayerController>();
+            if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
+        }
+    }
+
+    protected virtual void TickRecover()
     {
         SetMove(0);
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0) { attackCdTimer = attackCooldown; state = State.Chase; }
     }
 
-    private void TickGroggy()
+    protected virtual void TickGroggy()
     {
         SetMove(0);
         groggyTimer -= Time.deltaTime;
         if (groggyTimer <= 0) { state = State.Chase; attackCdTimer = groggyRecoverDelay; }   // 풀린 뒤 바로 안 때리게
     }
 
-    private void SetMove(float vx)
+    protected void SetMove(float vx)
     {
         if (rb != null) rb.linearVelocity = new Vector2(vx, rb.linearVelocity.y);
+    }
+
+    protected void SetVelocity(Vector2 v)   // 공중 몹(2D 이동)용
+    {
+        if (rb != null) rb.linearVelocity = v;
     }
 
     // ── IDamageable ── (플레이어 공격에 맞음)
