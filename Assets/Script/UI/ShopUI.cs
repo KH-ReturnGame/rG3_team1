@@ -47,6 +47,7 @@ public class ShopUI : MonoBehaviour
 
     private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; }
     private static int Value(ItemData it) { return it != null ? Mathf.Max(1, it.baseValue) : 1; }
+    private static float SellRate(ItemData it) { return (it != null && it.sellAtFullValue) ? 1f : 0.8f; }   // 화폐는 전액 판매
 
     void OnGUI()
     {
@@ -156,19 +157,15 @@ public class ShopUI : MonoBehaviour
                 int row = i / 2, col = i % 2;
                 Rect r = new Rect(rx2 + 6f + col * (colW + sgap), sy0 + row * (shh + sgap), colW, shh);
                 DrawSlotBg(r, true);
-                string label; bool maxed = false; int price = 0;
+                string label = ""; bool maxed = false; int price = 0;
                 if (i == 0) { int cur = Hotbar.Instance != null ? Hotbar.Instance.hotkeySlots : 0, mx2 = Hotbar.Instance != null ? Hotbar.Instance.hotbarColumns : 8; maxed = cur >= mx2; price = 300; label = maxed ? "단축키 최대" : ("단축키 +1  " + price + "G"); }
                 else if (i == 1) { maxed = gm.bonusJumps >= gm.maxBonusJumps; price = 800; label = maxed ? "점프 최대" : ("점프 +1  " + price + "G"); }
-                else if (i == 2) { price = 400 + (gm.maxHearts - 6) * 200; label = "체력 +1  " + price + "G"; }
-                else { price = 300 + ((int)gm.maxStamina - 100) / 20 * 150; label = "기력 +20  " + price + "G"; }
                 GUI.Label(new Rect(r.x + 6f, r.y, r.width - 12f, r.height), label, svc);
                 if (!maxed && click && r.Contains(m))
                 {
                     if (!gm.TrySpendGold(price)) Toast.Show("골드가 부족합니다.", 1.5f);
                     else if (i == 0) { if (Hotbar.Instance != null) Hotbar.Instance.AddHotkeySlot(1); Toast.Show("단축키 슬롯 +1!", 2f); }
                     else if (i == 1) { gm.UpgradeJumps(1); Toast.Show("점프 횟수 +1!", 2f); }
-                    else if (i == 2) { gm.UpgradeMaxHearts(1); Toast.Show("최대 체력 +1!", 2f); }
-                    else { gm.UpgradeMaxStamina(20f); Toast.Show("최대 기력 +20!", 2f); }
                     Event.current.Use();
                 }
             }
@@ -211,7 +208,7 @@ public class ShopUI : MonoBehaviour
             DrawSlotBg(r, false);
             ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
             int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) { hover = it; hoverInfo = "판매  " + Mathf.RoundToInt(Value(it) * 0.8f) + " G"; } }
+            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) { hover = it; hoverInfo = "판매  " + Mathf.RoundToInt(Value(it) * SellRate(it)) + " G"; } }
             if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
         }
         for (int i = 0; i < Cap; i++)
@@ -263,7 +260,7 @@ public class ShopUI : MonoBehaviour
     {
         if (held != null)
         {
-            int unit = Mathf.RoundToInt(Value(held) * 0.8f);
+            int unit = Mathf.RoundToInt(Value(held) * SellRate(held));
             if (GameManager.Instance != null) GameManager.Instance.AddGold(unit * heldCount);
             AddSold(held, heldCount);
             held = null; heldCount = 0;

@@ -2,12 +2,34 @@ using UnityEngine;
 
 // 월드에 떨어져 있거나 채집 가능한 아이템. 가까이서 F로 주우면 인벤토리로 들어가고 사라짐.
 // 필요: 이 오브젝트에 Collider2D(트리거든 아니든 OK) — PlayerInteractor가 범위로 감지함.
+// hover=true 면 중력 없이 공중에 둥둥 떠 있음(보물상자 드랍 등).
 public class ItemPickup : MonoBehaviour, IInteractable
 {
     public ItemData item;
     public int count = 1;
 
+    [Header("공중 부유 (상자 드랍 등)")]
+    public bool hover = false;          // true면 중력 없이 둥둥
+    public float bobAmplitude = 0.22f;  // 위아래 폭
+    public float bobSpeed = 2.2f;       // 흔들리는 속도
+    private float baseY;
+    private float bobPhase;
+
     public string Prompt => item != null ? $"F: {item.itemName} 줍기" : "F: 줍기";
+
+    void Start()
+    {
+        baseY = transform.position.y;
+        bobPhase = Random.value * 6.2831853f;
+    }
+
+    void Update()
+    {
+        if (!hover) return;
+        Vector3 p = transform.position;
+        p.y = baseY + Mathf.Sin(Time.time * bobSpeed + bobPhase) * bobAmplitude;   // 둥둥
+        transform.position = p;
+    }
 
     public void Interact()
     {
@@ -27,9 +49,9 @@ public class ItemPickup : MonoBehaviour, IInteractable
         }
     }
 
-    // 주울 수 있는 월드 아이템을 생성하는 공용 메서드 (인벤토리 버리기 / 적 드랍 등에서 사용).
-    // Item 레이어 + 중력 + 줍기 컴포넌트를 붙이고, 아이콘 크기와 무관하게 worldSize로 맞춤.
-    public static GameObject SpawnWorld(ItemData item, int count, Vector3 pos, float worldSize = 0.5f)
+    // 주울 수 있는 월드 아이템을 생성하는 공용 메서드 (인벤토리 버리기 / 적 드랍 / 보물상자 등에서 사용).
+    // hover=true 면 중력 없이 공중에 둥둥(상자 드랍). false면 중력 받아 바닥에 떨어짐(기존 적 드랍).
+    public static GameObject SpawnWorld(ItemData item, int count, Vector3 pos, float worldSize = 0.5f, bool hover = false)
     {
         if (item == null) return null;
 
@@ -53,15 +75,23 @@ public class ItemPickup : MonoBehaviour, IInteractable
             go.transform.localScale = Vector3.one * scale;
         }
 
-        go.AddComponent<BoxCollider2D>();   // 스프라이트 크기에 맞게 자동 + 줍기/바닥 충돌
-
-        var rb = go.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 1f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        var box = go.AddComponent<BoxCollider2D>();   // 줍기 감지(+바닥 충돌)
 
         var pickup = go.AddComponent<ItemPickup>();
         pickup.item = item;
         pickup.count = count;
+
+        if (hover)
+        {
+            box.isTrigger = true;          // 통과 가능(플레이어 안 막음), F로 줍기
+            pickup.hover = true;
+        }
+        else
+        {
+            var rb = go.AddComponent<Rigidbody2D>();
+            rb.gravityScale = 1f;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
         return go;
     }
 }

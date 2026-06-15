@@ -52,16 +52,6 @@ public class StatUI : MonoBehaviour
             GUI.DrawTexture(r, HeartTex());
         }
         GUI.color = Color.white;
-
-        // 기력 바
-        float by = y + heartSize + heartPad + 4f;
-        Rect bg = new Rect(x, by, barWidth, barHeight);
-        GUI.color = new Color(0f, 0f, 0f, 0.5f);
-        GUI.DrawTexture(bg, WhiteTex());
-        float frac = gm.MaxStamina > 0f ? Mathf.Clamp01(gm.CurrentStamina / gm.MaxStamina) : 0f;
-        GUI.color = new Color(0.3f, 0.8f, 1f);
-        GUI.DrawTexture(new Rect(bg.x + 2, bg.y + 2, (bg.width - 4) * frac, bg.height - 4), WhiteTex());
-        GUI.color = Color.white;
     }
 
     private static Texture2D WhiteTex()

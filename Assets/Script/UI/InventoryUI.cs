@@ -467,16 +467,16 @@ public class InventoryUI : MonoBehaviour
         GUI.Label(spriteBox, "캐릭터\n(레드 후드)\n— 추후 —", tabStyle);
 
         float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
-        string[] names = { "체력 모듈", "스태미나 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈" };
+        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈" };
         string[] descs = {
-            "체력 한 칸씩 증가", "스태미나 최대치 증가", "체력 재생력 + 스태미나 재생력 증가",
+            "체력 한 칸씩 증가", "체력 자동 재생력 증가",
             "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승"
         };
-        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), Mathf.Max(0, Mathf.RoundToInt((gm.maxStamina - 100f) / 20f)), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck };
-        int[] costs = { 5, 1, 2, 1, 1, 2 };
-        float rh = Mathf.Clamp(bodyH / 6f, 28f, 46f);
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck };
+        int[] costs = { 5, 2, 1, 1, 2 };
+        float rh = Mathf.Clamp(bodyH / 5f, 28f, 46f);
         string hoverDesc = null;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 5; i++)
         {
             Rect row = new Rect(sx, bodyY + i * rh, sw, rh - 4f);
             Fill(row, cSlot); Border(row, 1f, cSlotBd);

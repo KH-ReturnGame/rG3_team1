@@ -195,7 +195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveSpeed: 5
   guardSpeedMultiplier: 0.2
-  jumpForce: 10
+  jumpForce: 11
   maxJumps: 2
   doubleJumpState: FrontFlip
   chargeJumpTime: 1.5

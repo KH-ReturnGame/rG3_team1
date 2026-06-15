@@ -44,7 +44,6 @@ public static class SaveSystem
             sceneName = startScene,
             hearts = -1,            // -1 = 최대치로 시작
             maxHearts = 3,
-            maxStamina = 100f,
             gold = 0,
             items = new List<SavedItem>()
         };
@@ -96,7 +95,6 @@ public static class SaveSystem
         {
             data.hearts = GameManager.Instance.CurrentHearts;
             data.maxHearts = GameManager.Instance.maxHearts;       // 장신구 보너스 제외(기본 최대)
-            data.maxStamina = GameManager.Instance.maxStamina;
             data.gold = GameManager.Instance.Gold;
             data.bonusJumps = GameManager.Instance.bonusJumps;
             data.level = GameManager.Instance.level;
@@ -118,7 +116,7 @@ public static class SaveSystem
     {
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.LoadStats(data.hearts, data.maxHearts, data.maxStamina, data.gold);
+            GameManager.Instance.LoadStats(data.hearts, data.maxHearts, data.gold);
             GameManager.Instance.bonusJumps = data.bonusJumps;   // 점프 업그레이드 복원(Equipment.LoadIds가 ApplyEquipment로 반영)
             GameManager.Instance.level = Mathf.Max(1, data.level);
             GameManager.Instance.xp = data.xp;

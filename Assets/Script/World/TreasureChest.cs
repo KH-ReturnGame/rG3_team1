@@ -15,14 +15,18 @@ public class TreasureChest : MonoBehaviour, IInteractable
     public string chestId = "";
 
     [Header("보상")]
-    public string lootItemId = "";   // Resources/Items 의 아이템 id (비우면 아이템 없음)
+    public string lootItemId = "";   // 추가 아이템 id (Resources/Items, 비우면 없음)
     public int lootCount = 1;
-    public int lootGold = 0;
+    public int lootGold = 0;          // 가치(골드 환산) → 동화/은화/금화 화폐로 환산해 드랍
 
-    [Header("드랍 연출 (몬스터 처치와 동일)")]
-    public Sprite goldSprite;        // 폴백 코인 스프라이트(Resources/GoldCoin.prefab 있으면 그게 우선)
-    public float dropSize = 0.5f;    // 떨군 아이템 월드 크기
-    public float dropScatter = 0.4f; // 흩어지는 정도
+    [Header("화폐 아이템 id (Resources/Items)")]
+    public string copperCoinId = "copper_coin";   // 동화
+    public string silverCoinId = "silver_coin";   // 은화
+    public string goldCoinId   = "gold_coin";     // 금화
+
+    [Header("드랍 연출")]
+    public float dropSize = 0.6f;    // 떨군 아이템/코인 월드 크기
+    public float dropSpacing = 0.6f; // 공중에 한 줄로 띄울 때 간격
 
     [Header("연출 (선택)")]
     public Sprite openedSprite;      // 열렸을 때 스프라이트(있으면 교체, 없으면 어둡게)
@@ -54,25 +58,39 @@ public class TreasureChest : MonoBehaviour, IInteractable
         if (isOpen) return;
         openedKeys.Add(Key);
 
-        Vector3 origin = transform.position + Vector3.up * 0.3f;
-        Transform player = PlayerController.Instance != null ? PlayerController.Instance.transform : null;
-
-        // 아이템: 바닥에 떨궈 플레이어가 F로 줍게(몬스터 드랍과 동일)
+        // 떨굴 목록 구성: 추가 아이템 + 골드 가치를 환산한 동화/은화/금화
+        var drops = new List<KeyValuePair<ItemData, int>>();
         if (!string.IsNullOrEmpty(lootItemId))
         {
             ItemData item = ItemDatabase.Get(lootItemId);
-            if (item != null)
-            {
-                Vector3 pos = origin + (Vector3)(Random.insideUnitCircle * dropScatter);
-                ItemPickup.SpawnWorld(item, Mathf.Max(1, lootCount), pos, dropSize);
-            }
+            if (item != null) drops.Add(new KeyValuePair<ItemData, int>(item, Mathf.Max(1, lootCount)));
         }
+        if (lootGold > 0) AddCoinDrops(drops, lootGold);
 
-        // 골드: 코인 여러 개로 흩뿌려 플레이어에게 빨려가게(도착 시 적립). 골드량에 비례해 코인 개수 증가.
-        if (lootGold > 0) GoldCoin.SpawnGold(lootGold, origin, player, goldSprite);
+        // 상자 위 공중에 한 줄로 둥둥 띄움(튀어나오지 않음, F로 줍기)
+        Vector3 origin = transform.position + Vector3.up * 0.9f;
+        int n = drops.Count;
+        for (int i = 0; i < n; i++)
+        {
+            float ox = (i - (n - 1) * 0.5f) * dropSpacing;
+            Vector3 pos = origin + new Vector3(ox, 0f, 0f);
+            ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true);   // hover=true → 둥둥
+        }
 
         Toast.Show("보물 상자를 열었다!", 2f);
         ApplyOpenedVisual();
+    }
+
+    // 골드 가치를 금화→은화→동화 순서로 환산해 드랍 목록에 추가(각 화폐 baseValue 기준)
+    private void AddCoinDrops(List<KeyValuePair<ItemData, int>> drops, int value)
+    {
+        ItemData gold = ItemDatabase.Get(goldCoinId);
+        ItemData silver = ItemDatabase.Get(silverCoinId);
+        ItemData copper = ItemDatabase.Get(copperCoinId);
+        int rem = value;
+        if (gold != null) { int v = Mathf.Max(1, gold.baseValue); int c = rem / v; if (c > 0) { drops.Add(new KeyValuePair<ItemData, int>(gold, c)); rem -= c * v; } }
+        if (silver != null) { int v = Mathf.Max(1, silver.baseValue); int c = rem / v; if (c > 0) { drops.Add(new KeyValuePair<ItemData, int>(silver, c)); rem -= c * v; } }
+        if (copper != null && rem > 0) { int v = Mathf.Max(1, copper.baseValue); int c = Mathf.RoundToInt(rem / (float)v); if (c > 0) drops.Add(new KeyValuePair<ItemData, int>(copper, c)); }
     }
 
     private void ApplyOpenedVisual()

@@ -34,6 +34,7 @@ public class ItemData : ScriptableObject
     [Header("판매 / 가치")]
     public int sellValue = 0;                // (구) 골동품 판매가
     public int baseValue = 0;                // 상점 가치. 판매 = 80% / 되사기 = 100%
+    public bool sellAtFullValue = false;     // true면 판매 시 100% (동화/은화/금화 같은 화폐)
 
     [Header("희귀도")]
     public Rarity rarity = Rarity.Common;
@@ -60,7 +61,6 @@ public class ItemData : ScriptableObject
         var gm = GameManager.Instance;
         bool did = false;
         if (healHearts > 0 && gm.CurrentHearts < gm.MaxHearts) { gm.Heal(healHearts); did = true; }
-        if (restoreStamina > 0f && gm.CurrentStamina < gm.MaxStamina) { gm.ChangeStamina(restoreStamina); did = true; }
         if (tempAttackMult > 0f && buffDuration > 0f) { gm.ApplyAttackBuff(tempAttackMult, buffDuration); did = true; }
         if (tempDamageReduction > 0f && buffDuration > 0f) { gm.ApplyDefenseBuff(tempDamageReduction, buffDuration); did = true; }
         return did;

@@ -49,12 +49,11 @@ public class PlayerController : MonoBehaviour
     private bool isGuarding;
     private bool isParrying;
 
-    [Header("기력 소모/회복 (GameManager 스탯 사용)")]
-    public float dashStaminaCost = 20f;
-    public float guardStaminaCost = 15f;    // 가드/패링 시도(클릭 순간) 즉시 소모 — 남발 방지 패널티
-    public float guardStaminaDrain = 30f;   // 가드 중 초당 소모
-    public float staminaRegen = 15f;        // 가드/대시 중이 아닐 때 초당 회복
-    public float parryStaminaRecover = 30f; // 패링 성공 시 회복
+    [Header("쿨타임 (스태미나 대신 — 꼼수 방지)")]
+    public float dashCooldown = 0.7f;        // 대시 후 재대시까지(무한 대시 방지)
+    public float guardCooldown = 0.6f;       // 가드 해제 후 재가드까지(가드 연타 패링 방지)
+    private float dashCooldownTimer;
+    private float guardCooldownTimer;
 
     [Header("Hit Reaction (피격 넉백/경직)")]
     public string hitState = "HitDamage";
@@ -134,7 +133,6 @@ public class PlayerController : MonoBehaviour
 
     public static PlayerController Instance;          // 현재 씬의 플레이어(장비 적용용)
     private int baseMaxJumps;                         // 장신구 보너스 전 기본값
-    private float baseStaminaRegen;
 
     [Header("낙사")]
     public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
@@ -155,7 +153,6 @@ public class PlayerController : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
         defaultGravityScale = rb.gravityScale;
         baseMaxJumps = maxJumps;
-        baseStaminaRegen = staminaRegen;
         foreach (Collider2D c in GetComponentsInChildren<Collider2D>())   // 트리거 아닌 첫 몸 콜라이더(통과 처리용)
             if (c != null && !c.isTrigger) { bodyCollider = c; break; }
         BuildClipLengthTable();
@@ -192,10 +189,8 @@ public class PlayerController : MonoBehaviour
     public void ApplyEquipment()
     {
         int jb = Equipment.Instance != null ? Equipment.Instance.MaxJumpBonus : 0;
-        float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
         int sb = GameManager.Instance != null ? GameManager.Instance.bonusJumps : 0;   // 상점 영구 점프 업그레이드
         maxJumps = baseMaxJumps + sb + jb;
-        staminaRegen = baseStaminaRegen + rgb + (GameManager.Instance != null ? GameManager.Instance.StaminaRegenBonus : 0f);   // 재생력 스탯 반영
         if (currentJumps > maxJumps) currentJumps = maxJumps;
     }
 
@@ -222,6 +217,9 @@ public class PlayerController : MonoBehaviour
             SetAlpha(dim ? blinkMinAlpha : 1f);                 // 반투명 ↔ 불투명 점멸
             if (hitInvincibleTimer <= 0) SetAlpha(1f);          // 무적 끝 → 완전 불투명
         }
+
+        if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.deltaTime;     // 대시/가드 쿨타임은 항상 진행
+        if (guardCooldownTimer > 0f) guardCooldownTimer -= Time.deltaTime;
 
         if (isDashing)
         {
@@ -261,20 +259,6 @@ public class PlayerController : MonoBehaviour
         }
         if (plungeArmTimer > 0) plungeArmTimer -= Time.deltaTime;
         if (isGrounded) plungeArmTimer = 0;            // 착지하면 낙하공격 입력창 닫힘
-
-        // 기력: 가드 중 소모 / 그 외 회복 (대시 중에는 이 블록에 도달 안 함 — 위에서 return)
-        if (GameManager.Instance != null)
-        {
-            if (isGuarding)
-            {
-                GameManager.Instance.ChangeStamina(-guardStaminaDrain * Time.deltaTime);
-                if (GameManager.Instance.CurrentStamina <= 0f) EndGuard();   // 기력 고갈 시 가드 해제
-            }
-            else
-            {
-                GameManager.Instance.ChangeStamina(staminaRegen * Time.deltaTime);
-            }
-        }
 
         // 스윙 중 미리 눌러둔 공격: 스윙이 끝나는 즉시 다음 콤보로 연결
         if (attackBufferTimer > 0 && animBusyTimer <= 0 && isSwordDrawn && !isGuarding && !isDashing && isGrounded)
@@ -319,8 +303,7 @@ public class PlayerController : MonoBehaviour
             ToggleSheathe();
 
         // 가드/패링 (검을 들었을 때만)
-        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump
-            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= guardStaminaCost))
+        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump && guardCooldownTimer <= 0f)
             StartGuard();
         if (Input.GetMouseButtonUp(1)) EndGuard();
 
@@ -396,8 +379,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding && animBusyTimer <= 0 && !isChargingJump
-            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= dashStaminaCost))
+        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && dashCooldownTimer <= 0f && !isGuarding && animBusyTimer <= 0 && !isChargingJump)
             StartDash();
     }
 
@@ -612,7 +594,7 @@ public class PlayerController : MonoBehaviour
 
     private void StartDash()
     {
-        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(dashStaminaCost);
+        dashCooldownTimer = dashCooldown;   // 무한 대시 방지
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
@@ -673,7 +655,6 @@ public class PlayerController : MonoBehaviour
 
     private void StartGuard()
     {
-        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(guardStaminaCost);  // 패링 시도 비용
         isGuarding = true;
         isParrying = true;
         parryTimer = parryWindow;
@@ -683,6 +664,7 @@ public class PlayerController : MonoBehaviour
 
     private void EndGuard()
     {
+        if (isGuarding) guardCooldownTimer = guardCooldown;   // 가드 해제 후 쿨타임(연타 패링 방지)
         isGuarding = false;
         isParrying = false;
     }
@@ -696,7 +678,6 @@ public class PlayerController : MonoBehaviour
             if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
             PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
             animBusyTimer = ClipLength(parrySuccessState);
-            if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
             skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
             Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
             return;

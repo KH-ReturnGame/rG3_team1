@@ -36,10 +36,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float wanderChangeInterval = 2f;   // Wander: 한 방향으로 걷는 시간
     public float wanderPauseTime = 1.2f;      // Wander: 중간중간 가만히 서 있는 시간
 
-    [Header("Drops (처치 보상)")]
-    public int goldMin = 1;
-    public int goldMax = 5;
-    public Sprite goldSprite;            // 폴백 코인 스프라이트(Resources/GoldCoin.prefab 있으면 그게 우선)
+    [Header("Drops (처치 보상 — 전리품만, 골드 없음)")]
     public LootDrop[] loot;              // 사망 시 확률로 떨어지는 채집물/전리품(바닥에 떨궈 F로 줍기)
     public float dropSize = 0.5f;        // 떨군 아이템 월드 크기
     public float dropScatter = 0.3f;     // 여러 개일 때 퍼지는 정도
@@ -302,12 +299,9 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         Destroy(gameObject);
     }
 
-    // 처치 보상: 골드는 즉시 적립(런 결과에 집계), 채집물/전리품은 바닥에 떨궈 F로 줍게.
+    // 처치 보상: 골드는 떨구지 않음 — 적은 각자 맞는 전리품(loot)을 확률로 바닥에 떨궈 F로 줍게(상점에 팔아 환금).
     private void GrantRewards()
     {
-        int goldAmount = Random.Range(goldMin, goldMax + 1);
-        if (goldAmount > 0) DropGoldCoins(goldAmount);   // 즉시 적립이 아니라 코인으로 떨궈 인벤토리로 빨려가게
-
         if (loot == null) return;
         foreach (var d in loot)
         {
@@ -317,12 +311,6 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
             Vector3 pos = transform.position + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
             ItemPickup.SpawnWorld(d.item, n, pos, dropSize);
         }
-    }
-
-    // 골드를 코인 여러 개로 떨궈 플레이어에게 빨려가게(도착 시 적립). 골드량에 비례해 코인 개수 증가.
-    private void DropGoldCoins(int amount)
-    {
-        GoldCoin.SpawnGold(amount, transform.position + Vector3.up * 0.3f, player, goldSprite);
     }
 
     private void UpdateColor()

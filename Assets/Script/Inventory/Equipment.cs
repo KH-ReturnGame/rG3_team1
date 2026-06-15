@@ -10,7 +10,6 @@ public class Equipment : MonoBehaviour
     public ItemData[] slots = new ItemData[SlotCount];
 
     public int MaxJumpBonus { get; private set; }       // PlayerController가 읽음
-    public float StaminaRegenBonus { get; private set; }
 
     void Awake()
     {
@@ -44,17 +43,15 @@ public class Equipment : MonoBehaviour
     public void Recompute()
     {
         int jump = 0, heart = 0;
-        float stam = 0f, regen = 0f, atk = 0f;
+        float atk = 0f;
         for (int i = 0; i < SlotCount; i++)
         {
             var it = slots[i];
             if (it == null) continue;
-            jump += it.maxJumpBonus; heart += it.maxHeartBonus;
-            stam += it.maxStaminaBonus; regen += it.staminaRegenBonus; atk += it.attackBonus;
+            jump += it.maxJumpBonus; heart += it.maxHeartBonus; atk += it.attackBonus;
         }
         MaxJumpBonus = jump;
-        StaminaRegenBonus = regen;
-        if (GameManager.Instance != null) GameManager.Instance.SetEquipBonuses(heart, stam, atk);
+        if (GameManager.Instance != null) GameManager.Instance.SetEquipBonuses(heart, atk);
         if (PlayerController.Instance != null) PlayerController.Instance.ApplyEquipment();
     }
 

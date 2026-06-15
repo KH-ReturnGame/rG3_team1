@@ -11,10 +11,6 @@ public class GameManager : MonoBehaviour
     public int maxHearts = 3;   // 기본 체력 3칸(개조 포인트 '체력'으로 +1칸씩)
     private int currentHearts;
 
-    [Header("기력 (스태미나)")]
-    public float maxStamina = 100f;
-    private float currentStamina;
-
     [Header("재화")]
     public int gold = 0;
 
@@ -29,9 +25,8 @@ public class GameManager : MonoBehaviour
     public bool IsPotionReady(ItemData it) => PotionCooldownLeft(it) <= 0f;
     public void StartPotionCooldown(ItemData it) { if (it != null) potionCdEnd[PotionKey(it)] = Time.time + potionCooldown; }
 
-    // 영구 스탯 업그레이드(상점 골드 소모처). maxHearts/maxStamina에 반영 → 세이브로 유지.
+    // 영구 스탯 업그레이드(상점 골드 소모처). maxHearts에 반영 → 세이브로 유지.
     public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHearts += amt; OnStatsChanged?.Invoke(); }
-    public void UpgradeMaxStamina(float amt) { maxStamina += amt; currentStamina += amt; OnStatsChanged?.Invoke(); }
 
     [Header("점프 업그레이드(영구·세이브 유지)")]
     public int bonusJumps = 0;        // 상점에서 산 추가 점프 횟수
@@ -48,10 +43,9 @@ public class GameManager : MonoBehaviour
     public int xp = 0;
     public int modPoints = 0;          // 개조 포인트(스탯 강화) — 레벨업 시 획득
     public int pointsPerLevel = 2;
-    public int statRegen, statAttack, statAdapt, statLuck;   // 투자 레벨(체력=maxHearts, 스태미나=maxStamina로 반영)
+    public int statRegen, statAttack, statAdapt, statLuck;   // 투자 레벨(재생력=체력회복 / 공격력 / 적응력 / 행운)
     public int XpToNext => level * 120;
 
-    public float StaminaRegenBonus => statRegen * 3f;        // 재생력 → 기력 회복 보너스(PlayerController가 합산)
     public float GoldMultiplier => 1f + statLuck * 0.1f;     // 행운 → 골드 획득량
 
     public void AddXp(int amt)
@@ -62,8 +56,8 @@ public class GameManager : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
-    // 개조 포인트로 스탯 강화. 0체력 1스태미나 2재생력 3공격력 4적응력 5행운
-    public int StatCost(int i) { switch (i) { case 0: return 5; case 2: return 2; case 5: return 2; default: return 1; } }
+    // 개조 포인트로 스탯 강화. 0체력 1재생력 2공격력 3적응력 4행운
+    public int StatCost(int i) { switch (i) { case 0: return 5; case 1: return 2; case 4: return 2; default: return 1; } }
     public bool SpendStat(int i)
     {
         int cost = StatCost(i);
@@ -72,11 +66,10 @@ public class GameManager : MonoBehaviour
         switch (i)
         {
             case 0: UpgradeMaxHearts(1); break;       // 체력 +1칸
-            case 1: UpgradeMaxStamina(20f); break;    // 스태미나 +20
-            case 2: statRegen++; if (PlayerController.Instance != null) PlayerController.Instance.ApplyEquipment(); break;  // 재생력(기력회복 반영)
-            case 3: statAttack++; break;              // 공격력(물리)
-            case 4: statAdapt++; break;               // 적응력(마법/기프트 — 시스템 추후 연동)
-            case 5: statLuck++; break;                // 행운(골드 등)
+            case 1: statRegen++; break;               // 재생력(체력 자동 회복)
+            case 2: statAttack++; break;              // 공격력(물리)
+            case 3: statAdapt++; break;               // 적응력(마법/기프트 — 추후)
+            case 4: statLuck++; break;                // 행운(골드/전리품/채집)
         }
         OnStatsChanged?.Invoke();
         return true;
@@ -94,14 +87,12 @@ public class GameManager : MonoBehaviour
     // 읽기용
     public int CurrentHearts => currentHearts;
     public int MaxHearts => maxHearts + equipHeartBonus;
-    public float CurrentStamina => currentStamina;
-    public float MaxStamina => maxStamina + equipStaminaBonus;
     public int Gold => gold;
 
     // 일시 버프(전투/방어 포션) + 장신구 보너스
     private float atkBuffMult, atkBuffTimer, defReduction, defBuffTimer;
     private int equipHeartBonus;
-    private float equipStaminaBonus, equipAttackBonus;
+    private float equipAttackBonus;
     public float AttackMultiplier => 1f + (atkBuffTimer > 0f ? atkBuffMult : 0f) + equipAttackBonus + statAttack * 0.05f;  // 공격력 스탯 5%/레벨
     public float DamageReduction => defBuffTimer > 0f ? defReduction : 0f;        // 피해 감량(0~1)
 
@@ -112,7 +103,6 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         currentHearts = maxHearts;
-        currentStamina = maxStamina;
     }
 
     // 어느 씬에서 시작해도 스탯(체력·기력·골드)이 존재하도록 자동 생성(1회, 씬 넘어가도 유지)
@@ -157,29 +147,6 @@ public class GameManager : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
-    // ───────── 기력 ─────────
-    public bool TrySpendStamina(float amount)
-    {
-        if (currentStamina < amount) return false;
-        currentStamina -= amount;
-        OnStatsChanged?.Invoke();
-        return true;
-    }
-
-    public void ChangeStamina(float delta)   // 회복(+) / 소모(-) 둘 다, 0~max로 고정
-    {
-        float before = currentStamina;
-        currentStamina = Mathf.Clamp(currentStamina + delta, 0f, maxStamina);
-        if (!Mathf.Approximately(before, currentStamina)) OnStatsChanged?.Invoke();
-    }
-
-    public void IncreaseMaxStamina(float amount, bool refill = true)
-    {
-        maxStamina = Mathf.Max(1f, maxStamina + amount);
-        currentStamina = refill ? maxStamina : Mathf.Min(currentStamina, maxStamina);
-        OnStatsChanged?.Invoke();
-    }
-
     // ───────── 재화 ─────────
     public void AddGold(int amount) { if (amount > 0) amount = Mathf.RoundToInt(amount * GoldMultiplier); gold = Mathf.Max(0, gold + amount); OnStatsChanged?.Invoke(); }   // 행운 → 골드 획득량↑
 
@@ -199,13 +166,11 @@ public class GameManager : MonoBehaviour
     }
 
     // 장신구 보너스 적용(Equipment가 호출). 최대치 변동 시 현재값 클램프.
-    public void SetEquipBonuses(int heart, float stamina, float attack)
+    public void SetEquipBonuses(int heart, float attack)
     {
         equipHeartBonus = heart;
-        equipStaminaBonus = stamina;
         equipAttackBonus = attack;
         currentHearts = Mathf.Min(currentHearts, MaxHearts);
-        currentStamina = Mathf.Min(currentStamina, MaxStamina);
         OnStatsChanged?.Invoke();
     }
 
@@ -219,13 +184,11 @@ public class GameManager : MonoBehaviour
 
     // ───────── 세이브/로드 ─────────
     // 저장된 값으로 스탯 복원. hearts가 음수면 최대치로 시작(새 게임).
-    public void LoadStats(int hearts, int maxH, float maxStam, int g)
+    public void LoadStats(int hearts, int maxH, int g)
     {
         maxHearts = Mathf.Max(1, maxH);
-        maxStamina = Mathf.Max(1f, maxStam);
         gold = Mathf.Max(0, g);
         currentHearts = (hearts < 0) ? maxHearts : Mathf.Clamp(hearts, 0, maxHearts);
-        currentStamina = maxStamina;
         OnStatsChanged?.Invoke();
     }
 
@@ -237,7 +200,6 @@ public class GameManager : MonoBehaviour
         if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 16 };
         style.normal.textColor = Color.white;
         GUI.Label(new Rect(12, 10, 400, 24), $"♥ {currentHearts} / {maxHearts}", style);
-        GUI.Label(new Rect(12, 34, 400, 24), $"기력 {currentStamina:0} / {maxStamina:0}", style);
-        GUI.Label(new Rect(12, 58, 400, 24), $"Gold {gold}", style);
+        GUI.Label(new Rect(12, 34, 400, 24), $"Gold {gold}", style);
     }
 }
