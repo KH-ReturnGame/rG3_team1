@@ -67,15 +67,17 @@ public class ItemPickup : MonoBehaviour, IInteractable
         sr.sortingOrder = 1;
 
         // 스프라이트 원본 크기(PPU)와 무관하게 목표 월드 크기로 맞춤
+        float scale = 1f;
         if (item.icon != null)
         {
             Vector2 sz = item.icon.bounds.size;
             float maxDim = Mathf.Max(sz.x, sz.y);
-            float scale = maxDim > 0.0001f ? worldSize / maxDim : 1f;
-            go.transform.localScale = Vector3.one * scale;
+            scale = maxDim > 0.0001f ? worldSize / maxDim : 1f;
         }
+        go.transform.localScale = Vector3.one * scale;
 
         var box = go.AddComponent<BoxCollider2D>();   // 줍기 감지(+바닥 충돌)
+        box.size = Vector2.one * (worldSize / Mathf.Max(0.0001f, scale));   // ★ 아이콘 없어도 줍기 가능하게 크기 보장(자동크기 0 방지)
 
         var pickup = go.AddComponent<ItemPickup>();
         pickup.item = item;

@@ -18,6 +18,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
+    public float maxFallSpeed = 22f;   // 종단 낙하 속도 제한(고속 낙하로 땅에 박히는 것 방지)
     public int maxJumps = 2;   // 기본 더블 점프. 장신구 +1, 상점(영구) +1 로 더 늘릴 수 있음
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
@@ -289,6 +290,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
         Move();
+
+        // 종단 속도 제한 — 너무 빠르게 낙하해 지형을 뚫고 박히는 것 방지
+        if (rb.linearVelocity.y < -maxFallSpeed)
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
     }
 
     private void CheckInput()

@@ -181,6 +181,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractor
   interactKey: 102
   interactRadius: 1.2
+  highlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  borderThickness: 4
 --- !u!114 &5994272772996261918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -211,11 +213,8 @@ MonoBehaviour:
   dashDuration: 0.3
   maxDashes: 1
   parryWindow: 0.5
-  dashStaminaCost: 20
-  guardStaminaCost: 15
-  guardStaminaDrain: 30
-  staminaRegen: 5
-  parryStaminaRecover: 30
+  dashCooldown: 0.7
+  guardCooldown: 0.6
   hitState: HitDamage
   hitstunDuration: 0.3
   knockbackForce: 4
@@ -296,7 +295,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 1
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!70 &4243454474624021510
 CapsuleCollider2D:

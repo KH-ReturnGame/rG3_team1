@@ -10,15 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
-  m_Name: slime_condensate
+  m_Name: discharged_core
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  id: slime_condensate
-  itemName: "\uC2AC\uB77C\uC784 \uC751\uCD95\uC561"
-  icon: {fileID: 21300000, guid: 8993003de32dd1c47b5d00cc8f3a56ab, type: 3}
+  id: discharged_core
+  itemName: "\uBC29\uC804 \uCF54\uC5B4"
+  icon: {fileID: 21300000, guid: 28d462db3abfba14ba208764534b48c7, type: 3}
   maxStack: 99
-  description: "\uC2AC\uB77C\uC784\uC744 \uCC98\uCE58\uD558\uBA74 \uC5BB\uB294 \uB048\uC801\uD55C
-    \uC751\uCD95\uC561. \uBB34\uC5B8\uAC00\uB97C \uB9CC\uB4E4 \uC218 \uC788\uC744
-    \uAC83 \uAC19\uB2E4."
+  description: "\uC6D0\uAC70\uB9AC \uBAB9\uC758 \uBC29\uC804\uB41C \uB3D9\uB825 \uCF54\uC5B4.
+    \uC0C1\uC810\uC5D0 \uD314 \uC218 \uC788\uB2E4."
   kind: 0
   healHearts: 0
   restoreStamina: 0
@@ -32,6 +31,6 @@ MonoBehaviour:
   staminaRegenBonus: 0
   attackBonus: 0
   sellValue: 0
-  baseValue: 40
+  baseValue: 14
   sellAtFullValue: 0
-  rarity: 0
+  rarity: 1

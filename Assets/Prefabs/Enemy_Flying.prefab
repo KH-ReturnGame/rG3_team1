@@ -189,12 +189,12 @@ MonoBehaviour:
   wanderChangeInterval: 2
   wanderPauseTime: 1.2
   loot:
-  - item: {fileID: 11400000, guid: aa0a4074f36159f45b589b3ee6135bcb, type: 2}
+  - item: {fileID: 11400000, guid: 61fbdbfabab8f4a45b862661e168fd6f, type: 2}
     chance: 0.7
     minCount: 1
     maxCount: 2
-  - item: {fileID: 11400000, guid: 1107f8ce29f80814ea01113f878efefc, type: 2}
-    chance: 0.2
+  - item: {fileID: 11400000, guid: 906150fb88f3cd84ab0d100d6047b61d, type: 2}
+    chance: 0.07
     minCount: 1
     maxCount: 1
   dropSize: 0.5

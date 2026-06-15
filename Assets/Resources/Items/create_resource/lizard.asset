@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: lizard
   itemName: "\uB3C4\uB9C8\uBC40"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8fb9c0f0f53773a4eb4363caffd2417b, type: 3}
   maxStack: 99
   description: "\uD3EC\uC158 \uC7AC\uB8CC\uB85C \uC4F0\uC774\uB294 \uC791\uC740 \uB3C4\uB9C8\uBC40."
   kind: 0
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -30,4 +31,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 0
   baseValue: 30
+  sellAtFullValue: 0
   rarity: 0
