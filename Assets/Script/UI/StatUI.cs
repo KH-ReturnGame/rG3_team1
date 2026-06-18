@@ -27,8 +27,8 @@ public class StatUI : MonoBehaviour
 
     [Header("하트(체력)")]
     public Vector2 origin = new Vector2(0.02f, 0.06f);   // 좌상단 시작(화면 비율) — 메뉴 버튼 아래
-    public float heartSize = 34f;
-    public float heartPad = 6f;
+    public float heartSize = 48f;
+    public float heartPad = 8f;
 
     [Header("기력 바")]
     public float barWidth = 220f;
@@ -45,12 +45,20 @@ public class StatUI : MonoBehaviour
         float x = Screen.width * origin.x;
         float y = Screen.height * origin.y;
 
-        // 하트(채워짐 / 빈 칸) — 음영·외곽선·하이라이트가 들어간 텍스처
+        // 하트(꽉 / 반 / 빈 칸) — 반칸 단위. 음영·외곽선·하이라이트 텍스처
         GUI.color = Color.white;
         for (int i = 0; i < gm.MaxHearts; i++)
         {
             Rect r = new Rect(x + i * (heartSize + heartPad), y, heartSize, heartSize);
-            GUI.DrawTexture(r, Heart(i < gm.CurrentHearts));
+            int fill = Mathf.Clamp(gm.CurrentHalf - i * 2, 0, 2);   // 2=꽉, 1=반, 0=빈
+            GUI.DrawTexture(r, Heart(false));                       // 빈 하트 바탕
+            if (fill == 2) GUI.DrawTexture(r, Heart(true));         // 꽉 찬 하트
+            else if (fill == 1)                                     // 반 칸: 왼쪽 절반만 채움
+            {
+                GUI.BeginGroup(new Rect(r.x, r.y, r.width * 0.5f, r.height));
+                GUI.DrawTexture(new Rect(0, 0, r.width, r.height), Heart(true));
+                GUI.EndGroup();
+            }
         }
     }
 

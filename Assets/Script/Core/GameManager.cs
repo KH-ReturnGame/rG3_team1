@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
 
     [Header("체력 (하트 칸)")]
     public int maxHearts = 3;   // 기본 체력 3칸(개조 포인트 '체력'으로 +1칸씩)
-    private int currentHearts;
+    private int currentHalf;    // 현재 체력을 '반칸' 단위로 저장(2 = 한 칸). 가드 50% 경감 등 반칸 피해 반영용.
 
     [Header("재화")]
     public int gold = 0;
@@ -26,7 +26,7 @@ public class GameManager : MonoBehaviour
     public void StartPotionCooldown(ItemData it) { if (it != null) potionCdEnd[PotionKey(it)] = Time.time + potionCooldown; }
 
     // 영구 스탯 업그레이드(상점 골드 소모처). maxHearts에 반영 → 세이브로 유지.
-    public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHearts += amt; OnStatsChanged?.Invoke(); }
+    public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHalf += amt * 2; OnStatsChanged?.Invoke(); }
 
     [Header("점프 업그레이드(영구·세이브 유지)")]
     public int bonusJumps = 0;        // 상점에서 산 추가 점프 횟수
@@ -52,7 +52,7 @@ public class GameManager : MonoBehaviour
     {
         if (amt <= 0) return;
         xp += amt;
-        while (xp >= XpToNext) { xp -= XpToNext; level++; modPoints += pointsPerLevel; currentHearts = MaxHearts; Toast.Show("레벨 업! Lv." + level + "  (개조 포인트 +" + pointsPerLevel + ")", 3f); }
+        while (xp >= XpToNext) { xp -= XpToNext; level++; modPoints += pointsPerLevel; currentHalf = MaxHalf; Toast.Show("레벨 업! Lv." + level + "  (개조 포인트 +" + pointsPerLevel + ")", 3f); }
         OnStatsChanged?.Invoke();
     }
 
@@ -85,7 +85,9 @@ public class GameManager : MonoBehaviour
     public event System.Action OnPlayerDied;
 
     // 읽기용
-    public int CurrentHearts => currentHearts;
+    public int CurrentHearts => currentHalf / 2;        // 한 칸 단위(내림) — 호환·회복판정용
+    public int CurrentHalf => currentHalf;              // 반칸 단위 현재 체력(표시용)
+    public int MaxHalf => MaxHearts * 2;                // 반칸 단위 최대 체력
     public int MaxHearts => maxHearts + equipHeartBonus;
     public int Gold => gold;
 
@@ -102,7 +104,7 @@ public class GameManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        currentHearts = maxHearts;
+        currentHalf = maxHearts * 2;
     }
 
     // 어느 씬에서 시작해도 스탯(체력·기력·골드)이 존재하도록 자동 생성(1회, 씬 넘어가도 유지)
@@ -114,26 +116,29 @@ public class GameManager : MonoBehaviour
     }
 
     // ───────── 체력 ─────────
-    public void TakeDamage(int hearts)
+    public void TakeDamage(int hearts) => TakeDamageHalves(Mathf.Max(0, hearts) * 2);   // 한 칸 단위 입력 호환
+
+    // 반칸 단위 피해. 가드 50% 경감으로 생긴 반칸 피해도 정확히 반영(반칸만 깎임).
+    public void TakeDamageHalves(int halves)
     {
-        if (isDead || hearts <= 0) return;
-        hearts = Mathf.RoundToInt(hearts * (1f - DamageReduction));   // 방어 포션: 피해 감량
-        if (hearts <= 0) return;
-        currentHearts = Mathf.Max(0, currentHearts - hearts);
+        if (isDead || halves <= 0) return;
+        halves = Mathf.RoundToInt(halves * (1f - DamageReduction));   // 방어 포션: 피해 감량
+        if (halves <= 0) return;
+        currentHalf = Mathf.Max(0, currentHalf - halves);
         OnStatsChanged?.Invoke();
-        if (currentHearts == 0) Die();
+        if (currentHalf == 0) Die();
     }
 
     public void Heal(int hearts)
     {
-        currentHearts = Mathf.Min(maxHearts, currentHearts + Mathf.Max(0, hearts));
+        currentHalf = Mathf.Min(MaxHalf, currentHalf + Mathf.Max(0, hearts) * 2);
         OnStatsChanged?.Invoke();
     }
 
     public void IncreaseMaxHearts(int amount, bool refill = true)
     {
         maxHearts = Mathf.Max(1, maxHearts + amount);
-        currentHearts = refill ? maxHearts : Mathf.Min(currentHearts, maxHearts);
+        currentHalf = refill ? MaxHalf : Mathf.Min(currentHalf, MaxHalf);
         OnStatsChanged?.Invoke();
     }
 
@@ -143,7 +148,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] 플레이어 사망");
         GameFlow.Instance?.OnRunPlayerDied();   // 런 중이면 마을로 귀환(결과창 표시)
         // 임시: 테스트 편의를 위해 체력 리셋(진짜 사망/리스폰 처리는 이후 단계에서)
-        currentHearts = maxHearts;
+        currentHalf = MaxHalf;
         OnStatsChanged?.Invoke();
     }
 
@@ -158,7 +163,7 @@ public class GameManager : MonoBehaviour
     {
         if (atkBuffTimer > 0f) atkBuffTimer -= Time.deltaTime;
         if (defBuffTimer > 0f) defBuffTimer -= Time.deltaTime;
-        if (statRegen > 0 && currentHearts > 0 && currentHearts < MaxHearts)   // 재생력 → 체력 느린 자동 회복
+        if (statRegen > 0 && currentHalf > 0 && currentHalf < MaxHalf)   // 재생력 → 체력 느린 자동 회복
         {
             hpRegenAccum += statRegen * 0.06f * Time.deltaTime;
             if (hpRegenAccum >= 1f) { int h = (int)hpRegenAccum; hpRegenAccum -= h; Heal(h); }
@@ -170,7 +175,7 @@ public class GameManager : MonoBehaviour
     {
         equipHeartBonus = heart;
         equipAttackBonus = attack;
-        currentHearts = Mathf.Min(currentHearts, MaxHearts);
+        currentHalf = Mathf.Min(currentHalf, MaxHalf);
         OnStatsChanged?.Invoke();
     }
 
@@ -188,7 +193,7 @@ public class GameManager : MonoBehaviour
     {
         maxHearts = Mathf.Max(1, maxH);
         gold = Mathf.Max(0, g);
-        currentHearts = (hearts < 0) ? maxHearts : Mathf.Clamp(hearts, 0, maxHearts);
+        currentHalf = (hearts < 0) ? MaxHalf : Mathf.Clamp(hearts * 2, 0, MaxHalf);
         OnStatsChanged?.Invoke();
     }
 
@@ -199,7 +204,7 @@ public class GameManager : MonoBehaviour
         if (!showDebugStats) return;
         if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 16 };
         style.normal.textColor = Color.white;
-        GUI.Label(new Rect(12, 10, 400, 24), $"♥ {currentHearts} / {maxHearts}", style);
+        GUI.Label(new Rect(12, 10, 400, 24), $"♥ {currentHalf / 2f} / {maxHearts}", style);
         GUI.Label(new Rect(12, 34, 400, 24), $"Gold {gold}", style);
     }
 }

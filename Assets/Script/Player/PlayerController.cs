@@ -726,11 +726,12 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // damage는 "하트" 단위. 가드 중이면 절반(반올림).
-        int hearts = isGuarding ? Mathf.RoundToInt(damage * 0.5f) : Mathf.RoundToInt(damage);
-        if (hearts <= 0) return;   // 가드로 완전히 막힘 → 피해/반응 없음
+        // damage는 "하트" 단위. 가드(패링 X) 중이면 50% 경감하되 반칸 단위로 반영.
+        // 가드는 '경감'만 — 피해가 있으면 최소 반칸은 들어간다(완전 무효화는 패링만). 0데미지 버그 방지.
+        float eff = isGuarding ? damage * 0.5f : damage;
+        int halves = Mathf.Max(1, Mathf.RoundToInt(eff * 2f));   // 반칸 단위(예: 가드로 1칸→0.5칸→반칸)
 
-        if (GameManager.Instance != null) GameManager.Instance.TakeDamage(hearts);
+        if (GameManager.Instance != null) GameManager.Instance.TakeDamageHalves(halves);
 
         Hurt(source);   // 넉백 + 경직 + 피격 모션
     }
