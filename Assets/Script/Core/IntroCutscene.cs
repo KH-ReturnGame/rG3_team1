@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 // 튜토리얼 인트로 컷씬. 새 게임으로 진입했을 때(SaveSystem.IntroPending)만 1회 재생.
-// 레터박스 등장 → 플레이어가 위에서 떨어져 → 착지 → 바닥에 널부러짐(기존 애니) → 일어남 → 레터박스 해제 → 조작 복귀.
+// 레터박스 등장 → 플레이어가 위에서 떨어져 → 착지 → 바닥에 널부러짐(기존 애니) → 레터박스 해제 → 조작 복귀.
 // TutorialScene에 빈 오브젝트로 배치(이 컴포넌트만 있으면 됨).
 public class IntroCutscene : MonoBehaviour
 {
@@ -14,8 +14,7 @@ public class IntroCutscene : MonoBehaviour
     [Header("애니 클립명 (기존 에셋)")]
     public string fallState = "JumpFall";
     public string landState = "Land";
-    public string sprawlState = "GroundSlam";   // 바닥에 널부러짐
-    public string getUpState = "Crouch";
+    public string sprawlState = "GroundSlam";   // 바닥에 널부러짐(착지 모션)
 
     void Start()
     {
@@ -44,13 +43,9 @@ public class IntroCutscene : MonoBehaviour
 
         
         
-        // 바닥에 널부러짐
+        // 바닥에 널부러짐(착지 모션). 일어나는 런지(Crouch) 자세는 흐름이 어색해 제거 — 바로 조작 복귀.
         pc.PlayAnim(sprawlState);
         yield return new WaitForSeconds(sprawlHold);
-
-        // 일어남
-        pc.PlayAnim(getUpState);
-        yield return new WaitForSeconds(0.45f);
 
         // 정리: 카메라 원위치 + 레터박스 해제
         if (CameraFollow.Instance != null) CameraFollow.Instance.cutsceneOffset = Vector2.zero;
