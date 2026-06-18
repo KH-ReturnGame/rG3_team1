@@ -181,7 +181,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractor
   interactKey: 102
   interactRadius: 1.2
-  highlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  highlightColor: {r: 0.3, g: 0.8, b: 0.95, a: 1}
   borderThickness: 4
 --- !u!114 &5994272772996261918
 MonoBehaviour:

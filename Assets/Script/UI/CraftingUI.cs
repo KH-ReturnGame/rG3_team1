@@ -68,8 +68,8 @@ public class CraftingUI : MonoBehaviour
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
-        GUI.color = new Color(0.13f, 0.10f, 0.08f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
+        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = new Color(0.30f, 0.80f, 0.95f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
         GUI.Label(new Rect(x, y + 12f, w, 32f), "제작대", title);
 
         // 탭
@@ -167,14 +167,14 @@ public class CraftingUI : MonoBehaviour
             Rect r = k == 0 ? r0 : r1;
             DrawSlotBg(r, true);
             if (inItem[k] != null) { DrawItem(r, inItem[k], inCount[k], bigSS); if (held == null && r.Contains(m)) hover = inItem[k]; }
-            else { slotName.normal.textColor = new Color(0.6f, 0.55f, 0.45f); GUI.Label(r, "재료", slotName); }
+            else { slotName.normal.textColor = new Color(0.5f, 0.6f, 0.7f); GUI.Label(r, "재료", slotName); }
             if (click && r.Contains(m)) { ClickInput(k); Event.current.Use(); }
         }
 
         var rc = MatchRecipe();
         ItemData outItem = rc != null ? ItemDatabase.Get(rc.outId) : null;
         DrawSlotBg(ro, true);
-        Border(ro, 3f, new Color(0.95f, 0.8f, 0.35f));      // 결과칸 강조
+        Border(ro, 3f, new Color(0.45f, 0.88f, 1f));      // 결과칸 강조
         if (outItem != null)
         {
             DrawItem(ro, outItem, 0, bigSS);
@@ -246,15 +246,15 @@ public class CraftingUI : MonoBehaviour
 
     private void DrawTabBtn(Rect r, string label, bool on)
     {
-        Fill(r, on ? new Color(0.86f, 0.63f, 0.30f) : new Color(0.22f, 0.18f, 0.13f));
-        Border(r, 2f, new Color(0.5f, 0.4f, 0.28f));
+        Fill(r, on ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.11f, 0.15f, 0.21f));
+        Border(r, 2f, new Color(0.26f, 0.42f, 0.54f));
         GUI.Label(r, label, on ? tabOn : tabOff);
     }
 
     private void DrawSlotBg(Rect r, bool accent)
     {
-        Fill(r, new Color(0.20f, 0.16f, 0.12f, 0.95f));
-        Border(r, 2f, accent ? new Color(0.85f, 0.55f, 0.25f) : new Color(0.45f, 0.38f, 0.28f));
+        Fill(r, new Color(0.11f, 0.15f, 0.21f, 0.95f));
+        Border(r, 2f, accent ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.26f, 0.42f, 0.54f));
     }
 
     private void DrawItem(Rect r, ItemData it, int cnt, float ss)
@@ -282,7 +282,7 @@ public class CraftingUI : MonoBehaviour
         if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
         if (tyy + th > Screen.height) tyy = Screen.height - th - 4f;
         Rect tr = new Rect(tx, tyy, tw, th);
-        Fill(tr, new Color(0.10f, 0.08f, 0.06f, 0.98f)); Border(tr, 2f, new Color(0.86f, 0.63f, 0.30f));
+        Fill(tr, new Color(0.06f, 0.08f, 0.12f, 0.98f)); Border(tr, 2f, new Color(0.30f, 0.80f, 0.95f));
         GUI.Label(new Rect(tx + 8f, tyy + 5f, tw - 16f, nh), nm, tipName);
         if (dh > 0f) GUI.Label(new Rect(tx + 8f, tyy + 5f + nh, tw - 16f, dh), desc, body);
     }
@@ -298,14 +298,14 @@ public class CraftingUI : MonoBehaviour
     {
         if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
         if (title != null) return;
-        Color cream = new Color(0.95f, 0.91f, 0.80f), goldC = new Color(1f, 0.85f, 0.42f);
+        Color cream = new Color(0.90f, 0.95f, 1f), goldC = new Color(1f, 0.85f, 0.42f);
         title = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; title.normal.textColor = goldC;
         sec = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold }; sec.normal.textColor = cream;
         tipName = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
         body = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true }; body.normal.textColor = cream;
         count = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight }; count.normal.textColor = Color.white;
         slotName = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        tabOn = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; tabOn.normal.textColor = new Color(0.12f, 0.09f, 0.06f);
+        tabOn = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; tabOn.normal.textColor = new Color(0.04f, 0.10f, 0.14f);
         tabOff = new GUIStyle(tabOn); tabOff.normal.textColor = cream;
         heldNum = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
         arrow = new GUIStyle(GUI.skin.label) { fontSize = 40, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; arrow.normal.textColor = goldC;

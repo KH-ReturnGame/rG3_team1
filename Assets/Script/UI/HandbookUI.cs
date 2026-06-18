@@ -43,8 +43,8 @@ public class HandbookUI : MonoBehaviour
         Rect panel = new Rect(px, py, pw, ph);
 
         Fill(new Rect(px + 5, py + 6, pw, ph), new Color(0f, 0f, 0f, 0.4f));     // 그림자
-        Fill(panel, new Color(0.09f, 0.08f, 0.07f, 0.97f));                      // 배경
-        Border(panel, 3f, new Color(0.86f, 0.63f, 0.30f));                       // 금색 테두리
+        Fill(panel, new Color(0.06f, 0.08f, 0.12f, 0.98f));                      // 배경
+        Border(panel, 3f, new Color(0.30f, 0.80f, 0.95f));                       // 시안 테두리
 
         GUI.Label(new Rect(px + 20f, py + 12f, pw - 40f, 32f), "모험 핸드북", titleStyle);
         // 닫기
@@ -61,7 +61,7 @@ public class HandbookUI : MonoBehaviour
         }
 
         Rect content = new Rect(px + 150f, py + 56f, pw - 166f, ph - 72f);
-        Border(content, 1f, new Color(0.4f, 0.34f, 0.25f));
+        Border(content, 1f, new Color(0.26f, 0.42f, 0.54f));
         if (tab == 0) DrawHelpTab(content);
         else GUI.Label(content, (tab == 1 ? "지도" : "도감") + " — 준비 중", dimStyle);
     }
@@ -93,9 +93,9 @@ public class HandbookUI : MonoBehaviour
 
     private bool Btn(Rect r, string label, bool selected)
     {
-        Fill(r, selected ? new Color(0.86f, 0.63f, 0.30f) : new Color(0.20f, 0.17f, 0.13f));
-        Border(r, 2f, new Color(0.5f, 0.4f, 0.28f));
-        itemStyle.normal.textColor = selected ? new Color(0.12f, 0.09f, 0.05f) : new Color(0.92f, 0.88f, 0.78f);
+        Fill(r, selected ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.11f, 0.15f, 0.21f));
+        Border(r, 2f, new Color(0.26f, 0.42f, 0.54f));
+        itemStyle.normal.textColor = selected ? new Color(0.04f, 0.10f, 0.14f) : new Color(0.78f, 0.86f, 0.94f);
         GUI.Label(r, label, itemStyle);
         return Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition);
     }
@@ -105,7 +105,7 @@ public class HandbookUI : MonoBehaviour
     private void EnsureStyles()
     {
         if (titleStyle != null) return;
-        Color cream = new Color(0.95f, 0.91f, 0.80f), gold = new Color(1f, 0.85f, 0.42f);
+        Color cream = new Color(0.90f, 0.95f, 1f), gold = new Color(1f, 0.85f, 0.42f);
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
         titleStyle.normal.textColor = gold;
         tabStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 15, fontStyle = FontStyle.Bold };
@@ -115,7 +115,7 @@ public class HandbookUI : MonoBehaviour
         bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft };
         bodyStyle.normal.textColor = cream;
         dimStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        dimStyle.normal.textColor = new Color(0.7f, 0.65f, 0.55f);
+        dimStyle.normal.textColor = new Color(0.58f, 0.68f, 0.78f);
     }
 
     private static Texture2D Tex() { if (_tex == null) { _tex = new Texture2D(1, 1); _tex.SetPixel(0, 0, Color.white); _tex.Apply(); } return _tex; }

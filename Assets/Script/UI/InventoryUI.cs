@@ -34,13 +34,13 @@ public class InventoryUI : MonoBehaviour
     private static readonly string[] catNames = { "전체", "소비", "재료", "장비" };
 
     // ── 색(나무/주황 팔레트) ──
-    private static readonly Color cPanel  = new Color(0.14f, 0.11f, 0.08f);   // 어두운 나무(불투명) — 글자/아이템이 잘 보이게
-    private static readonly Color cBorder = new Color(0.86f, 0.63f, 0.30f);   // 밝은 금색 테두리
-    private static readonly Color cSlot   = new Color(0.31f, 0.25f, 0.18f);   // 슬롯(패널보다 밝게)
-    private static readonly Color cSlotBd = new Color(0.58f, 0.45f, 0.30f);
-    private static readonly Color cAccent = new Color(1f, 0.64f, 0.14f);      // 밝은 주황(선택 탭·단축키)
-    private static readonly Color cTabOff = new Color(0.34f, 0.27f, 0.19f);
-    private static readonly Color cClose  = new Color(0.82f, 0.26f, 0.18f);   // 닫기(X) 버튼
+    private static readonly Color cPanel  = new Color(0.07f, 0.10f, 0.15f);   // 어두운 슬레이트 배경
+    private static readonly Color cBorder = new Color(0.30f, 0.80f, 0.95f);   // 시안 테두리
+    private static readonly Color cSlot   = new Color(0.13f, 0.18f, 0.25f);   // 슬롯(배경보다 밝게)
+    private static readonly Color cSlotBd = new Color(0.26f, 0.42f, 0.54f);
+    private static readonly Color cAccent = new Color(0.30f, 0.80f, 0.95f);   // 시안(선택 탭·단축키)
+    private static readonly Color cTabOff = new Color(0.14f, 0.18f, 0.24f);
+    private static readonly Color cClose  = new Color(0.85f, 0.30f, 0.30f);   // 닫기(X) 버튼
 
     private Texture2D white;
     private GUIStyle countStyle, tipNameStyle, tipDescStyle, tabStyle, tabSelStyle, goldStyle, itemLabelStyle, hotkeyNumStyle, closeStyle, hoodTitle, hoodStat, hoodCenter;
@@ -498,7 +498,7 @@ public class InventoryUI : MonoBehaviour
         if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
         if (countStyle != null) return;
 
-        Color cream = new Color(0.97f, 0.93f, 0.83f);
+        Color cream = new Color(0.90f, 0.95f, 1f);
         Color gold  = new Color(1f, 0.85f, 0.42f);
         countStyle     = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.LowerRight, fontStyle = FontStyle.Bold, fontSize = 18 };
         countStyle.normal.textColor = Color.white;
@@ -507,7 +507,7 @@ public class InventoryUI : MonoBehaviour
         tipDescStyle   = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
         tipDescStyle.normal.textColor = cream;
         tabStyle       = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 14, fontStyle = FontStyle.Bold };
-        tabStyle.normal.textColor = new Color(0.82f, 0.74f, 0.60f);
+        tabStyle.normal.textColor = new Color(0.62f, 0.72f, 0.82f);
         tabSelStyle    = new GUIStyle(tabStyle);
         tabSelStyle.normal.textColor = Color.white;
         goldStyle      = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleRight, fontSize = 16, fontStyle = FontStyle.Bold };

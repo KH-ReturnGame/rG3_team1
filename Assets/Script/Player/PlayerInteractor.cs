@@ -8,7 +8,7 @@ public class PlayerInteractor : MonoBehaviour
     public float interactRadius = 1.2f;
 
     [Header("강조 표시")]
-    public Color highlightColor = new Color(1f, 0.85f, 0.3f);   // 테두리·뱃지 강조색(금색)
+    public Color highlightColor = new Color(0.30f, 0.80f, 0.95f);   // 테두리·뱃지 강조색(시안)
     public float borderThickness = 4f;                          // 대상 테두리 두께(px)
 
     private IInteractable nearest;
@@ -82,12 +82,12 @@ public class PlayerInteractor : MonoBehaviour
 
         Rect badge = new Rect(bx, by, bw, bh);
         Fill(new Rect(badge.x + 2f, badge.y + 3f, badge.width, badge.height), new Color(0f, 0f, 0f, 0.35f));  // 그림자
-        Fill(badge, new Color(0.07f, 0.07f, 0.09f, 0.92f));   // 어두운 배경
-        DrawBorder(badge, 2f, highlightColor);                // 금색 테두리
+        Fill(badge, new Color(0.06f, 0.08f, 0.12f, 0.94f));   // 어두운 슬레이트 배경
+        DrawBorder(badge, 2f, highlightColor);                // 시안 테두리
 
         Rect keyCap = new Rect(badge.x + padX, badge.y + (bh - 22f) * 0.5f, keyW, 22f);
         Fill(keyCap, highlightColor);
-        keyStyle.normal.textColor = new Color(0.12f, 0.09f, 0.04f);
+        keyStyle.normal.textColor = new Color(0.04f, 0.10f, 0.14f);
         GUI.Label(keyCap, keyText, keyStyle);                 // 키캡 [F]
 
         labelStyle.normal.textColor = Color.white;

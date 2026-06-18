@@ -32,10 +32,10 @@ public class Toast : MonoBehaviour
         float w = Mathf.Min(Screen.width * 0.8f, 640f), h = 56f;
         float x = (Screen.width - w) * 0.5f, y = Screen.height * 0.14f;
         var prev = GUI.color;
-        GUI.color = new Color(0.10f, 0.08f, 0.06f, 0.92f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f, alpha);
+        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = new Color(0.30f, 0.80f, 0.95f, alpha);
         GUI.DrawTexture(new Rect(x, y, w, 3f), white); GUI.DrawTexture(new Rect(x, y + h - 3f, w, 3f), white);
-        style.normal.textColor = new Color(1f, 0.93f, 0.72f, alpha);
+        style.normal.textColor = new Color(0.85f, 0.95f, 1f, alpha);
         GUI.color = new Color(1f, 1f, 1f, alpha);
         GUI.Label(new Rect(x, y, w, h), msg, style);
         GUI.color = prev;
