@@ -682,6 +682,21 @@ public class PlayerController : MonoBehaviour
         isParrying = false;
     }
 
+    // 튜토리얼 패링 레슨: 슬로우모션 중 우클릭이 감지되면 CombatTutorial이 호출.
+    // 실제 TakeDamage 패링 분기와 동일한 보상(그로기·반격 모션·Q쿨 초기화·타격감)을 강제 발동한다.
+    // ※ 호출 전 Time.timeScale=1 복구 필요(Juice 히트스톱은 timeScale<0.9면 무시됨).
+    public void TutorialParrySuccess(IParryable attacker)
+    {
+        if (attacker != null) attacker.ApplyGroggy();
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState);
+        skillCooldownTimer = 0f;          // 패링 성공 → Q스킬 즉시 초기화
+        isGuarding = false;
+        isParrying = false;
+        guardCooldownTimer = guardCooldown;   // 같은 프레임의 우클릭이 일반 가드로 중복 처리되는 것 방지
+        Juice.ParryHit();                 // "팅" — 히트스톱 + 셰이크 + 플래시
+    }
+
     public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default)
     {
         if (isDashing || hitInvincibleTimer > 0) return;   // 대시 무적 / 피격 후 무적

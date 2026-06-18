@@ -1,15 +1,18 @@
 using UnityEngine;
 
-// 도움말 팝업(자동부팅·영구 싱글톤). HelpTrigger가 Show/Hide로 제어.
-// 화면 상단 중앙에 제목+본문 패널을 페이드인으로 표시. 게임플레이는 멈추지 않음(읽으면서 이동 가능).
+// 도움말 팝업(자동부팅·영구 싱글톤).
+//  · 일반 도움말(HelpTrigger 구역 / 온보딩 팁 / 전투 안내): ShowManual 로 띄우고
+//    플레이어가 [ESC] 또는 우상단 [X] 로 직접 닫을 때까지 유지된다(이동·시간 경과로 사라지지 않음).
+//  · 패링 큐처럼 '액션 유도'는 ShowSticky 로 띄우고 코드(ForceHide)로만 닫는다(X·ESC 없음).
 public class HelpPopupUI : MonoBehaviour
 {
     public static HelpPopupUI Instance;
 
-    private HelpTrigger owner;
     private string title, body;
     private float shownAt;
-    private GUIStyle titleStyle, bodyStyle, tagStyle;
+    private bool visible;
+    private bool manual;     // true: ESC·X로 닫기 / false: 코드(ForceHide)로만 닫기
+    private GUIStyle titleStyle, bodyStyle, tagStyle, closeStyle, hintStyle;
     private static Texture2D _tex;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -31,36 +34,40 @@ public class HelpPopupUI : MonoBehaviour
         Seen.Add(new HelpEntry { title = t, body = b });
     }
 
-    private float timedUntil;   // 이벤트성(타이머) 도움말이 사라질 시각
-    public void Show(HelpTrigger o, string t, string b) { owner = o; timedUntil = 0f; title = t; body = b; shownAt = Time.unscaledTime; Record(t, b); }
-    public void Hide(HelpTrigger o) { if (owner == o) owner = null; }
-    // 존이 아닌 '이벤트성' 도움말(온보딩 팁 등): duration초 뒤 자동으로 사라짐.
-    public void ShowTimed(string t, string b, float duration) { owner = null; title = t; body = b; shownAt = Time.unscaledTime; timedUntil = Time.unscaledTime + duration; Record(t, b); }
+    // 일반 도움말: [ESC]·[X]로 직접 닫을 때까지 유지. 핸드북에 기록.
+    public void ShowManual(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = true; Record(t, b); }
+    // 액션 큐(패링 레슨 등): ForceHide로만 닫힘. 일시적 입력 유도라 기록하지 않음.
+    public void ShowSticky(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = false; }
+    public void ForceHide() { visible = false; }
+    public bool IsManualOpen => visible && manual;
+
+    void Update()
+    {
+        if (visible && manual && Input.GetKeyDown(KeyCode.Escape)) visible = false;
+    }
 
     void OnGUI()
     {
-        bool visible = owner != null || Time.unscaledTime < timedUntil;
         if (!visible || string.IsNullOrEmpty(body)) return;
         EnsureStyles();
 
-        float a = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.25f);   // 페이드 인
-        if (timedUntil > 0f) a *= Mathf.Clamp01((timedUntil - Time.unscaledTime) / 0.5f);   // 타이머형: 끝에서 페이드아웃
-        Color cyan = new Color(0.35f, 0.85f, 1f);
+        float a = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.2f);   // 페이드 인
+        Color cyan = new Color(0.30f, 0.80f, 0.95f);
 
         float w = Mathf.Min(720f, Screen.width - 60f);
-        float pad = 24f, headH = 40f, gap = 12f;
+        float pad = 24f, headH = 40f, gap = 12f, hintH = manual ? 22f : 0f;
         float bodyW = w - pad * 2f;
         float bodyH = bodyStyle.CalcHeight(new GUIContent(body), bodyW);
-        float h = pad + headH + gap + bodyH + pad;
+        float h = pad + headH + gap + bodyH + (manual ? gap + hintH : 0f) + pad;
         float x = (Screen.width - w) * 0.5f;
         float y = Screen.height * 0.07f;
 
         Color prev = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.35f * a);              // 그림자
+        GUI.color = new Color(0f, 0f, 0f, 0.35f * a);                 // 그림자
         GUI.DrawTexture(new Rect(x + 4f, y + 5f, w, h), Tex());
-        GUI.color = new Color(0.06f, 0.07f, 0.10f, 0.95f * a);    // 배경
+        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.96f * a);       // 배경(슬레이트)
         GUI.DrawTexture(new Rect(x, y, w, h), Tex());
-        GUI.color = new Color(cyan.r, cyan.g, cyan.b, 0.16f * a); // 헤더 강조 띠
+        GUI.color = new Color(cyan.r, cyan.g, cyan.b, 0.16f * a);    // 헤더 강조 띠
         GUI.DrawTexture(new Rect(x, y, w, headH + pad), Tex());
         GUI.color = prev;
         Border(new Rect(x, y, w, h), 2f, new Color(cyan.r, cyan.g, cyan.b, a));   // 테두리
@@ -69,11 +76,28 @@ public class HelpPopupUI : MonoBehaviour
         tagStyle.normal.textColor = new Color(0.6f, 0.85f, 1f, a);
         GUI.Label(new Rect(x + pad, y + pad - 2f, 70f, headH), "도움말", tagStyle);
         titleStyle.normal.textColor = new Color(1f, 1f, 1f, a);
-        GUI.Label(new Rect(x + pad + 70f, y + pad - 4f, w - pad * 2f - 70f, headH), title, titleStyle);
+        GUI.Label(new Rect(x + pad + 70f, y + pad - 4f, w - pad * 2f - 70f - 36f, headH), title, titleStyle);
 
         // 본문
         bodyStyle.normal.textColor = new Color(0.92f, 0.94f, 0.98f, a);
         GUI.Label(new Rect(x + pad, y + pad + headH + gap - 6f, bodyW, bodyH + 4f), body, bodyStyle);
+
+        if (manual)
+        {
+            // 하단 닫기 힌트
+            hintStyle.normal.textColor = new Color(0.6f, 0.72f, 0.82f, a);
+            GUI.Label(new Rect(x, y + h - pad - hintH + 2f, w, hintH), "[ESC] 또는 [X] 를 눌러 닫기", hintStyle);
+
+            // 우상단 X 버튼
+            Rect close = new Rect(x + w - 38f, y + 10f, 26f, 26f);
+            bool hover = close.Contains(Event.current.mousePosition);
+            GUI.color = new Color(hover ? 0.85f : 0.5f, hover ? 0.32f : 0.24f, hover ? 0.32f : 0.24f, a);
+            GUI.DrawTexture(close, Tex());
+            GUI.color = prev;
+            closeStyle.normal.textColor = new Color(1f, 1f, 1f, a);
+            GUI.Label(close, "X", closeStyle);
+            if (Event.current.type == EventType.MouseDown && hover) { Event.current.Use(); visible = false; }
+        }
     }
 
     private void EnsureStyles()
@@ -82,6 +106,8 @@ public class HelpPopupUI : MonoBehaviour
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
         bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true, alignment = TextAnchor.UpperLeft };
         tagStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        closeStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
     }
 
     private static Texture2D Tex()

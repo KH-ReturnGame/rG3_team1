@@ -10,6 +10,8 @@ public class RangedEnemy : Enemy
     public float preferredDistance = 4.5f;  // 유지하려는 거리(이보다 가까우면 후퇴) — attackRange보다 작게
     public Transform firePoint;             // 발사 위치(비우면 자기 위치 + 약간 위)
 
+    public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
+
     // attackRange = '사격 사거리'로 사용(인스펙터에서 크게: 6~7 권장)
     protected override void TickChase()
     {

@@ -28,14 +28,8 @@ public class HelpTrigger : MonoBehaviour
         if (other.GetComponentInParent<PlayerController>() == null) return;
         if (showOnce && consumed) return;
         string t, b; GetText(out t, out b);
-        if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.Show(this, t, b);
+        if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ShowManual(t, b);   // [ESC]·[X]로 직접 닫을 때까지 유지
         consumed = true;
-    }
-
-    void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.GetComponentInParent<PlayerController>() == null) return;
-        if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.Hide(this);
     }
 
     public void GetText(out string title, out string body)

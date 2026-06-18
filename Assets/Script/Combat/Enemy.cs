@@ -22,6 +22,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float attackActive = 0.1f;    // 실제 타격 판정이 나가는 순간
     public float attackRecover = 0.5f;   // 공격 후 경직
     public float attackCooldown = 1.0f;  // 다음 공격까지 추가 대기
+    public float firstAttackDelay = 0f;  // 첫 교전(발견) 후 첫 공격까지 추가 유예(튜토리얼 등에서 사용)
 
     [Header("Groggy (패링당했을 때)")]
     public float groggyDuration = 2f;
@@ -69,6 +70,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     protected bool struck;            // 이번 공격에서 이미 타격을 줬는지
     private float wanderTimer;
     private bool wanderPausing;
+    private bool engaged;             // 플레이어를 한 번이라도 발견(교전)했는지 — 첫 공격 유예용
     
 
     // 임시 색 구분
@@ -76,6 +78,12 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private readonly Color strikeColor = Color.red;                  // 타격 순간
     private readonly Color groggyColor = Color.cyan;                 // 그로기
     private readonly Color hitColor = Color.white;                   // 맞는 순간
+
+    // ── 튜토리얼 훅 ── 외부(CombatTutorial)가 '피격 직전(예비동작 진입)'을 감지하기 위한 정적 이벤트(기본 무구독).
+    public static System.Action<Enemy> WindupStarted;
+    public Transform TargetPlayer => player;                          // 이 적이 노리는 대상
+    public bool IsAttacking => state == State.Windup || state == State.Strike;
+    public virtual bool IsParryableMelee => true;                     // 원거리는 false로 오버라이드(투사체는 패링 레슨 제외)
 
     void Awake()
     {
@@ -158,6 +166,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         if (DistToPlayer() <= detectRange)
         {
             dir = player.position.x >= transform.position.x ? 1 : -1;   // 발견 시 플레이어 쪽으로 한 번 돌아봄
+            if (!engaged) { engaged = true; attackCdTimer = Mathf.Max(attackCdTimer, firstAttackDelay); }   // 첫 교전 → 첫 공격까지 유예
             state = State.Chase;
         }
     }
@@ -222,6 +231,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         struck = false;
         state = State.Windup;
         stateTimer = attackWindup;
+        WindupStarted?.Invoke(this);   // 피격 직전(예비동작) 알림 — 튜토리얼 패링 레슨 훅
     }
 
     protected virtual void TickWindup()

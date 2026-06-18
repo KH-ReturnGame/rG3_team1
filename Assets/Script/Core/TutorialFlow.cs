@@ -12,15 +12,15 @@ public static class TutorialFlow
     {
         if (!armed || itemTip || HelpPopupUI.Instance == null) return;
         itemTip = true;
-        HelpPopupUI.Instance.ShowTimed("아이템 획득",
-            "아이템을 손에 넣었습니다!\n[B] 키를 눌러 배낭을 열어 무엇을 주웠는지 확인해 보세요.", 7f);
+        HelpPopupUI.Instance.ShowManual("아이템 획득",
+            "아이템을 손에 넣었습니다!\n[B] 키를 눌러 배낭을 열어 무엇을 주웠는지 확인해 보세요.");
     }
 
     public static void OnBackpackOpened()
     {
         if (!armed || backpackTip || HelpPopupUI.Instance == null) return;
         backpackTip = true;
-        HelpPopupUI.Instance.ShowTimed("배낭 · 핫바 등록",
-            "배낭의 아이템을 번호(1, 2 …)가 적힌 핫바 칸으로 옮기면, 그 숫자키로 언제든 빠르게 사용할 수 있습니다.\n포션을 핫바에 등록해 두면 전투 중에도 바로 쓸 수 있어요.", 9f);
+        HelpPopupUI.Instance.ShowManual("배낭 · 핫바 등록",
+            "배낭의 아이템을 번호(1, 2 …)가 적힌 핫바 칸으로 옮기면, 그 숫자키로 언제든 빠르게 사용할 수 있습니다.\n포션을 핫바에 등록해 두면 전투 중에도 바로 쓸 수 있어요.");
     }
 }
