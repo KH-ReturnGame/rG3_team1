@@ -167,7 +167,7 @@ public class BossPattern2_DashTeleport : BossPatternBase
     {
         if (clip == null) return;
         if (_audio != null) _audio.PlayOneShot(clip);
-        else BossHelpers.PlaySoundEffect(clip, 1f);
+        else AudioSource.PlayClipAtPoint(clip, transform.position, 1f);
     }
 
     void OnDrawGizmosSelected()
