@@ -34,7 +34,7 @@ public class StatUI : MonoBehaviour
     public float barWidth = 220f;
     public float barHeight = 16f;
 
-    private static Texture2D _heart, _white;
+    private static Texture2D _white;
 
     void OnGUI()
     {
@@ -45,14 +45,13 @@ public class StatUI : MonoBehaviour
         float x = Screen.width * origin.x;
         float y = Screen.height * origin.y;
 
-        // 하트(현재=빨강 / 빈 칸=회색)
+        // 하트(채워짐 / 빈 칸) — 음영·외곽선·하이라이트가 들어간 텍스처
+        GUI.color = Color.white;
         for (int i = 0; i < gm.MaxHearts; i++)
         {
             Rect r = new Rect(x + i * (heartSize + heartPad), y, heartSize, heartSize);
-            GUI.color = i < gm.CurrentHearts ? new Color(0.9f, 0.15f, 0.2f) : new Color(0.25f, 0.25f, 0.28f);
-            GUI.DrawTexture(r, HeartTex());
+            GUI.DrawTexture(r, Heart(i < gm.CurrentHearts));
         }
-        GUI.color = Color.white;
     }
 
     private static Texture2D WhiteTex()
@@ -61,22 +60,56 @@ public class StatUI : MonoBehaviour
         return _white;
     }
 
-    // 하트 모양 텍스처(흰색, 알파). 그릴 때 GUI.color로 색칠. 음함수 (x²+y²-1)³ - x²y³ ≤ 0.
-    private static Texture2D HeartTex()
+    // 하트 텍스처(64px). 음함수 (x²+y²-1)³ - x²y³ ≤ 0 으로 모양을 잡고,
+    // 채워짐: 빨강 그라데이션 + 어두운 외곽선 + 좌상단 하이라이트 / 빈 칸: 어두운 채움 + 밝은 테두리.
+    private static Texture2D _heartFull, _heartEmpty;
+    private static Texture2D Heart(bool full)
     {
-        if (_heart != null) return _heart;
-        const int S = 32;
-        _heart = new Texture2D(S, S, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+        if (full && _heartFull != null) return _heartFull;
+        if (!full && _heartEmpty != null) return _heartEmpty;
+
+        const int S = 64;
+        var tex = new Texture2D(S, S, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        Color topR = new Color(1f, 0.34f, 0.42f), botR = new Color(0.80f, 0.12f, 0.20f), rim = new Color(0.42f, 0.05f, 0.10f);
+        Color eFill = new Color(0.15f, 0.17f, 0.21f), eRim = new Color(0.34f, 0.38f, 0.45f);
+
         for (int py = 0; py < S; py++)
             for (int px = 0; px < S; px++)
             {
-                float x = (px / (float)(S - 1)) * 2.6f - 1.3f;
-                float y = (py / (float)(S - 1)) * 2.6f - 1.4f;        // 텍스처 좌표(아래=0) 보정: 봉우리 위·꼭지점 아래
+                // 3x3 슈퍼샘플로 가장자리 부드럽게(알파 커버리지)
+                float cov = 0f; const int N = 3;
+                for (int sy = 0; sy < N; sy++)
+                    for (int sx = 0; sx < N; sx++)
+                    {
+                        float fx = (px + (sx + 0.5f) / N) / S * 2.6f - 1.3f;
+                        float fy = (py + (sy + 0.5f) / N) / S * 2.6f - 1.4f;
+                        float aa = fx * fx + fy * fy - 1f;
+                        if (aa * aa * aa - fx * fx * fy * fy * fy <= 0f) cov += 1f;
+                    }
+                cov /= N * N;
+                if (cov <= 0f) { tex.SetPixel(px, py, Color.clear); continue; }
+
+                float x = (px + 0.5f) / S * 2.6f - 1.3f;
+                float y = (py + 0.5f) / S * 2.6f - 1.4f;
                 float a = x * x + y * y - 1f;
-                float f = a * a * a - x * x * y * y * y;
-                _heart.SetPixel(px, py, f <= 0f ? Color.white : Color.clear);
+                float f = a * a * a - x * x * y * y * y;   // <=0 안쪽, 0 근처 = 가장자리
+                float t = Mathf.Clamp01((py + 0.5f) / S);   // 0 아래 ~ 1 위
+
+                Color col;
+                if (full)
+                {
+                    col = Color.Lerp(botR, topR, t);
+                    if (f > -0.35f) col = Color.Lerp(col, rim, 0.65f);                          // 외곽선 어둡게
+                    float hx = x + 0.42f, hy = y - 0.55f, hd = hx * hx * 1.5f + hy * hy;
+                    if (hd < 0.16f) col = Color.Lerp(col, Color.white, (1f - hd / 0.16f) * 0.75f);  // 좌상단 하이라이트
+                }
+                else col = (f > -0.30f) ? eRim : eFill;
+
+                col.a = cov;
+                tex.SetPixel(px, py, col);
             }
-        _heart.Apply();
-        return _heart;
+        tex.Apply();
+        if (full) _heartFull = tex; else _heartEmpty = tex;
+        return tex;
     }
 }
