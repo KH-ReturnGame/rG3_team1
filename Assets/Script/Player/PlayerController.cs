@@ -135,6 +135,12 @@ public class PlayerController : MonoBehaviour
     public static PlayerController Instance;          // 현재 씬의 플레이어(장비 적용용)
     private int baseMaxJumps;                         // 장신구 보너스 전 기본값
 
+    // ── 컷씬 제어(IntroCutscene 등이 사용) ──
+    [System.NonSerialized] public bool cutsceneActive;   // true면 입력·자동애니 잠금(중력 낙하는 유지)
+    public bool Grounded => isGrounded;                  // 외부에서 착지 판정 읽기
+    public void PlayAnim(string state) => PlayStateForced(state);   // 특정 애니 강제 재생
+    public void ZeroVelocity() { if (rb != null) rb.linearVelocity = Vector2.zero; }
+
     [Header("낙사")]
     public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
     public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
@@ -221,6 +227,8 @@ public class PlayerController : MonoBehaviour
 
         if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.deltaTime;     // 대시/가드 쿨타임은 항상 진행
         if (guardCooldownTimer > 0f) guardCooldownTimer -= Time.deltaTime;
+
+        if (cutsceneActive) { CheckGrounded(); return; }   // 컷씬 중: 입력·자동애니 잠금(중력 낙하만 유지)
 
         if (isDashing)
         {

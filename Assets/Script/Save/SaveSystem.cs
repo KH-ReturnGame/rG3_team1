@@ -11,6 +11,8 @@ public static class SaveSystem
     public const int SlotCount = 3;
     public static int CurrentSlot = -1;
 
+    public static bool IntroPending;   // 새 게임으로 시작 씬 진입 시 인트로 컷씬 1회 재생 플래그
+
     private static SaveSlotData pending;
 
     private static string PathFor(int slot)
@@ -50,6 +52,7 @@ public static class SaveSystem
         Write(slot, data);
         CurrentSlot = slot;
         pending = data;
+        IntroPending = true;   // 새 게임 → 시작 씬에서 인트로 컷씬 재생
         LoadSceneSafe(startScene);
     }
 

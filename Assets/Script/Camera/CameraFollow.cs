@@ -41,6 +41,7 @@ public class CameraFollow : MonoBehaviour
 
     private Camera cam;
     public static CameraFollow Instance;                 // Juice(셰이크) 접근용
+    [System.NonSerialized] public Vector2 cutsceneOffset;   // 컷씬용 카메라 오프셋(IntroCutscene 등이 설정, 끝나면 0)
     private float shakeAmt, shakeTimer, shakeDur;
     private Vector3 vel;
     private float lookDir = 1f, curAhead, aheadVel, lastX;
@@ -183,6 +184,7 @@ public class CameraFollow : MonoBehaviour
         else if (dy < -verticalDeadZone) goalY = anchoredY + verticalDeadZone;
 
         Vector3 desired = new Vector3(desiredX, goalY, transform.position.z);
+        desired += (Vector3)cutsceneOffset;   // 컷씬용 카메라 이동(부드럽게 SmoothDamp로 적용)
         Vector3 pos = Vector3.SmoothDamp(transform.position, desired, ref vel, smoothTime);
 
         if (useBounds && hasBounds && cam != null && cam.orthographic)
