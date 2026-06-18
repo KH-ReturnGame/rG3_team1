@@ -1,9 +1,10 @@
 using UnityEngine;
 
-// 도움말 팝업(자동부팅·영구 싱글톤).
-//  · 일반 도움말(HelpTrigger 구역 / 온보딩 팁 / 전투 안내): ShowManual 로 띄우고
-//    플레이어가 [ESC] 또는 우상단 [X] 로 직접 닫을 때까지 유지된다(이동·시간 경과로 사라지지 않음).
-//  · 패링 큐처럼 '액션 유도'는 ShowSticky 로 띄우고 코드(ForceHide)로만 닫는다(X·ESC 없음).
+// 도움말 팝업(자동부팅·영구 싱글톤). 표시 방식 3가지:
+//  · ShowManual  : [ESC] 또는 우상단 [X] 로 직접 닫을 때까지 유지(이동·시간 경과로 안 사라짐). 핸드북 기록 O.
+//  · ShowTimed   : duration초 뒤 자동으로 사라짐(끝에서 페이드아웃). 핸드북 기록 O.
+//  · ShowSticky  : 코드(ForceHide)로만 닫힘 — X·ESC 없음. 패링 큐 같은 액션 유도용. 기록 X.
+// 어떤 도움말에 어떤 모드를 쓸지는 각 호출부(HelpTrigger 인스펙터 등)에서 선택.
 public class HelpPopupUI : MonoBehaviour
 {
     public static HelpPopupUI Instance;
@@ -11,7 +12,8 @@ public class HelpPopupUI : MonoBehaviour
     private string title, body;
     private float shownAt;
     private bool visible;
-    private bool manual;     // true: ESC·X로 닫기 / false: 코드(ForceHide)로만 닫기
+    private bool manual;        // true면 [ESC]·[X]로 닫음
+    private float timedUntil;   // >0이면 그 시각에 자동으로 사라짐(Timed). 0이면 타이머 없음.
     private GUIStyle titleStyle, bodyStyle, tagStyle, closeStyle, hintStyle;
     private static Texture2D _tex;
 
@@ -34,16 +36,20 @@ public class HelpPopupUI : MonoBehaviour
         Seen.Add(new HelpEntry { title = t, body = b });
     }
 
-    // 일반 도움말: [ESC]·[X]로 직접 닫을 때까지 유지. 핸드북에 기록.
-    public void ShowManual(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = true; Record(t, b); }
-    // 액션 큐(패링 레슨 등): ForceHide로만 닫힘. 일시적 입력 유도라 기록하지 않음.
-    public void ShowSticky(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = false; }
+    // [ESC]·[X]로 직접 닫을 때까지 유지.
+    public void ShowManual(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = true; timedUntil = 0f; Record(t, b); }
+    // duration초 뒤 자동으로 사라짐.
+    public void ShowTimed(string t, string b, float duration) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = false; timedUntil = Time.unscaledTime + Mathf.Max(0.1f, duration); Record(t, b); }
+    // 코드(ForceHide)로만 닫힘. 일시적 입력 유도라 기록하지 않음.
+    public void ShowSticky(string t, string b) { title = t; body = b; shownAt = Time.unscaledTime; visible = true; manual = false; timedUntil = 0f; }
     public void ForceHide() { visible = false; }
     public bool IsManualOpen => visible && manual;
 
     void Update()
     {
-        if (visible && manual && Input.GetKeyDown(KeyCode.Escape)) visible = false;
+        if (!visible) return;
+        if (manual) { if (Input.GetKeyDown(KeyCode.Escape)) visible = false; return; }
+        if (timedUntil > 0f && Time.unscaledTime >= timedUntil) visible = false;   // Timed 자동 종료
     }
 
     void OnGUI()
@@ -51,7 +57,8 @@ public class HelpPopupUI : MonoBehaviour
         if (!visible || string.IsNullOrEmpty(body)) return;
         EnsureStyles();
 
-        float a = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.2f);   // 페이드 인
+        float a = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.2f);                           // 페이드 인
+        if (timedUntil > 0f) a *= Mathf.Clamp01((timedUntil - Time.unscaledTime) / 0.5f);         // Timed: 끝에서 페이드아웃
         Color cyan = new Color(0.30f, 0.80f, 0.95f);
 
         float w = Mathf.Min(720f, Screen.width - 60f);

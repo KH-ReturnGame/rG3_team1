@@ -6,13 +6,23 @@ public static class TutorialFlow
 {
     private static bool armed, itemTip, backpackTip;
 
+    // 온보딩 팁 표시 방식(여기서 직접 조정). ManualTips=true: ESC/X로 닫기 / false: TipSeconds초 뒤 자동.
+    public static bool ManualTips = true;
+    public static float TipSeconds = 7f;
+
     public static void Begin() { armed = true; itemTip = false; backpackTip = false; }   // SaveSystem.NewGame에서 호출
+
+    private static void ShowTip(string t, string b)
+    {
+        if (ManualTips) HelpPopupUI.Instance.ShowManual(t, b);
+        else HelpPopupUI.Instance.ShowTimed(t, b, TipSeconds);
+    }
 
     public static void OnItemAcquired()
     {
         if (!armed || itemTip || HelpPopupUI.Instance == null) return;
         itemTip = true;
-        HelpPopupUI.Instance.ShowManual("아이템 획득",
+        ShowTip("아이템 획득",
             "아이템을 손에 넣었습니다!\n[B] 키를 눌러 배낭을 열어 무엇을 주웠는지 확인해 보세요.");
     }
 
@@ -20,7 +30,7 @@ public static class TutorialFlow
     {
         if (!armed || backpackTip || HelpPopupUI.Instance == null) return;
         backpackTip = true;
-        HelpPopupUI.Instance.ShowManual("배낭 · 핫바 등록",
+        ShowTip("배낭 · 핫바 등록",
             "배낭의 아이템을 번호(1, 2 …)가 적힌 핫바 칸으로 옮기면, 그 숫자키로 언제든 빠르게 사용할 수 있습니다.\n포션을 핫바에 등록해 두면 전투 중에도 바로 쓸 수 있어요.");
     }
 }

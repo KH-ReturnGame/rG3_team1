@@ -141,6 +141,21 @@ public class PlayerController : MonoBehaviour
     public void PlayAnim(string state) => PlayStateForced(state);   // 특정 애니 강제 재생
     public void ZeroVelocity() { if (rb != null) rb.linearVelocity = Vector2.zero; }
 
+    // 컷씬용 걷기: 지정 방향으로 이동 + 방향 전환 + 걷기 애니(매 프레임 호출). cutsceneActive 중 외부 컷씬이 구동.
+    public void CutsceneWalk(int dir)
+    {
+        facingDir = dir < 0 ? -1 : 1;
+        if (sr != null) sr.flipX = facingDir < 0;
+        if (rb != null) rb.linearVelocity = new Vector2(facingDir * moveSpeed, rb.linearVelocity.y);
+        PlayStateForced(isSwordDrawn ? swordMoveState : moveState);
+    }
+    // 컷씬용 정지: 수평 정지 + 대기 자세.
+    public void CutsceneStop()
+    {
+        if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        PlayStateForced(isSwordDrawn ? swordIdleState : idleState);
+    }
+
     [Header("낙사")]
     public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
     public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리

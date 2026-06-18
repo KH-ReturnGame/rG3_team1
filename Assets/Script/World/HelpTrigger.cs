@@ -15,7 +15,11 @@ public class HelpTrigger : MonoBehaviour
     public string customTitle = "";
     [TextArea] public string customBody = "";
 
+    public enum DisplayMode { Manual, Timed }   // Manual: ESC/X로 직접 닫기 / Timed: 잠시 후 자동으로 사라짐
+
     [Header("옵션")]
+    public DisplayMode displayMode = DisplayMode.Manual;   // 이 도움말을 어떻게 닫을지
+    public float timedSeconds = 7f;                        // Timed 모드일 때 표시 시간(초)
     public bool showOnce = false;   // true = 최초 1회만 뜸(이후 재진입해도 안 뜸)
 
     private bool consumed;
@@ -28,7 +32,11 @@ public class HelpTrigger : MonoBehaviour
         if (other.GetComponentInParent<PlayerController>() == null) return;
         if (showOnce && consumed) return;
         string t, b; GetText(out t, out b);
-        if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ShowManual(t, b);   // [ESC]·[X]로 직접 닫을 때까지 유지
+        if (HelpPopupUI.Instance != null)
+        {
+            if (displayMode == DisplayMode.Timed) HelpPopupUI.Instance.ShowTimed(t, b, timedSeconds);
+            else HelpPopupUI.Instance.ShowManual(t, b);   // [ESC]·[X]로 직접 닫을 때까지 유지
+        }
         consumed = true;
     }
 

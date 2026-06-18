@@ -13,6 +13,8 @@ public class CombatTutorial : MonoBehaviour
 
     [Header("발견 도움말")]
     public float sightRange = 7.5f;     // 이 거리 안에 살아있는 적이 들어오면 공격 안내(1회)
+    public bool combatHelpManual = true;   // true: ESC/X로 직접 닫기 / false: 잠시 후 자동
+    public float combatHelpSeconds = 8f;   // 자동(Manual=false)일 때 표시 시간
 
     [Header("적 첫 공격 유예")]
     public float enemyFirstAttackDelay = 3f;   // 튜토리얼 적이 플레이어를 발견한 뒤 첫 공격까지 더 기다림(읽을 시간)
@@ -106,10 +108,12 @@ public class CombatTutorial : MonoBehaviour
         if (NearestLiveEnemy(p.transform.position, sightRange) == null) return;
 
         combatHelpShown = true;
-        HelpPopupUI.Instance.ShowManual("전투 — 공격",
-            "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
+        const string ct = "전투 — 공격";
+        const string cb = "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
             "[Q]를 누르면 넓게 베는 횡베기 스킬을 사용합니다(쿨타임 있음).\n" +
-            "적의 공격은 [우클릭] 가드로 막거나 타이밍 맞춰 패링할 수 있습니다.");
+            "적의 공격은 [우클릭] 가드로 막거나 타이밍 맞춰 패링할 수 있습니다.";
+        if (combatHelpManual) HelpPopupUI.Instance.ShowManual(ct, cb);
+        else HelpPopupUI.Instance.ShowTimed(ct, cb, combatHelpSeconds);
     }
 
     private Enemy NearestLiveEnemy(Vector3 from, float maxDist)
