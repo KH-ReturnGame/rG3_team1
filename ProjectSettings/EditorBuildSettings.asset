@@ -15,10 +15,13 @@ EditorBuildSettings:
     path: Assets/Scenes/StartingArea.unity
     guid: a00411e484064c540a3c7880717a3ab0
   - enabled: 1
+    path: Assets/Scenes/Stage1.unity
+    guid: d4e5f26eaea359b42b76518890fbb5bd
+  - enabled: 0
     path: Assets/Scenes/Stage2.unity
-    guid: bd65523c1d341a5458b8543e419a8261
+    guid: 8037ee5b73a76b9479b63e7eb1cf54e8
   - enabled: 1
-    path: Assets/Scenes/BigLayout.unity
+    path: Assets/Scenes/Stage2.unity
     guid: 8037ee5b73a76b9479b63e7eb1cf54e8
   - enabled: 1
     path: Assets/Scenes/Stage3.unity

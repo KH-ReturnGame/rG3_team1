@@ -15550,11 +15550,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IntroCutscene
   dropHeight: 8
-  sprawlHold: 1.5
+  sprawlHold: 0.7
   letterboxTime: 0.6
   fallState: JumpFall
   landState: Land
-  sprawlState: Die
+  sprawlState: GroundSlam
   getUpState: Crouch
 --- !u!4 &1640211245
 Transform:
