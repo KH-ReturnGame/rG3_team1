@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: escape_rope
   itemName: "\uB3D9\uAD74 \uD0C8\uCD9C \uB85C\uD504"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 86548283e4328f246a6b4e366bfda167, type: 3}
   maxStack: 5
   description: "\uC0AC\uC6A9\uD558\uBA74 \uC989\uC2DC \uB9C8\uC744\uB85C \uB3CC\uC544\uAC04\uB2E4.
     \uD0D0\uD5D8 \uC911\uB2E8\uC6A9."
@@ -32,4 +32,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 0
   baseValue: 120
+  sellAtFullValue: 0
   rarity: 1

@@ -59,7 +59,7 @@ public class InventoryUI : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; } }
+        if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; TutorialFlow.OnBackpackOpened(); } }
         if (Input.GetKeyDown(hoodKey))   { if (open && panelTab == 1) { open = false; ReturnHeld(); } else { open = true; panelTab = 1; } }
         if (open && Input.GetKeyDown(KeyCode.Escape)) { open = false; ReturnHeld(); }   // ESC로도 닫기
         Inventory.InvUIOpen = open;

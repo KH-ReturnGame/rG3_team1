@@ -14,10 +14,9 @@ public class TreasureChest : MonoBehaviour, IInteractable
     [Header("식별 (비우면 씬+위치로 자동 생성)")]
     public string chestId = "";
 
-    [Header("보상")]
-    public string lootItemId = "";   // 추가 아이템 id (Resources/Items, 비우면 없음)
-    public int lootCount = 1;
-    public int lootGold = 0;          // 가치(골드 환산) → 동화/은화/금화 화폐로 환산해 드랍
+    [Header("보상 — 아이템 (드래그로 추가, 칸마다 확률·개수)")]
+    public LootDrop[] loot;           // 이 상자에서 나올 아이템들(각 item/chance/minCount/maxCount). 적 드롭과 동일 방식.
+    public int lootGold = 0;          // 가치(골드 환산) → 동화/은화/금화로 환산해 드랍(0이면 화폐 없음)
 
     [Header("화폐 아이템 id (Resources/Items)")]
     public string copperCoinId = "copper_coin";   // 동화
@@ -58,13 +57,15 @@ public class TreasureChest : MonoBehaviour, IInteractable
         if (isOpen) return;
         openedKeys.Add(Key);
 
-        // 떨굴 목록 구성: 추가 아이템 + 골드 가치를 환산한 동화/은화/금화
+        // 떨굴 목록 구성: loot[] 아이템(확률) + 골드 가치를 환산한 동화/은화/금화
         var drops = new List<KeyValuePair<ItemData, int>>();
-        if (!string.IsNullOrEmpty(lootItemId))
-        {
-            ItemData item = ItemDatabase.Get(lootItemId);
-            if (item != null) drops.Add(new KeyValuePair<ItemData, int>(item, Mathf.Max(1, lootCount)));
-        }
+        if (loot != null)
+            foreach (var d in loot)
+            {
+                if (d == null || d.item == null || Random.value > d.chance) continue;
+                int cnt = Random.Range(d.minCount, Mathf.Max(d.minCount, d.maxCount) + 1);
+                if (cnt > 0) drops.Add(new KeyValuePair<ItemData, int>(d.item, cnt));
+            }
         if (lootGold > 0) AddCoinDrops(drops, lootGold);
 
         // 상자 위 공중에 한 줄로 둥둥 띄움(튀어나오지 않음, F로 줍기)

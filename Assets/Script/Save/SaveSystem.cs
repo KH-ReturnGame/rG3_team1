@@ -53,6 +53,7 @@ public static class SaveSystem
         CurrentSlot = slot;
         pending = data;
         IntroPending = true;   // 새 게임 → 시작 씬에서 인트로 컷씬 재생
+        TutorialFlow.Begin();  // 새 게임 → 온보딩 도움말 흐름 무장
         LoadSceneSafe(startScene);
     }
 

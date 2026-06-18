@@ -37,7 +37,12 @@ public class ItemPickup : MonoBehaviour, IInteractable
 
         int left = Inventory.Instance.Add(item, count);
         int picked = count - left;
-        if (picked > 0 && QuestManager.Instance != null) QuestManager.Instance.ReportGather(item.id, picked);   // 채집 퀘스트 진행
+        if (picked > 0)
+        {
+            AcquireFeed.Notify(item, picked);   // 획득 알림 연출
+            TutorialFlow.OnItemAcquired();        // 온보딩: 첫 아이템 → 배낭 안내
+            if (QuestManager.Instance != null) QuestManager.Instance.ReportGather(item.id, picked);   // 채집 퀘스트 진행
+        }
         if (left <= 0)
         {
             Destroy(gameObject);   // 전부 주웠으면 제거

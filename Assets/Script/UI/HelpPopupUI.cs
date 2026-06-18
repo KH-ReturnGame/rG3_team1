@@ -31,15 +31,20 @@ public class HelpPopupUI : MonoBehaviour
         Seen.Add(new HelpEntry { title = t, body = b });
     }
 
-    public void Show(HelpTrigger o, string t, string b) { owner = o; title = t; body = b; shownAt = Time.unscaledTime; Record(t, b); }
+    private float timedUntil;   // 이벤트성(타이머) 도움말이 사라질 시각
+    public void Show(HelpTrigger o, string t, string b) { owner = o; timedUntil = 0f; title = t; body = b; shownAt = Time.unscaledTime; Record(t, b); }
     public void Hide(HelpTrigger o) { if (owner == o) owner = null; }
+    // 존이 아닌 '이벤트성' 도움말(온보딩 팁 등): duration초 뒤 자동으로 사라짐.
+    public void ShowTimed(string t, string b, float duration) { owner = null; title = t; body = b; shownAt = Time.unscaledTime; timedUntil = Time.unscaledTime + duration; Record(t, b); }
 
     void OnGUI()
     {
-        if (owner == null || string.IsNullOrEmpty(body)) return;
+        bool visible = owner != null || Time.unscaledTime < timedUntil;
+        if (!visible || string.IsNullOrEmpty(body)) return;
         EnsureStyles();
 
         float a = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.25f);   // 페이드 인
+        if (timedUntil > 0f) a *= Mathf.Clamp01((timedUntil - Time.unscaledTime) / 0.5f);   // 타이머형: 끝에서 페이드아웃
         Color cyan = new Color(0.35f, 0.85f, 1f);
 
         float w = Mathf.Min(720f, Screen.width - 60f);

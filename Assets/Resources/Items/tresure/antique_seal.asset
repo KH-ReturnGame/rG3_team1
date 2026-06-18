@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: antique_seal
   itemName: "\uACE0\uB300 \uC9C0\uC800\uC778\uC758 \uC778\uC7A5"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b8f25326327da5d43a06440ce2b18e11, type: 3}
   maxStack: 99
   description: "\uD798\uC758 \uADFC\uC6D0 \uAC00\uAE4C\uC774\uC11C \uD0DC\uC5B4\uB09C
     \uC61B \uC9C0\uC800\uC778\uC758 \uC778\uC7A5. \uAC15\uD55C \uAE30\uD504\uD2B8\uC758
@@ -22,6 +22,7 @@ MonoBehaviour:
   kind: 3
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -32,4 +33,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 1500
   baseValue: 1500
+  sellAtFullValue: 0
   rarity: 3

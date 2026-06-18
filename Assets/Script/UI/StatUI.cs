@@ -40,6 +40,7 @@ public class StatUI : MonoBehaviour
     {
         var gm = GameManager.Instance;
         if (gm == null) return;
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;   // 시작 메뉴에선 HP 숨김
 
         float x = Screen.width * origin.x;
         float y = Screen.height * origin.y;
