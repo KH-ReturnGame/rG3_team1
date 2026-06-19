@@ -147,8 +147,19 @@ public class PlayerController : MonoBehaviour
         facingDir = dir < 0 ? -1 : 1;
         if (sr != null) sr.flipX = facingDir < 0;
         if (rb != null) rb.linearVelocity = new Vector2(facingDir * moveSpeed, rb.linearVelocity.y);
-        PlayStateForced(isSwordDrawn ? swordMoveState : moveState);
+        string ws = isSwordDrawn ? swordMoveState : moveState;
+        if (ws != currentAnimState) PlayStateForced(ws);   // 매 프레임 재시작 방지(루트모션 고정 회피)
     }
+    // 컷씬용 이동(속도·애니 지정): 마을 진입처럼 천천히 'Walk'로 걷게 할 때.
+    public void CutsceneMove(int dir, float speed, string animState)
+    {
+        facingDir = dir < 0 ? -1 : 1;
+        if (sr != null) sr.flipX = facingDir < 0;
+        if (rb != null) rb.linearVelocity = new Vector2(facingDir * speed, rb.linearVelocity.y);
+        // 매 프레임 재시작하면 루트모션(applyRootMotion)이 위치를 고정시켜 이동이 막힘 → 상태가 바뀔 때만 재생
+        if (!string.IsNullOrEmpty(animState) && animState != currentAnimState) PlayStateForced(animState);
+    }
+
     // 컷씬용 정지: 수평 정지 + 대기 자세.
     public void CutsceneStop()
     {
@@ -312,7 +323,7 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, 0f);   // 아래 베기 중 잠깐 체공
             return;
         }
-        Move();
+        if (!cutsceneActive) Move();   // 컷씬 중엔 컷씬이 속도를 직접 제어 → Move()로 x속도를 0으로 덮어쓰지 않음
 
         // 종단 속도 제한 — 너무 빠르게 낙하해 지형을 뚫고 박히는 것 방지
         if (rb.linearVelocity.y < -maxFallSpeed)

@@ -20,6 +20,7 @@ public class HelpPopupUI : MonoBehaviour
         public float timedUntil;   // >0이면 그 시각에 자동 종료(Timed). 0 && !manual = Sticky(코드로만).
     }
     private readonly List<Entry> stack = new List<Entry>();   // [0]=먼저 뜬 것(맨 앞), 뒤로 갈수록 나중에 뜬 것
+    public bool stackPopups = true;   // false면 중첩 안 함 — 새 도움말이 뜨면 이전 것은 즉시 사라짐(교체)
     private const float HeaderPeek = 46f;   // 뒤 도움말이 위로 삐져나오는 양(제목 보이게)
     private const int MaxCascade = 4;       // 이 이상 쌓이면 더 위로 올리지 않음
 
@@ -46,13 +47,15 @@ public class HelpPopupUI : MonoBehaviour
     }
 
     // [ESC]·[X]로 닫을 때까지 유지.
-    public void ShowManual(string t, string b) { stack.Add(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = true, timedUntil = 0f }); Record(t, b); }
+    public void ShowManual(string t, string b) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = true, timedUntil = 0f }); Record(t, b); }
     // duration초 뒤 자동 종료.
-    public void ShowTimed(string t, string b, float duration) { stack.Add(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = Time.unscaledTime + Mathf.Max(0.1f, duration) }); Record(t, b); }
+    public void ShowTimed(string t, string b, float duration) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = Time.unscaledTime + Mathf.Max(0.1f, duration) }); Record(t, b); }
     // 코드(ForceHide)로만 닫힘. 일시적 입력 유도(패링 큐)라 기록하지 않음.
-    public void ShowSticky(string t, string b) { stack.Add(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = 0f }); }
+    public void ShowSticky(string t, string b) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = 0f }); }
     // Sticky(패링 큐 등)만 제거.
     public void ForceHide() { stack.RemoveAll(e => !e.manual && e.timedUntil <= 0f); }
+    // 중첩 옵션 처리: stackPopups가 false면 새 도움말이 뜰 때 기존 것을 모두 비움(교체).
+    private void Push(Entry e) { if (!stackPopups) stack.Clear(); stack.Add(e); }
     public bool IsManualOpen { get { return stack.Count > 0 && stack[0].manual; } }
 
     void Update()
