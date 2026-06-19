@@ -718,6 +718,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HubEntryCutscene
   walkDir: 1
   walkInDistance: 5
+  walkSpeed: 2
+  walkState: Walk
   arriveThreshold: 0.15
   maxWalkTime: 6
   useLetterbox: 1
@@ -1905,7 +1907,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 4.4667053, y: 3.5202742}
+  m_Offset: {x: 4.4667053, y: 3.1976807}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1915,7 +1917,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 84.84, y: 14.857883}
+  m_Size: {x: 84.84, y: 15.503071}
   m_EdgeRadius: 0
 --- !u!4 &1673741337
 Transform:
@@ -2740,6 +2742,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Hotbar
   hotbarColumns: 8
+  baseHotkeySlots: 2
   hotkeySlots: 2
   showBar: 1
   slotSizeRatio: 0.07
