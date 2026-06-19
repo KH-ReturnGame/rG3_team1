@@ -48,6 +48,8 @@ public class GameManager : MonoBehaviour
     [Header("후드 모듈 (맥스 Lv.1 — 해금형)")]
     public int moduleMinimap;   // 미니맵 표시 해금(0/1)
     public int moduleScan;      // 일반 지도(스캔) 해금(0/1)
+    public int moduleQuickdraw; // 빨리 뽑기: 핫바 슬롯 +N (레벨당 +1)
+    public int maxQuickdraw = 4;
     public bool HasMinimap => moduleMinimap > 0;
     public bool HasScanMap => moduleScan > 0;
     public int XpToNext => level * 120;
@@ -91,6 +93,19 @@ public class GameManager : MonoBehaviour
         OnStatsChanged?.Invoke();
         return true;
     }
+
+    // 빨리 뽑기 모듈 강화(레벨당 핫바 슬롯 +1). 성공 시 true.
+    public bool TryUpgradeQuickdraw(int cost)
+    {
+        if (moduleQuickdraw >= maxQuickdraw || modPoints < cost) return false;
+        modPoints -= cost;
+        moduleQuickdraw++;
+        ApplyQuickdraw();
+        OnStatsChanged?.Invoke();
+        return true;
+    }
+    // 현재 빨리 뽑기 레벨을 핫바에 반영(구매·로드 시 호출).
+    public void ApplyQuickdraw() { if (Hotbar.Instance != null) Hotbar.Instance.ApplyQuickdraw(moduleQuickdraw); }
 
     [Header("디버그 표시 (실제 UI 붙이기 전 임시)")]
     public bool showDebugStats = false;   // StatUI(HUD)가 대체 — 기본 꺼둠

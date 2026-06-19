@@ -107,6 +107,7 @@ public static class SaveSystem
             data.statRegen = GameManager.Instance.statRegen; data.statAttack = GameManager.Instance.statAttack;
             data.statAdapt = GameManager.Instance.statAdapt; data.statLuck = GameManager.Instance.statLuck;
             data.moduleMinimap = GameManager.Instance.moduleMinimap; data.moduleScan = GameManager.Instance.moduleScan;
+            data.moduleQuickdraw = GameManager.Instance.moduleQuickdraw;
         }
         data.items = new List<SavedItem>();
         if (Inventory.Instance != null)
@@ -129,6 +130,7 @@ public static class SaveSystem
             GameManager.Instance.statRegen = data.statRegen; GameManager.Instance.statAttack = data.statAttack;
             GameManager.Instance.statAdapt = data.statAdapt; GameManager.Instance.statLuck = data.statLuck;
             GameManager.Instance.moduleMinimap = data.moduleMinimap; GameManager.Instance.moduleScan = data.moduleScan;
+            GameManager.Instance.moduleQuickdraw = data.moduleQuickdraw; GameManager.Instance.ApplyQuickdraw();
         }
         if (Inventory.Instance != null)
             Inventory.Instance.LoadFromSaved(data.items);

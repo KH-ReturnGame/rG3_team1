@@ -19,7 +19,8 @@ public class Hotbar : MonoBehaviour
 
     [Header("단축키")]
     public int hotbarColumns = 8;   // 최하단 줄 너비(인벤토리 columns와 맞추기)
-    public int hotkeySlots = 2;     // 현재 활성 단축키 개수(상점으로 증가)
+    public int baseHotkeySlots = 2; // 모듈 전 기본 단축키 개수
+    public int hotkeySlots = 2;     // 현재 활성 단축키 개수(= base + '빨리 뽑기' 모듈 레벨)
 
     [Header("표시(임시 — 에셋 들어오면 교체)")]
     public bool showBar = true;
@@ -64,9 +65,13 @@ public class Hotbar : MonoBehaviour
         }
     }
 
-    // 단축키 슬롯 늘리기(상점 구매 등). 최대 = 한 줄 너비.
+    // 단축키 슬롯 늘리기(직접 증가). 최대 = 한 줄 너비.
     public void AddHotkeySlot(int n = 1)
         => hotkeySlots = Mathf.Clamp(hotkeySlots + n, 0, hotbarColumns);
+
+    // '빨리 뽑기' 모듈: 기본 + level 만큼 단축키 슬롯 확보(엔지니어에서 강화).
+    public void ApplyQuickdraw(int level)
+        => hotkeySlots = Mathf.Clamp(baseHotkeySlots + level, 0, hotbarColumns);
 
     void OnGUI()
     {

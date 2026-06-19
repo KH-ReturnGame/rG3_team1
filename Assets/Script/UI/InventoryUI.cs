@@ -474,16 +474,17 @@ public class InventoryUI : MonoBehaviour
         GUI.Label(spriteBox, "캐릭터\n(레드 후드)\n— 추후 —", tabStyle);
 
         float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
-        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "스캔 모듈" };
+        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "스캔 모듈", "빨리 뽑기 모듈" };
         string[] descs = {
             "체력 한 칸씩 증가", "체력 자동 재생력 증가",
             "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승",
             "미니맵 표시 (주변 상자·출구·적·채집물). [M]으로 켜고 끔",
-            "일반 지도 열람 — 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭"
+            "일반 지도 열람 — 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭",
+            "핫바(단축키) 슬롯 +1 — 더 많은 포션·아이템을 숫자키로 즉시 사용"
         };
-        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.moduleScan };
-        int[] costs = { 5, 2, 1, 1, 2, 3, 3 };
-        int[] maxLv = { 99, 99, 99, 99, 99, 1, 1 };
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.moduleScan, gm.moduleQuickdraw };
+        int[] costs = { 5, 2, 1, 1, 2, 3, 3, 2 };
+        int[] maxLv = { 99, 99, 99, 99, 99, 1, 1, gm.maxQuickdraw };
         int rows = names.Length;
         float rh = Mathf.Clamp(bodyH / rows, 22f, 40f);
         string hoverDesc = null;
@@ -511,7 +512,14 @@ public class InventoryUI : MonoBehaviour
                 bool can = gm.modPoints >= costs[i];
                 Fill(plus, can ? cAccent : cTabOff); Border(plus, 2f, cBorder);
                 GUI.Label(plus, "+", closeStyle);
-                if (can && md && plus.Contains(mp)) { if (i < 5) gm.SpendStat(i); else gm.TryUnlockModule(i - 5, costs[i]); Event.current.Use(); }
+                if (can && md && plus.Contains(mp))
+                {
+                    if (i < 5) gm.SpendStat(i);
+                    else if (i == 5) gm.TryUnlockModule(0, costs[i]);   // 미니맵
+                    else if (i == 6) gm.TryUnlockModule(1, costs[i]);   // 스캔
+                    else gm.TryUpgradeQuickdraw(costs[i]);              // 빨리 뽑기(레벨형)
+                    Event.current.Use();
+                }
             }
             // else: C키로 연 조회 전용 & 미보유 → 버튼 없음
         }

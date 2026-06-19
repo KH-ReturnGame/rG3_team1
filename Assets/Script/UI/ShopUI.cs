@@ -141,35 +141,7 @@ public class ShopUI : MonoBehaviour
             }
         }
 
-        // ── 골드 소모 서비스(영구) — 탐험가에서만 ──
-        if (merchant == 2 && GameManager.Instance != null)
-        {
-            var gm = GameManager.Instance;
-            float rx2 = x + 20f + panelW + gap;
-            int brows = Mathf.CeilToInt(buyItems.Count / (float)Cols);
-            float sy0 = gy + 6f + brows * (ss + 6f) + 18f;
-            float colW = (panelW - 18f) * 0.5f, shh = 38f, sgap = 6f;
-            GUI.Label(new Rect(rx2 + 6f, sy0 - 22f, panelW - 12f, 20f), "골드 소모 (영구 강화)", sec);
-
-            // 0:단축키 1:점프 (체력·기력은 후드 탭의 개조 포인트로 강화)
-            for (int i = 0; i < 2; i++)
-            {
-                int row = i / 2, col = i % 2;
-                Rect r = new Rect(rx2 + 6f + col * (colW + sgap), sy0 + row * (shh + sgap), colW, shh);
-                DrawSlotBg(r, true);
-                string label = ""; bool maxed = false; int price = 0;
-                if (i == 0) { int cur = Hotbar.Instance != null ? Hotbar.Instance.hotkeySlots : 0, mx2 = Hotbar.Instance != null ? Hotbar.Instance.hotbarColumns : 8; maxed = cur >= mx2; price = 300; label = maxed ? "단축키 최대" : ("단축키 +1  " + price + "G"); }
-                else if (i == 1) { maxed = gm.bonusJumps >= gm.maxBonusJumps; price = 800; label = maxed ? "점프 최대" : ("점프 +1  " + price + "G"); }
-                GUI.Label(new Rect(r.x + 6f, r.y, r.width - 12f, r.height), label, svc);
-                if (!maxed && click && r.Contains(m))
-                {
-                    if (!gm.TrySpendGold(price)) Toast.Show("골드가 부족합니다.", 1.5f);
-                    else if (i == 0) { if (Hotbar.Instance != null) Hotbar.Instance.AddHotkeySlot(1); Toast.Show("단축키 슬롯 +1!", 2f); }
-                    else if (i == 1) { gm.UpgradeJumps(1); Toast.Show("점프 횟수 +1!", 2f); }
-                    Event.current.Use();
-                }
-            }
-        }
+        // (탐험가의 '단축키·점프 +1' 골드 강화는 제거됨 — 핫바 증가는 엔지니어 '빨리 뽑기 모듈'로, 점프는 장신구로 대체)
         return hover;
     }
 
