@@ -44,6 +44,12 @@ public class GameManager : MonoBehaviour
     public int modPoints = 0;          // 개조 포인트(스탯 강화) — 레벨업 시 획득
     public int pointsPerLevel = 2;
     public int statRegen, statAttack, statAdapt, statLuck;   // 투자 레벨(재생력=체력회복 / 공격력 / 적응력 / 행운)
+
+    [Header("후드 모듈 (맥스 Lv.1 — 해금형)")]
+    public int moduleMinimap;   // 미니맵 표시 해금(0/1)
+    public int moduleScan;      // 일반 지도(스캔) 해금(0/1)
+    public bool HasMinimap => moduleMinimap > 0;
+    public bool HasScanMap => moduleScan > 0;
     public int XpToNext => level * 120;
 
     public float GoldMultiplier => 1f + statLuck * 0.1f;     // 행운 → 골드 획득량
@@ -71,6 +77,17 @@ public class GameManager : MonoBehaviour
             case 3: statAdapt++; break;               // 적응력(마법/기프트 — 추후)
             case 4: statLuck++; break;                // 행운(골드/전리품/채집)
         }
+        OnStatsChanged?.Invoke();
+        return true;
+    }
+
+    // 후드 모듈 해금(맥스 Lv.1). id: 0=미니맵, 1=스캔. 성공 시 true.
+    public bool TryUnlockModule(int id, int cost)
+    {
+        int cur = (id == 0) ? moduleMinimap : moduleScan;
+        if (cur > 0 || modPoints < cost) return false;
+        modPoints -= cost;
+        if (id == 0) moduleMinimap = 1; else moduleScan = 1;
         OnStatsChanged?.Invoke();
         return true;
     }

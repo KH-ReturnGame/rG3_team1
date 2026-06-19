@@ -63,7 +63,32 @@ public class HandbookUI : MonoBehaviour
         Rect content = new Rect(px + 150f, py + 56f, pw - 166f, ph - 72f);
         Border(content, 1f, new Color(0.26f, 0.42f, 0.54f));
         if (tab == 0) DrawHelpTab(content);
-        else GUI.Label(content, (tab == 1 ? "지도" : "도감") + " — 준비 중", dimStyle);
+        else if (tab == 1) DrawMapTab(content);
+        else GUI.Label(content, "도감 — 준비 중", dimStyle);
+    }
+
+    // 지도 탭: 스캔 모듈을 해금했으면 일반 지도(지형·다음 포탈, 플레이어 위치 없음) 표시.
+    private void DrawMapTab(Rect area)
+    {
+        var gm = GameManager.Instance;
+        if (gm == null || !gm.HasScanMap)
+        {
+            GUI.Label(area, "스캔 모듈이 필요합니다.\n후드(C) → 모듈 탭에서 '스캔 모듈'을 해금하세요.", dimStyle);
+            return;
+        }
+        Texture2D m = MapScanner.GetMap();
+        if (m == null) { GUI.Label(area, "이 구역에서는 지도를 만들 수 없습니다.", dimStyle); return; }
+
+        Fill(area, new Color(0.04f, 0.06f, 0.09f, 1f));
+        float pad = 12f;
+        Rect inner = new Rect(area.x + pad, area.y + pad, area.width - pad * 2f, area.height - pad * 2f - 18f);
+        float ar = (float)m.width / Mathf.Max(1, m.height);
+        float w = inner.width, h = w / ar;
+        if (h > inner.height) { h = inner.height; w = h * ar; }
+        Rect mr = new Rect(inner.x + (inner.width - w) * 0.5f, inner.y + (inner.height - h) * 0.5f, w, h);
+        GUI.DrawTexture(mr, m, ScaleMode.ScaleToFit);
+        GUI.Label(new Rect(area.x + pad, area.yMax - 20f, area.width - pad * 2f, 16f),
+            "지형 · 다음 포탈(시안)만 표시 — 플레이어 위치는 보이지 않습니다.", dimStyle);
     }
 
     private void DrawHelpTab(Rect area)

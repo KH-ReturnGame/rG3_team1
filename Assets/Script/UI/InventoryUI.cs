@@ -45,7 +45,13 @@ public class InventoryUI : MonoBehaviour
     private Texture2D white;
     private GUIStyle countStyle, tipNameStyle, tipDescStyle, tabStyle, tabSelStyle, goldStyle, itemLabelStyle, hotkeyNumStyle, closeStyle, hoodTitle, hoodStat, hoodCenter;
 
-    void Awake() { SetupItemCollisions(); }
+    public static InventoryUI Instance;
+    private bool hoodUpgrade;   // true면 후드에서 업그레이드(+) 가능 — 엔지니어로 열었을 때만. C키로 열면 false(조회 전용)
+
+    void Awake() { Instance = this; SetupItemCollisions(); }
+
+    // 엔지니어 NPC가 호출 — 후드 패널을 '업그레이드 모드'로 연다(+ 버튼 활성).
+    public void OpenEngineer() { open = true; panelTab = 1; hoodSubTab = 0; hoodUpgrade = true; }
 
     // Item 레이어는 맵(Ground)하고만 충돌(밀림 방지)
     private void SetupItemCollisions()
@@ -59,9 +65,9 @@ public class InventoryUI : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; TutorialFlow.OnBackpackOpened(); } }
-        if (Input.GetKeyDown(hoodKey))   { if (open && panelTab == 1) { open = false; ReturnHeld(); } else { open = true; panelTab = 1; } }
-        if (open && Input.GetKeyDown(KeyCode.Escape)) { open = false; ReturnHeld(); }   // ESC로도 닫기
+        if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; hoodUpgrade = false; TutorialFlow.OnBackpackOpened(); } }
+        if (Input.GetKeyDown(hoodKey))   { if (open && panelTab == 1) { open = false; ReturnHeld(); } else { open = true; panelTab = 1; hoodUpgrade = false; } }   // C키 = 조회 전용
+        if (open && Input.GetKeyDown(KeyCode.Escape)) { open = false; ReturnHeld(); hoodUpgrade = false; }   // ESC로도 닫기
         Inventory.InvUIOpen = open;
     }
 
@@ -309,6 +315,7 @@ public class InventoryUI : MonoBehaviour
     {
         open = false;
         ReturnHeld();
+        hoodUpgrade = false;
         Inventory.InvUIOpen = false;
     }
 
@@ -441,7 +448,7 @@ public class InventoryUI : MonoBehaviour
 
         // 레벨(중앙) + 개조 포인트(우측)
         GUI.Label(new Rect(cx, cy, cw, sth), "Lv. " + gm.level, hoodCenter);
-        GUI.Label(new Rect(cx, cy, cw, sth), "개조 포인트 " + gm.modPoints, goldStyle);
+        GUI.Label(new Rect(cx, cy, cw, sth), "개조 포인트 " + gm.modPoints + (hoodUpgrade ? "" : "   (엔지니어에서 업그레이드)"), goldStyle);
 
         // XP 바
         float topY = cy + sth + 8f;
@@ -467,28 +474,46 @@ public class InventoryUI : MonoBehaviour
         GUI.Label(spriteBox, "캐릭터\n(레드 후드)\n— 추후 —", tabStyle);
 
         float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
-        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈" };
+        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "스캔 모듈" };
         string[] descs = {
             "체력 한 칸씩 증가", "체력 자동 재생력 증가",
-            "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승"
+            "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승",
+            "미니맵 표시 (주변 상자·출구·적·채집물). [M]으로 켜고 끔",
+            "일반 지도 열람 — 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭"
         };
-        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck };
-        int[] costs = { 5, 2, 1, 1, 2 };
-        float rh = Mathf.Clamp(bodyH / 5f, 28f, 46f);
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.moduleScan };
+        int[] costs = { 5, 2, 1, 1, 2, 3, 3 };
+        int[] maxLv = { 99, 99, 99, 99, 99, 1, 1 };
+        int rows = names.Length;
+        float rh = Mathf.Clamp(bodyH / rows, 22f, 40f);
         string hoverDesc = null;
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < rows; i++)
         {
             Rect row = new Rect(sx, bodyY + i * rh, sw, rh - 4f);
             Fill(row, cSlot); Border(row, 1f, cSlotBd);
             Rect nameRect = new Rect(row.x + 10f, row.y, sw * 0.5f, row.height);
             GUI.Label(nameRect, names[i], hoodStat);
             if (nameRect.Contains(mp)) hoverDesc = descs[i] + "\n필요 개조 포인트: " + costs[i];
-            GUI.Label(new Rect(row.x + sw * 0.52f, row.y, sw * 0.3f, row.height), "Lv." + levels[i], hoodStat);
+
+            bool module = maxLv[i] == 1;
+            bool maxed = levels[i] >= maxLv[i];
+            string lvText = module ? (maxed ? "보유" : "미보유") : ("Lv." + levels[i]);
+            GUI.Label(new Rect(row.x + sw * 0.52f, row.y, sw * 0.3f, row.height), lvText, hoodStat);
+
             Rect plus = new Rect(row.xMax - 42f, row.y + 3f, 36f, row.height - 6f);
-            bool can = gm.modPoints >= costs[i];
-            Fill(plus, can ? cAccent : cTabOff); Border(plus, 2f, cBorder);
-            GUI.Label(plus, "+", closeStyle);
-            if (can && md && plus.Contains(mp)) { gm.SpendStat(i); Event.current.Use(); }
+            if (maxed)
+            {
+                Fill(plus, cTabOff); Border(plus, 2f, cSlotBd);
+                GUI.Label(plus, "✓", closeStyle);
+            }
+            else if (hoodUpgrade)   // 엔지니어로 연 '업그레이드 모드'에서만 + 버튼
+            {
+                bool can = gm.modPoints >= costs[i];
+                Fill(plus, can ? cAccent : cTabOff); Border(plus, 2f, cBorder);
+                GUI.Label(plus, "+", closeStyle);
+                if (can && md && plus.Contains(mp)) { if (i < 5) gm.SpendStat(i); else gm.TryUnlockModule(i - 5, costs[i]); Event.current.Use(); }
+            }
+            // else: C키로 연 조회 전용 & 미보유 → 버튼 없음
         }
         if (hoverDesc != null) DrawStatTooltip(hoverDesc, mp);
     }

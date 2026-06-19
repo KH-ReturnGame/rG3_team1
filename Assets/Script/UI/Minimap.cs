@@ -75,6 +75,7 @@ public class Minimap : MonoBehaviour
     void OnGUI()
     {
         if (!visible) return;
+        if (GameManager.Instance == null || !GameManager.Instance.HasMinimap) return;   // 미니맵 모듈 해금 필요
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
         if (Inventory.IsUIOpen) return;   // 전체 UI 열렸을 땐 숨김
         if (player == null) { if (PlayerController.Instance != null) player = PlayerController.Instance.transform; else return; }

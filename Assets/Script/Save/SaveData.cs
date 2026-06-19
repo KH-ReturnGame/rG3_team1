@@ -34,4 +34,5 @@ public class SaveSlotData
     public int xp = 0;
     public int modPoints = 0;
     public int statRegen, statAttack, statAdapt, statLuck;   // 개조 포인트 투자 레벨
+    public int moduleMinimap, moduleScan;                    // 후드 모듈 해금(0/1)
 }
