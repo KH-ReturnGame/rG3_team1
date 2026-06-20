@@ -43,21 +43,16 @@ public class HubEntryCutscene : MonoBehaviour
         if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Show(letterboxTime);
         yield return null;
 
-        Debug.Log($"[Hub] start x={startX:F2} target={targetX:F2} dir={walkDir} spd={walkSpeed}");
         // 마을 안쪽으로 걷기
-        float t = 0f; int iter = 0;
-        var dbgRb = pc.GetComponent<Rigidbody2D>();
+        float t = 0f;
         while (t < maxWalkTime)
         {
             float dx = targetX - pc.transform.position.x;
-            if (Mathf.Abs(dx) <= arriveThreshold || Mathf.Sign(dx) != walkDir) { Debug.Log($"[Hub] BREAK dx={dx:F2}"); break; }   // 도착/지나침
+            if (Mathf.Abs(dx) <= arriveThreshold || Mathf.Sign(dx) != walkDir) break;   // 도착/지나침
             pc.CutsceneMove(walkDir, walkSpeed, walkState);   // 천천히 Walk로 걸어 들어옴
-            if (iter % 15 == 0) Debug.Log($"[Hub] iter={iter} x={pc.transform.position.x:F2} dx={dx:F2} velx={(dbgRb!=null?dbgRb.linearVelocity.x:-99):F2} cut={pc.cutsceneActive}");
-            iter++;
             t += Time.deltaTime;
             yield return null;
         }
-        Debug.Log($"[Hub] LOOP END iter={iter} x={pc.transform.position.x:F2}");
 
         pc.CutsceneStop();
         if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxTime);

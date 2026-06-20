@@ -1388,7 +1388,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -23.97
+      value: -27.4
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2896,6 +2896,10 @@ PrefabInstance:
     - target: {fileID: 2687608730949248439, guid: 5c55c5be8cbc7464caa75afb434dd4c1, type: 3}
       propertyPath: m_Name
       value: Village
+      objectReference: {fileID: 0}
+    - target: {fileID: 4439614841436683673, guid: 5c55c5be8cbc7464caa75afb434dd4c1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -38.9
       objectReference: {fileID: 0}
     - target: {fileID: 4973091268284188746, guid: 5c55c5be8cbc7464caa75afb434dd4c1, type: 3}
       propertyPath: m_Size.x

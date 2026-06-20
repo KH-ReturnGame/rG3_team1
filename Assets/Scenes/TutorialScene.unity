@@ -585,7 +585,7 @@ MonoBehaviour:
   labelHeight: 1.2
   questKillId: 
   FaceForward: 1
-  InvertSprite: 1
+  InvertSprite: 0
 --- !u!50 &412375961
 Rigidbody2D:
   serializedVersion: 5
@@ -8808,7 +8808,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 4842034949277789241, guid: a672340fb2d867b47b1368e24764bc0c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4af9c5ad5751c514da6b88db6bea56d5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

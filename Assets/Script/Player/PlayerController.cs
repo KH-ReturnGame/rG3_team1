@@ -153,18 +153,19 @@ public class PlayerController : MonoBehaviour
     // 컷씬용 이동(속도·애니 지정): 마을 진입처럼 천천히 'Walk'로 걷게 할 때.
     public void CutsceneMove(int dir, float speed, string animState)
     {
+        if (anim != null) anim.applyRootMotion = false;   // 루트모션이 위치를 고정해 속도 이동을 막으므로 컷씬 걷기 동안 끔
         facingDir = dir < 0 ? -1 : 1;
         if (sr != null) sr.flipX = facingDir < 0;
         if (rb != null) rb.linearVelocity = new Vector2(facingDir * speed, rb.linearVelocity.y);
-        // 매 프레임 재시작하면 루트모션(applyRootMotion)이 위치를 고정시켜 이동이 막힘 → 상태가 바뀔 때만 재생
         if (!string.IsNullOrEmpty(animState) && animState != currentAnimState) PlayStateForced(animState);
     }
 
-    // 컷씬용 정지: 수평 정지 + 대기 자세.
+    // 컷씬용 정지: 수평 정지 + 대기 자세. 루트모션 원복.
     public void CutsceneStop()
     {
         if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         PlayStateForced(isSwordDrawn ? swordIdleState : idleState);
+        if (anim != null) anim.applyRootMotion = true;
     }
 
     [Header("낙사")]
