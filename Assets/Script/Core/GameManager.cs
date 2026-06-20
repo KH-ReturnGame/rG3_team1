@@ -191,6 +191,11 @@ public class GameManager : MonoBehaviour
     public void ApplyAttackBuff(float mult, float dur) { atkBuffMult = mult; atkBuffTimer = dur; OnStatsChanged?.Invoke(); }
     public void ApplyDefenseBuff(float reduction, float dur) { defReduction = Mathf.Clamp01(reduction); defBuffTimer = dur; OnStatsChanged?.Invoke(); }
     private float hpRegenAccum;
+
+    [Header("마을 자동 회복")]
+    public float hubHealInterval = 0.6f;   // 마을(허브)에 있을 때 이 간격마다 반칸씩 회복
+    private float hubHealTimer;
+
     void Update()
     {
         if (atkBuffTimer > 0f) atkBuffTimer -= Time.deltaTime;
@@ -200,6 +205,20 @@ public class GameManager : MonoBehaviour
             hpRegenAccum += statRegen * 0.06f * Time.deltaTime;
             if (hpRegenAccum >= 1f) { int h = (int)hpRegenAccum; hpRegenAccum -= h; Heal(h); }
         }
+
+        // 마을(허브)에 돌아오면 체력 자동 회복(반칸 단위)
+        if (currentHalf < MaxHalf && IsInHub())
+        {
+            hubHealTimer += Time.deltaTime;
+            if (hubHealTimer >= hubHealInterval) { hubHealTimer = 0f; currentHalf = Mathf.Min(MaxHalf, currentHalf + 1); OnStatsChanged?.Invoke(); }
+        }
+        else hubHealTimer = 0f;
+    }
+
+    private bool IsInHub()
+    {
+        string hub = GameFlow.Instance != null ? GameFlow.Instance.hubScene : "StartingArea";
+        return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == hub;
     }
 
     // 장신구 보너스 적용(Equipment가 호출). 최대치 변동 시 현재값 클램프.
