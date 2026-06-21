@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// 패턴 6 — 불규칙 폭탄 투척 (Scatter Bomb Toss)
@@ -53,18 +54,32 @@ public class BossPattern6_ScatterBomb : BossPatternBase
         int count = bombCount;
         float xDir = player != null && player.position.x > transform.position.x ? 1f : -1f;
 
+        var spawnedBombs = new List<GameObject>(count);
+
         for (int i = 0; i < count; i++)
         {
-            ThrowBomb(xDir);
+            GameObject bomb = ThrowBomb(xDir);
+            if (bomb != null) spawnedBombs.Add(bomb);
 
             if (throwInterval > 0f)
                 yield return new WaitForSeconds(throwInterval);
         }
 
+        // 던진 폭탄이 전부 터지거나(파괴되거나) 사라질 때까지 대기.
+        // 이걸 안 기다리면 폭탄이 아직 날아다니거나 안 터진 채로 다음 패턴이 시작되어
+        // 패턴들이 겹쳐 보이는 문제가 생김. (폭탄 쪽 안전 Destroy가 8초라 그보다 살짝 길게 캡)
+        float waited = 0f;
+        const float safetyTimeout = 9f;
+        while (waited < safetyTimeout && spawnedBombs.Exists(b => b != null))
+        {
+            waited += Time.deltaTime;
+            yield return null;
+        }
+
         yield return new WaitForSeconds(recoverDuration);
     }
 
-    void ThrowBomb(float xDir)
+    GameObject ThrowBomb(float xDir)
     {
         // 랜덤 각도/속도 편차 적용
         float angle = baseAngle + Random.Range(-angleVariance, angleVariance);
@@ -101,6 +116,8 @@ public class BossPattern6_ScatterBomb : BossPatternBase
         {
             bombRb.linearVelocity = dir * speed;
         }
+
+        return bomb;
     }
 
     GameObject CreateDefaultBomb()

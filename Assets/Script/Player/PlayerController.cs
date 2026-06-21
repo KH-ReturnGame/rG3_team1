@@ -157,6 +157,11 @@ public class PlayerController : MonoBehaviour
         foreach (Collider2D c in GetComponentsInChildren<Collider2D>())   // 트리거 아닌 첫 몸 콜라이더(통과 처리용)
             if (c != null && !c.isTrigger) { bodyCollider = c; break; }
         BuildClipLengthTable();
+
+        // 인스펙터에서 enemyLayer를 비워둔 채(=0, Nothing) 저장된 씬/프리팹이 있으면
+        // 공격 판정(OverlapBoxAll)이 항상 빈 결과를 반환해 "공격이 안 맞는" 것처럼 보임.
+        // "Enemy" 레이어로 자동 보정해 Boss 등 IDamageable 대상에 공격이 항상 닿도록 함.
+        if (enemyLayer.value == 0) enemyLayer = LayerMask.GetMask("Enemy");
     }
 
     // 컨트롤러의 모든 클립 이름→길이를 미리 저장 (1회성 모션을 "딱 그 길이만큼만" 보호하기 위함)

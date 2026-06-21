@@ -6,8 +6,9 @@ using System.Collections;
 ///
 /// 1. 보스가 화면 왼쪽으로 이동
 /// 2. 8박자 사운드 큐로 예고 (6번째 박에서 피치 하강 → "곧 발사" 컷오프 신호)
-/// 3. 보스 위치에서 직선으로 사각형 세그먼트를 순차 배치 (멀수록 크기 증가)
-/// 4. 전체 빔이 보스를 중심으로 360도 회전
+/// 3. 보스 위치에서 직선으로 사각형 세그먼트를 순차 배치 (모든 세그먼트 크기 동일)
+/// 4. 전체 빔이 보스를 중심으로 360도 회전 — 회전하는 동안 각 세그먼트는 매 프레임
+///    피벗 회전값으로 강제 동기화되어 반지름 방향에 대해 계속 직각을 유지함
 ///
 /// [패링 불가 권장] isParryable = false (지속형 회전 판정. [CONFIRM] 확정 필요)
 ///
@@ -46,10 +47,8 @@ public class BossPattern5_RotatingBeam : BossPatternBase
     public int segmentCount = 8;
     [Tooltip("세그먼트 간 간격")]
     public float segmentSpacing = 0.8f;
-    [Tooltip("첫 번째 세그먼트 크기")]
+    [Tooltip("세그먼트 크기 (모든 세그먼트 동일)")]
     public float segmentBaseSize = 0.4f;
-    [Tooltip("보스에서 멀어질수록 크기 증가 비율 (세그먼트마다 곱함)")]
-    public float segmentSizeGrowth = 1.25f;
 
     [Header("회전")]
     [Tooltip("회전 속도 (도/초). 음수면 반시계.")]
@@ -144,7 +143,6 @@ public class BossPattern5_RotatingBeam : BossPatternBase
         _pivot.transform.SetParent(transform);
 
         _segments = new GameObject[count];
-        float size = segmentBaseSize;
 
         for (int i = 0; i < count; i++)
         {
@@ -159,7 +157,7 @@ public class BossPattern5_RotatingBeam : BossPatternBase
             }
             else
             {
-                seg = CreateDefaultSegment(_pivot.transform, dist, size);
+                seg = CreateDefaultSegment(_pivot.transform, dist, segmentBaseSize);
             }
 
             // BossHitbox 초기화
@@ -168,11 +166,10 @@ public class BossPattern5_RotatingBeam : BossPatternBase
             hb.Init(damage, hitParryable, hitParryable ? (IParryable)boss : null);
             hb.disableOnHit = false; // 지속 판정
 
-            // 크기 설정
-            seg.transform.localScale = Vector3.one * size;
+            // 크기 — 모든 세그먼트 동일
+            seg.transform.localScale = Vector3.one * segmentBaseSize;
 
             _segments[i] = seg;
-            size *= segmentSizeGrowth;
         }
     }
 
@@ -212,6 +209,16 @@ public class BossPattern5_RotatingBeam : BossPatternBase
 
             // 피벗 위치를 보스 위치에 고정 (보스가 움직이는 경우 대비)
             _pivot.transform.position = transform.position;
+
+            // 세그먼트가 계속 회전 방향(반지름)에 대해 직각을 유지하도록 매 프레임 강제로 맞춰줌.
+            if (_segments != null)
+            {
+                for (int i = 0; i < _segments.Length; i++)
+                {
+                    if (_segments[i] != null)
+                        _segments[i].transform.rotation = _pivot.transform.rotation;
+                }
+            }
 
             yield return null;
         }

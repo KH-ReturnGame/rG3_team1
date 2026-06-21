@@ -23,8 +23,10 @@ public class BossPattern2_DashTeleport : BossPatternBase
     public float normalWindup = 0.8f;
     [Tooltip("돌진 이동 속도")]
     public float dashSpeed = 18f;
-    [Tooltip("돌진 판정 지속 시간 (초)")]
+    [Tooltip("돌진 최대 지속 시간 (초) — 안전장치. 플레이어 바로 옆에 도달하면 이 시간 전에 먼저 멈춤.")]
     public float dashHitDuration = 0.3f;
+    [Tooltip("돌진을 멈추는 기준 거리 — 플레이어와 이 가로 거리 이하가 되면 바로 옆에서 정지.")]
+    public float dashStopDistance = 1f;
     [Tooltip("[CONFIRM] 일반 돌진 패링 가능 여부 (현재 true)")]
     public bool normalDashParryable = true;
 
@@ -99,10 +101,16 @@ public class BossPattern2_DashTeleport : BossPatternBase
         float elapsed = 0f;
         bool hitRegistered = false;
 
+        // 플레이어 바로 옆(dashStopDistance)까지 도달하면 멈춤.
+        // dashHitDuration은 안전장치(최대 지속 시간)로만 사용 — 플레이어가 멀어서 못 따라잡는 경우 대비.
         while (elapsed < dashHitDuration)
         {
-            rb.linearVelocity = dir * dashSpeed;
             elapsed += Time.deltaTime;
+
+            float distX = player != null ? Mathf.Abs(player.position.x - transform.position.x) : Mathf.Infinity;
+            if (distX <= dashStopDistance) break;
+
+            rb.linearVelocity = dir * dashSpeed;
 
             // 판정 (OverlapCircle)
             if (!hitRegistered)
