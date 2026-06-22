@@ -36,18 +36,19 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
 
     [Header("Wall (벽 슬라이드 / 벽 점프)")]
+    public bool wallMoveEnabled = false;       // 벽 슬라이드/점프 기능 on/off (기본 OFF — 필요하면 인스펙터에서 체크)
     public LayerMask wallLayer;                // 비우면 groundLayer 사용(보통 지형=벽)
     // 튜닝값은 const로 — 인스턴스 직렬화에 안 휘둘리고 무조건 적용됨(바꾸려면 여기 숫자만 수정)
     private const float wallSlideSpeed = 2.5f; // 벽에 붙어 미끄러질 때 최대 낙하 속도
-    private const float wallJumpForceX = 13f;  // 벽 차고 나가는 수평 힘
-    private const float wallJumpForceY = 11.5f;// 벽 점프 수직 힘
-    private const float wallJumpLockTime = 0.33f; // 벽점프 직후 수평 입력 무시(벽 쪽 키 눌러도 안 끌려가게)
+    private const float wallJumpForceX = 11.5f; // 벽 차고 나가는 수평 힘
+    private const float wallJumpForceY = 11f;   // 벽 점프 수직 힘
+    private const float wallJumpLockTime = 0.24f; // 벽점프 직후 수평 입력 무시(길수록 더 멀리 날아감)
     public string wallSlideState = "WallSlide";
     public string wallJumpState = "WallJump";
     private bool isTouchingWall, isWallSliding;
     private int wallDir;                        // +1 = 오른쪽 벽 / -1 = 왼쪽 벽
     private float wallJumpLockTimer;
-    private bool _dbgPrevWall;                  // (임시 디버그) 벽 접촉 상태 변화 로그용
+    private float wallJumpVelX;                 // 벽점프 수평 속도(잠금 동안 매 물리프레임 재적용)
 
     [Header("Dash")]
     public float dashSpeed = 15f;
@@ -69,6 +70,7 @@ public class PlayerController : MonoBehaviour
     public float guardCooldown = 0.6f;       // 가드 해제 후 재가드까지(가드 연타 패링 방지)
     private float dashCooldownTimer;
     private float guardCooldownTimer;
+    private bool guardParried;                // 이번 가드에서 패링 성공? → 해제해도 쿨타임 안 걸림(즉시 재가드 가능)
 
     [Header("Hit Reaction (피격 넉백/경직)")]
     public string hitState = "HitDamage";
@@ -290,7 +292,6 @@ public class PlayerController : MonoBehaviour
         isWallSliding = isTouchingWall && rb.linearVelocity.y < 0.2f
             && Mathf.Abs(horizontalInput) > 0.1f && (int)Mathf.Sign(horizontalInput) == wallDir;
         if (wallJumpLockTimer > 0f) wallJumpLockTimer -= Time.deltaTime;
-        if (isTouchingWall != _dbgPrevWall) { Debug.Log($"[Wall] f{Time.frameCount} touch={isTouchingWall} dir={wallDir} velX={rb.linearVelocity.x:F1} velY={rb.linearVelocity.y:F1} hIn={horizontalInput:F1}"); _dbgPrevWall = isTouchingWall; }
 
         if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
 
@@ -343,7 +344,13 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, 0f);   // 아래 베기 중 잠깐 체공
             return;
         }
-        if (!cutsceneActive) Move();   // 컷씬 중엔 컷씬이 속도를 직접 제어 → Move()로 x속도를 0으로 덮어쓰지 않음
+        if (!cutsceneActive)
+        {
+            if (wallJumpLockTimer > 0f)   // 벽점프 잠금 동안: 충돌/디페네트레이션이 지워도 수평 속도 재적용 → 확실히 밀려남
+                rb.linearVelocity = new Vector2(wallJumpVelX, rb.linearVelocity.y);
+            else
+                Move();
+        }
 
         if (isWallSliding && !cutsceneActive && rb.linearVelocity.y < -wallSlideSpeed)   // 벽 슬라이드: 천천히 미끄러짐
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
@@ -408,11 +415,9 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isChargingJump)
         {
-            Debug.Log($"[Jump] SPACE grounded={isGrounded} touchWall={isTouchingWall} wallDir={wallDir} jumps={currentJumps}");
             if (!isGrounded && isTouchingWall)
             {
                 WallJump();              // 벽에 붙어 있으면 벽 점프(공중 점프 횟수 소모 X)
-                Debug.Log($"[Jump] WALLJUMP f{Time.frameCount} velX={rb.linearVelocity.x:F1} lock={wallJumpLockTime}");
             }
             else if (currentJumps > 0)
             {
@@ -669,7 +674,7 @@ public class PlayerController : MonoBehaviour
     private void CheckWall()
     {
         isTouchingWall = false; wallDir = 0;
-        if (bodyCollider == null || isGrounded) return;
+        if (!wallMoveEnabled || bodyCollider == null || isGrounded) return;   // 기능 OFF면 벽 미감지 → 슬라이드/점프 모두 비활성
         LayerMask lm = wallLayer.value != 0 ? wallLayer : groundLayer;
         Bounds b = bodyCollider.bounds;
         float d = 0.22f;   // 감지 여유(벽에 딱 안 붙어도 잡히도록)
@@ -681,7 +686,8 @@ public class PlayerController : MonoBehaviour
     // 벽 점프: 벽 반대 방향으로 차고 나간다. 공중 점프 횟수는 리필.
     private void WallJump()
     {
-        rb.linearVelocity = new Vector2(-wallDir * wallJumpForceX, wallJumpForceY);
+        wallJumpVelX = -wallDir * wallJumpForceX;
+        rb.linearVelocity = new Vector2(wallJumpVelX, wallJumpForceY);
         facingDir = -wallDir;
         if (sr != null) sr.flipX = facingDir < 0;
         wallJumpLockTimer = wallJumpLockTime;
@@ -756,6 +762,7 @@ public class PlayerController : MonoBehaviour
     {
         isGuarding = true;
         isParrying = true;
+        guardParried = false;
         parryTimer = parryWindow;
         comboStep = 0;   // 가드하면 콤보 끊김
         // 가드 자세(SwordGuard)는 UpdateAnimations가 유지
@@ -763,7 +770,7 @@ public class PlayerController : MonoBehaviour
 
     private void EndGuard()
     {
-        if (isGuarding) guardCooldownTimer = guardCooldown;   // 가드 해제 후 쿨타임(연타 패링 방지)
+        if (isGuarding && !guardParried) guardCooldownTimer = guardCooldown;   // 가드 해제 후 쿨타임(연타 패링 방지). 단, 패링 성공한 가드는 쿨타임 없음
         isGuarding = false;
         isParrying = false;
     }
@@ -793,6 +800,8 @@ public class PlayerController : MonoBehaviour
             PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
             animBusyTimer = ClipLength(parrySuccessState);
             skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
+            guardParried = true;       // 패링 성공 → 가드 쿨타임 초기화(해제해도 안 걸림 → 즉시 재가드)
+            guardCooldownTimer = 0f;
             Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
             return;
         }
