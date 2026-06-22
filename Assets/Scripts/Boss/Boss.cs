@@ -45,6 +45,10 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
     [Header("감지")]
     public float detectRange = 14f;
 
+    [Header("피격 반응")]
+    [Tooltip("플레이어 공격에 맞았을 때 플레이어 반대 방향으로 살짝 밀려나는 힘")]
+    public float knockbackForce = 2.5f;
+
     // ── 런타임 상태 ────────────────────────────────────────────
     private float   _currentHealth;
     private bool    _isDead;
@@ -53,12 +57,14 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
     private int     _lastPattern    = -1;
     private float[] _cdTimers;
     private Transform _player;
+    private Rigidbody2D _rb;
 
     // ── 초기화 ─────────────────────────────────────────────────
     void Awake()
     {
         _currentHealth = maxHealth;
         _cdTimers = new float[6];
+        _rb = GetComponent<Rigidbody2D>();
     }
 
     void Start()
@@ -182,6 +188,14 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
         if (_isDead) return;
         _currentHealth -= damage;
         Debug.Log($"[Boss] 피해 {damage:F1} | HP {_currentHealth:F0}/{maxHealth:F0}");
+
+        // 플레이어 반대 방향으로 살짝 넉백 (플레이어 쪽 Hurt()의 넉백과 동일한 느낌)
+        if (_rb != null && _player != null)
+        {
+            float dir = transform.position.x >= _player.position.x ? 1f : -1f;
+            _rb.linearVelocity = new Vector2(dir * knockbackForce, _rb.linearVelocity.y);
+        }
+
         if (_currentHealth <= 0f) Die();
     }
 

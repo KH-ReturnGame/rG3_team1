@@ -5,10 +5,11 @@ using System.Collections;
 /// 패턴 3 — 포물선 바운드 (Bouncing Charge)
 ///
 /// 보스가 플레이어 방향으로 포물선 궤적을 그리며 날아가고,
-/// 바닥/벽에 닿을 때마다 마찰 감속을 적용한 반사로 탱탱볼처럼 튕긴다.
+/// 바닥/벽에 닿을 때마다 마찰 없이(탄성) 반사되어 탱탱볼처럼 튕긴다.
+/// activeBounceDuration 시간 동안은 감속 없이 계속 튕기다가, 그 시간이 지나면
+/// 그 즉시 속도를 0으로 만들고 다음 착지에서 바로 멈춘다 ("툭" 떨어지는 느낌).
 /// 바닥은 약하게(groundBounceRestitution, 낮게 깔리며 진행), 벽은 강하게(wallBounceRestitution,
 /// 플레이어 방향 벽쪽으로 세게 튕겨나감) 반사되도록 분리되어 있음.
-/// 속도가 BOUNCE_SETTLE_THRESHOLD 이하로 떨어지면 바닥에 안착.
 ///
 /// [CONFIRM] 패링 가능 여부: 현재 isParryable = true (확정 후 hitParryable 수정).
 /// [CONFIRM] 안착 후 동작: 현재 settleRecoverDuration(0.5s) 후딜레이 후 패턴 종료.
@@ -30,19 +31,13 @@ public class BossPattern3_BouncingCharge : BossPatternBase
     [Tooltip("선딜레이 (보스 점프 전 예비 동작)")]
     public float windupDuration = 0.5f;
 
-    [Header("바운스")]
-    [Tooltip("바운스 시, 반사되는 축이 아닌 쪽 속도에 곱해지는 마찰 계수 (0~1, 작을수록 빨리 감속)")]
-    public float bounceFriction = 0.7f;
+    [Header("바운스 (마찰 없음 — 탄성 반사)")]
     [Tooltip("바닥에 닿았을 때 수직 속도 반전 비율. 낮게 잡아야 위로 크게 솟아오르지 않고 플레이어 쪽으로 낮게 깔려서 진행함.")]
     [Range(0f, 1f)] public float groundBounceRestitution = 0.35f;
     [Tooltip("벽(높게 쌓은 Ground 타일맵)에 닿았을 때 수평 속도 반전 비율. 높게 잡아야 탱탱볼처럼 벽에서 세게 튕겨나감.")]
     [Range(0f, 1f)] public float wallBounceRestitution = 0.85f;
-
-    // ── TUNABLE: 바닥 안착 전환 임계 속도 ────────────────────────
-    // 이 값 이하로 속도가 떨어지면 바운스를 멈추고 안착 처리함.
-    // 밸런스 테스트 후 별도로 조정 예정 — 하드코딩 금지, 별도 변수/인스펙터 노출 필요.
-    public float BOUNCE_SETTLE_THRESHOLD = 3f;
-    // ─────────────────────────────────────────────────────────────
+    [Tooltip("이 시간 동안은 감속 없이 계속 튕김. 시간이 지나면 그 즉시 속도를 0으로 만들고 다음 착지에서 바로 멈춤.")]
+    public float activeBounceDuration = 1.5f;
 
     [Tooltip("안착 후 다음 패턴까지 후딜레이 (초). [CONFIRM] 기획 의도 확인 필요.")]
     public float settleRecoverDuration = 0.5f;
@@ -66,12 +61,12 @@ public class BossPattern3_BouncingCharge : BossPatternBase
     [Tooltip("[CONFIRM] 패링 가능 여부 (현재 true)")]
     public bool hitParryable = true;
 
-
     // ── 런타임 ───────────────────────────────────────────────────
     private bool _isBouncing;
     private Vector2 _vel;
     private bool _hasHitPlayer; // 이번 바운스 중 타격 여부
     private Collider2D _col;
+    private bool _forceSettle; // activeBounceDuration이 지나서 다음 착지에 바로 멈춰야 하는지
 
     protected override void Awake()
     {
@@ -114,6 +109,7 @@ public class BossPattern3_BouncingCharge : BossPatternBase
 
             _isBouncing = true;
             _hasHitPlayer = false;
+            _forceSettle = false;
 
             yield return StartCoroutine(BounceLoop());
 
@@ -125,6 +121,7 @@ public class BossPattern3_BouncingCharge : BossPatternBase
             rb.linearVelocity = _vel;
             _isBouncing = true;
             _hasHitPlayer = false;
+            _forceSettle = false;
 
             // 안착 감지 루프
             yield return StartCoroutine(WaitForSettle());
@@ -154,6 +151,14 @@ public class BossPattern3_BouncingCharge : BossPatternBase
                 yield break;
             }
 
+            // activeBounceDuration이 지나면 그 즉시 속도를 0으로 만들고,
+            // 다음 착지에서 바로 멈추도록 표시 ("툭" 떨어지는 느낌 — 점진적 감속 없음)
+            if (!_forceSettle && elapsed >= activeBounceDuration)
+            {
+                _forceSettle = true;
+                _vel = Vector2.zero;
+            }
+
             // 중력 적용
             _vel.y -= customGravity * Time.deltaTime;
             Vector2 moveDelta = _vel * Time.deltaTime;
@@ -163,8 +168,6 @@ public class BossPattern3_BouncingCharge : BossPatternBase
 
             // 레이캐스트는 보스 "중심(transform.position)"에서 쏘기 때문에,
             // 콜라이더 절반 크기를 더해야 실제 바닥/벽 표면에 닿기 전에 감지할 수 있음.
-            // (이걸 안 더하면 콜라이더가 이미 절반 넘게 파묻힌 뒤에야 감지되거나, 그 전에
-            //  물리 엔진이 먼저 위치를 막아버려서 바운스가 거의 안 일어나는 것처럼 보임)
             Bounds colBounds = _col != null ? _col.bounds : new Bounds(transform.position, Vector3.zero);
             float halfHeight = colBounds.extents.y;
             float halfWidth  = colBounds.extents.x;
@@ -176,15 +179,21 @@ public class BossPattern3_BouncingCharge : BossPatternBase
 
             if (groundHit.collider != null && _vel.y < 0f)
             {
-                // 바닥 바운스: groundBounceRestitution을 낮게 둬서 위로 크게 솟지 않고
-                // 낮게 깔리듯 진행하게 함 (수평 속도는 일반 마찰만 적용)
+                if (_forceSettle)
+                {
+                    // 액티브 바운스 시간이 끝난 뒤의 첫 착지 — 바로 멈춤
+                    _vel = Vector2.zero;
+                    _isBouncing = false;
+                    yield break;
+                }
+
+                // 바닥 바운스: 마찰 없이 groundBounceRestitution만 적용 (수평 속도는 그대로 유지)
                 _vel.y = -_vel.y * groundBounceRestitution;
-                _vel.x *= bounceFriction;
                 bounced = true;
             }
 
             // 벽 감지 (좌우) — 탱탱볼처럼 벽(높게 쌓은 Ground 타일맵)에 세게 튕겨나가도록 처리
-            if (Mathf.Abs(_vel.x) > 0.01f)
+            if (!_forceSettle && Mathf.Abs(_vel.x) > 0.01f)
             {
                 Vector2 xDir = new Vector2(Mathf.Sign(_vel.x), 0f);
                 float sideDist = halfWidth + wallCheckDist + Mathf.Abs(moveDelta.x);
@@ -193,30 +202,24 @@ public class BossPattern3_BouncingCharge : BossPatternBase
 
                 if (wallHit.collider != null)
                 {
-                    // 벽 바운스: wallBounceRestitution을 높게 둬서 플레이어 방향(벽 쪼)으로 강하게 튕겨나감
+                    // 벽 바운스: 마찰 없이 wallBounceRestitution만 적용 (수직 속도는 그대로 유지)
                     _vel.x = -_vel.x * wallBounceRestitution;
-                    _vel.y *= bounceFriction;
                     bounced = true;
                 }
             }
 
             if (bounced)
             {
-                // 안착 조건 체크
-                if (_vel.magnitude < BOUNCE_SETTLE_THRESHOLD)
-                {
-                    _isBouncing = false;
-                    yield break;
-                }
-
                 _hasHitPlayer = false; // 바운스마다 타격 기회 리셋
             }
 
             // 보스 판정 (이번 바운스 중 아직 안 때렸으면)
             if (!_hasHitPlayer)
             {
+                // 주의: 프로젝트 레이어 이름이 "player"(소문자)임. "Player"로 쓰면 항상 매칭 0개로
+                // 조용히 실패해서 데미지가 절대 안 들어갔던 원인이었음.
                 Collider2D playerHit = Physics2D.OverlapCircle(
-                    transform.position, 0.9f, LayerMask.GetMask("Player"));
+                    transform.position, 0.9f, LayerMask.GetMask("player"));
                 if (playerHit != null)
                 {
                     PlayerController pc = playerHit.GetComponent<PlayerController>();
@@ -234,18 +237,26 @@ public class BossPattern3_BouncingCharge : BossPatternBase
         }
     }
 
-    // ── 물리 중력 사용 시 안착 대기 루프 ─────────────────────
+    // ── 물리 중력 사용 시 안착 대기 루프 (useCustomGravity = false 시) ──
+    // 참고: 이 경로는 현재 기본값(useCustomGravity = true)에서는 쓰이지 않음.
     IEnumerator WaitForSettle()
     {
-        float timeout = 8f;
         float elapsed = 0f;
-        while (elapsed < timeout)
+        while (elapsed < maxBounceDuration)
         {
             elapsed += Time.deltaTime;
-            if (rb.linearVelocity.magnitude < BOUNCE_SETTLE_THRESHOLD)
+
+            if (!_forceSettle && elapsed >= activeBounceDuration)
+            {
+                _forceSettle = true;
+                rb.linearVelocity = Vector2.zero;
+            }
+
+            if (_forceSettle && rb.linearVelocity.magnitude < 0.5f)
             {
                 yield break;
             }
+
             yield return null;
         }
     }
@@ -261,24 +272,24 @@ public class BossPattern3_BouncingCharge : BossPatternBase
         bool isWall   = (wallLayer.value & layerBit) != 0;
         if (!isGround && !isWall) return;
 
+        if (_forceSettle)
+        {
+            rb.linearVelocity = Vector2.zero;
+            _isBouncing = false;
+            return;
+        }
+
         Vector2 n = col.GetContact(0).normal;
         Vector2 v = rb.linearVelocity;
 
-        // 법선 성분(반사되는 축)엔 표면에 맞는 restitution을, 접선 성분엔 일반 마찰을 적용.
+        // 법선 성분(반사되는 축)엔 표면에 맞는 restitution을 적용, 접선 성분은 마찰 없이 그대로 유지.
         // 법선이 더 수평이면 벽(wallBounceRestitution, 세게), 더 수직이면 바닥(groundBounceRestitution, 약하게).
         bool isWallNormal = Mathf.Abs(n.x) > Mathf.Abs(n.y);
         float restitution = isWallNormal ? wallBounceRestitution : groundBounceRestitution;
 
         Vector2 vAlongNormal = Vector2.Dot(v, n) * n;
         Vector2 vTangent = v - vAlongNormal;
-        Vector2 reflected = -vAlongNormal * restitution + vTangent * bounceFriction;
-
-        if (reflected.magnitude < BOUNCE_SETTLE_THRESHOLD)
-        {
-            rb.linearVelocity = Vector2.zero;
-            _isBouncing = false;
-            return;
-        }
+        Vector2 reflected = -vAlongNormal * restitution + vTangent;
 
         rb.linearVelocity = reflected;
         _hasHitPlayer = false;

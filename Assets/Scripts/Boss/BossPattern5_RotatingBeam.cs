@@ -2,190 +2,184 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// 패턴 5 — 회전 레이저 (Rotating Beam)
+/// 패턴 5 — 고드름 낙하 (Icicle Drop)
 ///
-/// 1. 보스가 화면 왼쪽으로 이동
-/// 2. 8박자 사운드 큐로 예고 (6번째 박에서 피치 하강 → "곧 발사" 컷오프 신호)
-/// 3. 보스 위치에서 직선으로 사각형 세그먼트를 순차 배치 (모든 세그먼트 크기 동일)
-/// 4. 전체 빔이 보스를 중심으로 360도 회전 — 회전하는 동안 각 세그먼트는 매 프레임
-///    피벗 회전값으로 강제 동기화되어 반지름 방향에 대해 계속 직각을 유지함
+/// 천장에 왼쪽부터 순차적으로 고드름이 생성되고(예고), 잠시 후 역시 왼쪽부터 순차적으로
+/// 떨어진다. 매번 그 중 하나는 랜덤으로 비어서(갭) 플레이어가 그 자리로 피할 수 있으며,
+/// 갭이 정해지는 순간 사운드 힌트(gapCueClip)가 재생된다.
+/// 이 "생성 → 낙하" 한 세트를 waveCount(기본 3)번 반복한다.
 ///
-/// [패링 불가 권장] isParryable = false (지속형 회전 판정. [CONFIRM] 확정 필요)
+/// [클래스/파일명은 BossPattern5_RotatingBeam 그대로 유지]
+/// 씬에 저장된 컴포넌트 참조가 스크립트 GUID 기반이라, 클래스 이름을 바꾸면 기존 보스
+/// 오브젝트의 패턴5 컴포넌트가 "Missing Script"로 깨짐. 그래서 내부 로직만 완전히
+/// 새로 짜고 이름은 그대로 둠.
 ///
-/// [CONFIRM] 2페이즈 변경 사항: 현재 회전 속도 증가 + 세그먼트 수 증가로 구현.
+/// [패링 불가] isParryable = false (환경 피해)
 ///
 /// [사용법]
-/// - beamPivot: 보스 자식 빈 오브젝트 (빔 회전 기준점). 없으면 코드에서 자동 생성.
-/// - beamSegmentPrefab: BossHitbox + SpriteRenderer + BoxCollider2D 달린 사각형 프리팹.
-///   없으면 코드로 기본 생성 (흰 사각형 플레이스홀더).
+/// - iciclePrefab: BossHitbox 컴포넌트가 달린 프리팹. 없으면 코드로 기본 생성(플레이스홀더).
+/// - groundLayer: 바닥 레이어. 비워두면 "Ground"로 자동 설정.
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public class BossPattern5_RotatingBeam : BossPatternBase
 {
-    [Header("이동")]
-    [Tooltip("발사 전 보스가 이동할 화면 왼쪽 X 위치")]
-    public float leftPositionX = -7f;
-    [Tooltip("왼쪽으로 이동하는 속도")]
-    public float moveSpeed = 5f;
-    [Tooltip("위치 이동 타임아웃 (초)")]
-    public float moveTimeout = 3f;
+    [Header("배치 (천장, 왼쪽부터)")]
+    [Tooltip("가장 왼쪽 고드름의 X 좌표")]
+    public float startX = -8f;
+    [Tooltip("고드름이 생성되는 천장 Y 좌표")]
+    public float ceilingY = 5f;
+    [Tooltip("고드름 간 가로 간격")]
+    public float columnSpacing = 1.4f;
+    [Tooltip("한 웨이브에 생성할 고드름 개수")]
+    public int columnCount = 7;
 
-    [Header("사운드 큐 (8박자)")]
-    [Tooltip("8박자 반복 클립 (루프 오디오 권장)")]
-    public AudioClip beatAudioClip;
-    [Tooltip("6번째 박에서 피치가 내려갈 AudioSource (별도 AudioSource 연결)")]
-    public AudioSource beatAudioSource;
-    [Tooltip("BPM — 박자 간격 = 60 / BPM")]
-    public float bpm = 120f;
-    [Tooltip("6번째 박 피치 변화량 (기본 1.0 대비. 예: 0.75 = 3/4음 하강)")]
-    public float beat6PitchShift = 0.75f;
+    [Header("타이밍")]
+    [Tooltip("고드름이 왼쪽부터 순차적으로 생성되는 간격 (초)")]
+    public float spawnStagger = 0.08f;
+    [Tooltip("전부 생성된 뒤, 낙하 시작까지 매달려 있는 예고 시간 (초)")]
+    public float warningDuration = 0.6f;
+    [Tooltip("고드름이 왼쪽부터 순차적으로 떨어지기 시작하는 간격 (초)")]
+    public float dropStagger = 0.08f;
+    [Tooltip("낙하 속도")]
+    public float fallSpeed = 16f;
+    [Tooltip("낙하 시작 후 바닥에 닿지 않아도 강제로 사라지는 최대 시간 (초, 안전장치)")]
+    public float maxFallDuration = 3f;
 
-    [Header("빔 세그먼트")]
-    [Tooltip("세그먼트 프리팹 (BossHitbox + BoxCollider2D + SpriteRenderer 필수). 없으면 자동 생성.")]
-    public GameObject beamSegmentPrefab;
-    [Tooltip("세그먼트 개수 (직선 길이)")]
-    public int segmentCount = 8;
-    [Tooltip("세그먼트 간 간격")]
-    public float segmentSpacing = 0.8f;
-    [Tooltip("세그먼트 크기 (모든 세그먼트 동일)")]
-    public float segmentBaseSize = 0.4f;
+    [Header("회피 구간 (갭)")]
+    [Tooltip("매 웨이브마다 한 칸을 랜덤으로 비워서 플레이어가 피할 수 있게 할지 여부")]
+    public bool enableGapColumn = true;
+    [Tooltip("갭이 정해지는 순간 재생할 사운드 힌트")]
+    public AudioClip gapCueClip;
 
-    [Header("회전")]
-    [Tooltip("회전 속도 (도/초). 음수면 반시계.")]
-    public float rotationSpeed = 90f;
-    [Tooltip("회전 방향 랜덤화 여부")]
-    public bool randomizeDirection = false;
-    [Tooltip("2페이즈 회전 속도 배율")]
-    public float phase2SpeedMultiplier = 1.5f;
-    [Tooltip("2페이즈 세그먼트 수 증가량")]
-    public int phase2ExtraSegments = 4;
+    [Header("반복")]
+    [Tooltip("생성→낙하 한 세트를 몇 번 반복할지")]
+    public int waveCount = 3;
+    [Tooltip("웨이브 사이 대기 시간 (초)")]
+    public float waveDelay = 0.5f;
+    [Tooltip("2페이즈에서 추가로 더 반복할 횟수")]
+    public int phase2ExtraWaves = 1;
+    [Tooltip("2페이즈에서 낙하 속도에 곱할 배율")]
+    public float phase2FallSpeedMultiplier = 1.3f;
+
+    [Header("고드름 모양 (플레이스홀더)")]
+    [Tooltip("스폰할 고드름 프리팹 (BossHitbox 필요). 없으면 코드로 기본 생성.")]
+    public GameObject iciclePrefab;
+    [Tooltip("고드름 가로 크기")]
+    public float icicleWidth = 0.5f;
+    [Tooltip("고드름 세로 크기")]
+    public float icicleHeight = 1.1f;
+
+    [Header("판정")]
+    [Tooltip("바닥/벽 레이어. 비워두면 \"Ground\"로 자동 설정.")]
+    public LayerMask groundLayer;
+    [Tooltip("바닥 감지 레이캐스트 거리")]
+    public float groundCheckDist = 0.2f;
 
     [Header("데미지")]
-    public float damage = 18f;
-    [Tooltip("[CONFIRM] 패링 가능 여부 (현재 false 권장)")]
-    public bool hitParryable = false;
+    public float damage = 14f;
 
-    // ── 런타임 ───────────────────────────────────────────────────
-    private GameObject     _pivot;
-    private GameObject[]   _segments;
-    private AudioSource    _audio;
+    private AudioSource _audio;
 
     protected override void Awake()
     {
         base.Awake();
         _audio = GetComponent<AudioSource>();
+        if (groundLayer.value == 0) groundLayer = LayerMask.GetMask("Ground");
     }
 
     public override IEnumerator Execute(bool isPhase2)
     {
-        // 1. 왼쪽으로 이동
-        yield return StartCoroutine(MoveToLeft());
+        FacePlayer();
 
-        // 2. 8박자 예고 사운드
-        yield return StartCoroutine(PlayBeatCue());
+        int waves = waveCount + (isPhase2 ? phase2ExtraWaves : 0);
+        float fallSpd = fallSpeed * (isPhase2 ? phase2FallSpeedMultiplier : 1f);
 
-        // 3. 빔 생성
-        int count = segmentCount + (isPhase2 ? phase2ExtraSegments : 0);
-        BuildBeam(count);
-
-        // 4. 360도 회전
-        float speed = rotationSpeed * (isPhase2 ? phase2SpeedMultiplier : 1f);
-        if (randomizeDirection && Random.value < 0.5f) speed = -speed;
-
-        yield return StartCoroutine(RotateBeam(speed));
-
-        // 5. 빔 제거
-        DestroyBeam();
-    }
-
-    // ── 왼쪽 이동 ────────────────────────────────────────────
-    IEnumerator MoveToLeft()
-    {
-        float elapsed = 0f;
-        while (elapsed < moveTimeout)
+        for (int w = 0; w < waves; w++)
         {
-            elapsed += Time.deltaTime;
-            float dx = leftPositionX - transform.position.x;
-            if (Mathf.Abs(dx) < 0.1f) { rb.linearVelocity = Vector2.zero; yield break; }
+            yield return StartCoroutine(RunOneWave(fallSpd));
 
-            rb.linearVelocity = new Vector2(Mathf.Sign(dx) * moveSpeed, rb.linearVelocity.y);
-            yield return null;
+            if (w < waves - 1)
+                yield return new WaitForSeconds(waveDelay);
         }
-        rb.linearVelocity = Vector2.zero;
     }
 
-    // ── 8박자 사운드 큐 ──────────────────────────────────────
-    IEnumerator PlayBeatCue()
+    // 한 세트: 왼쪽부터 순차 생성(예고) → 잠깐 대기 → 왼쪽부터 순차 낙하 → 전부 사라질 때까지 대기
+    IEnumerator RunOneWave(float fallSpd)
     {
-        float beatInterval = 60f / bpm;
-        AudioSource src = beatAudioSource != null ? beatAudioSource : _audio;
+        int count = Mathf.Max(1, columnCount);
+        int gapIndex = enableGapColumn ? Random.Range(0, count) : -1;
 
-        for (int beat = 1; beat <= 8; beat++)
-        {
-            if (src != null && beatAudioClip != null)
-            {
-                // 6번째 박: 피치 하강 (컷오프 신호)
-                src.pitch = (beat == 6) ? beat6PitchShift : 1f;
-                src.PlayOneShot(beatAudioClip);
-            }
-            yield return new WaitForSeconds(beatInterval);
-        }
+        var icicles = new GameObject[count];
 
-        if (src != null) src.pitch = 1f;
-    }
-
-    // ── 빔 생성 ──────────────────────────────────────────────
-    void BuildBeam(int count)
-    {
-        // 회전 피벗 (보스 위치에 자식 오브젝트 생성)
-        _pivot = new GameObject("BeamPivot");
-        _pivot.transform.position  = transform.position;
-        _pivot.transform.SetParent(transform);
-
-        _segments = new GameObject[count];
-
+        // 1. 왼쪽부터 순차적으로 천장에 생성 (갭 자리는 생성하지 않음 — 그 자체가 시각적 신호)
         for (int i = 0; i < count; i++)
         {
-            float dist = segmentSpacing * (i + 1);
-
-            GameObject seg;
-            if (beamSegmentPrefab != null)
+            if (i != gapIndex)
             {
-                seg = Instantiate(beamSegmentPrefab,
-                                  _pivot.transform.position + Vector3.right * dist,
-                                  Quaternion.identity, _pivot.transform);
+                float x = startX + i * columnSpacing;
+                icicles[i] = SpawnIcicle(x, ceilingY);
             }
-            else
-            {
-                seg = CreateDefaultSegment(_pivot.transform, dist, segmentBaseSize);
-            }
+            yield return new WaitForSeconds(spawnStagger);
+        }
 
-            // BossHitbox 초기화
-            BossHitbox hb = seg.GetComponent<BossHitbox>();
-            if (hb == null) hb = seg.AddComponent<BossHitbox>();
-            hb.Init(damage, hitParryable, hitParryable ? (IParryable)boss : null);
-            hb.disableOnHit = false; // 지속 판정
+        if (gapIndex >= 0) PlayGapCue();
 
-            // 크기 — 모든 세그먼트 동일
-            seg.transform.localScale = Vector3.one * segmentBaseSize;
+        // 2. 예고 — 잠깐 매달려 있는 시간 (플레이어가 어디로 피할지 파악)
+        yield return new WaitForSeconds(warningDuration);
 
-            _segments[i] = seg;
+        // 3. 왼쪽부터 순차적으로 낙하 시작
+        for (int i = 0; i < count; i++)
+        {
+            if (icicles[i] != null)
+                StartCoroutine(DropIcicle(icicles[i], fallSpd));
+
+            yield return new WaitForSeconds(dropStagger);
+        }
+
+        // 이번 웨이브의 고드름이 모두 사라질 때까지 대기 — 다음 패턴이 곧바로 시작돼서
+        // 잔여 고드름과 겹쳐 보이는 것을 방지.
+        float waited = 0f;
+        float safetyTimeout = maxFallDuration + dropStagger * count + 1f;
+        while (waited < safetyTimeout && System.Array.Exists(icicles, ic => ic != null))
+        {
+            waited += Time.deltaTime;
+            yield return null;
         }
     }
 
-    GameObject CreateDefaultSegment(Transform parent, float dist, float size)
+    GameObject SpawnIcicle(float x, float y)
     {
-        var go = new GameObject("BeamSeg");
-        go.transform.SetParent(parent);
-        go.transform.localPosition = Vector3.right * dist;
+        GameObject go;
+        if (iciclePrefab != null)
+        {
+            go = Instantiate(iciclePrefab, new Vector3(x, y, 0f), Quaternion.identity);
+        }
+        else
+        {
+            go = CreateDefaultIcicle();
+            go.transform.position = new Vector3(x, y, 0f);
+        }
+
+        BossHitbox hb = go.GetComponent<BossHitbox>();
+        if (hb == null) hb = go.AddComponent<BossHitbox>();
+        hb.isParryable  = false; // 환경 피해 — 패링 불가
+        hb.damage       = damage;
+        hb.disableOnHit = false; // 떨어지는 동안 지속 판정
+        hb.owner        = boss;
+
+        return go;
+    }
+
+    GameObject CreateDefaultIcicle()
+    {
+        var go = new GameObject("Icicle");
         go.layer = LayerMask.NameToLayer("Default");
 
-        // 시각 (플레이스홀더: 흰 사각형)
         var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = GetWhiteSquareSprite();
-        sr.color  = new Color(1f, 0.4f, 0.1f, 0.85f); // 주황빛 레이저
+        sr.sprite = GetIcicleSprite();
+        sr.color  = new Color(0.75f, 0.92f, 1f, 0.95f); // 옅은 청백색
+        go.transform.localScale = new Vector3(icicleWidth, icicleHeight, 1f);
 
-        // 충돌체
         var col = go.AddComponent<BoxCollider2D>();
         col.isTrigger = true;
         col.size      = Vector2.one;
@@ -193,61 +187,52 @@ public class BossPattern5_RotatingBeam : BossPatternBase
         return go;
     }
 
-    // ── 360도 회전 ────────────────────────────────────────────
-    IEnumerator RotateBeam(float speed)
+    // 고드름을 아래로 낙하시키고, 바닥에 닿거나 최대 낙하 시간이 지나면 파괴.
+    IEnumerator DropIcicle(GameObject icicle, float speed)
     {
-        float totalAngle = 0f;
-        float targetAngle = speed >= 0 ? 360f : -360f;
-
-        while (Mathf.Abs(totalAngle) < 360f)
+        float elapsed = 0f;
+        while (icicle != null && elapsed < maxFallDuration)
         {
-            if (_pivot == null) yield break;
+            elapsed += Time.deltaTime;
+            icicle.transform.position += Vector3.down * speed * Time.deltaTime;
 
-            float delta = speed * Time.deltaTime;
-            _pivot.transform.Rotate(0f, 0f, delta);
-            totalAngle += delta;
-
-            // 피벗 위치를 보스 위치에 고정 (보스가 움직이는 경우 대비)
-            _pivot.transform.position = transform.position;
-
-            // 세그먼트가 계속 회전 방향(반지름)에 대해 직각을 유지하도록 매 프레임 강제로 맞춰줌.
-            if (_segments != null)
-            {
-                for (int i = 0; i < _segments.Length; i++)
-                {
-                    if (_segments[i] != null)
-                        _segments[i].transform.rotation = _pivot.transform.rotation;
-                }
-            }
+            RaycastHit2D hit = Physics2D.Raycast(icicle.transform.position, Vector2.down, groundCheckDist, groundLayer);
+            if (hit.collider != null) break;
 
             yield return null;
         }
+
+        if (icicle != null) Destroy(icicle);
     }
 
-    // ── 빔 제거 ──────────────────────────────────────────────
-    void DestroyBeam()
+    void PlayGapCue()
     {
-        if (_pivot != null) Destroy(_pivot);
-        _pivot    = null;
-        _segments = null;
+        if (gapCueClip == null) return;
+        if (_audio != null) _audio.PlayOneShot(gapCueClip);
+        else AudioSource.PlayClipAtPoint(gapCueClip, transform.position, 1f);
     }
 
-    // ── 흰 사각형 스프라이트 헬퍼 ────────────────────────────
-    private static Sprite _whiteSquare;
-    static Sprite GetWhiteSquareSprite()
+    // ── 고드름 플레이스홀더 스프라이트 (세로로 긴 사각형) ──────
+    private static Sprite _icicleSprite;
+    static Sprite GetIcicleSprite()
     {
-        if (_whiteSquare != null) return _whiteSquare;
+        if (_icicleSprite != null) return _icicleSprite;
         Texture2D tex = new Texture2D(4, 4);
         Color[] pixels = new Color[16];
         for (int i = 0; i < 16; i++) pixels[i] = Color.white;
         tex.SetPixels(pixels);
         tex.Apply();
-        _whiteSquare = Sprite.Create(tex, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 4f);
-        return _whiteSquare;
+        _icicleSprite = Sprite.Create(tex, new Rect(0, 0, 4, 4), Vector2.one * 0.5f, 4f);
+        return _icicleSprite;
     }
 
-    void OnDestroy()
+    void OnDrawGizmosSelected()
     {
-        DestroyBeam();
+        Gizmos.color = new Color(0.5f, 0.8f, 1f, 0.6f);
+        for (int i = 0; i < Mathf.Max(1, columnCount); i++)
+        {
+            Vector3 p = new Vector3(startX + i * columnSpacing, ceilingY, 0f);
+            Gizmos.DrawWireCube(p, new Vector3(icicleWidth, icicleHeight, 0f));
+        }
     }
 }

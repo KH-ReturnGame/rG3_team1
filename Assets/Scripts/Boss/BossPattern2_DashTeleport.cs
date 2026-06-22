@@ -115,8 +115,9 @@ public class BossPattern2_DashTeleport : BossPatternBase
             // 판정 (OverlapCircle)
             if (!hitRegistered)
             {
+                // 프로젝트 레이어 이름이 "player"(소문자)라서 "Player"로 쓰면 매칭 0개로 조용히 실패함.
                 Collider2D hit = Physics2D.OverlapCircle(transform.position, 0.8f,
-                                    LayerMask.GetMask("Player"));
+                                    LayerMask.GetMask("player"));
                 if (hit != null)
                 {
                     PlayerController pc = hit.GetComponent<PlayerController>();
@@ -161,7 +162,7 @@ public class BossPattern2_DashTeleport : BossPatternBase
 
         // 즉시 데미지 판정 (isParryable = false — 반응 불가 설계)
         Collider2D hit = Physics2D.OverlapCircle(transform.position, teleportHitRadius,
-                            LayerMask.GetMask("Player"));
+                            LayerMask.GetMask("player"));
         if (hit != null)
         {
             PlayerController pc = hit.GetComponent<PlayerController>();
