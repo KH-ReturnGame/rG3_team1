@@ -219,7 +219,7 @@ MonoBehaviour:
   groundCheckRadius: 0.2
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 520
   dashSpeed: 15
   dashDuration: 0.3
   maxDashes: 1
@@ -1933,23 +1933,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed6e5a96c81254cfd9868aa0497484ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossPattern5_RotatingBeam
-  leftPositionX: -7
-  moveSpeed: 5
-  moveTimeout: 3
-  beatAudioClip: {fileID: 0}
-  beatAudioSource: {fileID: 0}
-  bpm: 120
-  beat6PitchShift: 0.75
-  beamSegmentPrefab: {fileID: 0}
-  segmentCount: 8
-  segmentSpacing: 0.8
-  segmentBaseSize: 0.4
-  rotationSpeed: 90
-  randomizeDirection: 0
-  phase2SpeedMultiplier: 1.5
-  phase2ExtraSegments: 4
+  startX: -8
+  ceilingY: 5
+  columnSpacing: 1.4
+  columnCount: 7
+  spawnStagger: 0.08
+  warningDuration: 0.6
+  dropStagger: 0.08
+  fallSpeed: 16
+  maxFallDuration: 3
+  enableGapColumn: 1
+  gapCueClip: {fileID: 0}
+  waveCount: 3
+  waveDelay: 0.5
+  phase2ExtraWaves: 1
+  phase2FallSpeedMultiplier: 1.3
+  iciclePrefab: {fileID: 0}
+  icicleWidth: 0.5
+  icicleHeight: 1.1
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  groundCheckDist: 0.2
   damage: 18
-  hitParryable: 0
 --- !u!114 &1505340198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2010,10 +2016,9 @@ MonoBehaviour:
   launchSpeedX: 150
   launchSpeedY: 80
   windupDuration: 0.5
-  bounceFriction: 0.7
   groundBounceRestitution: 0.85
   wallBounceRestitution: 0.85
-  BOUNCE_SETTLE_THRESHOLD: 3
+  activeBounceDuration: 1.5
   settleRecoverDuration: 0.5
   maxBounceDuration: 6
   useCustomGravity: 1
@@ -2118,6 +2123,7 @@ MonoBehaviour:
   - 3
   preventRepeat: 1
   detectRange: 14
+  knockbackForce: 2.5
 --- !u!1001 &1507801338
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2253,10 +2259,6 @@ MonoBehaviour:
   statAttack: 0
   statAdapt: 0
   statLuck: 0
-  moduleMinimap: 0
-  moduleScan: 0
-  moduleQuickdraw: 0
-  maxQuickdraw: 4
   showDebugStats: 0
 --- !u!4 &1828990179
 Transform:
