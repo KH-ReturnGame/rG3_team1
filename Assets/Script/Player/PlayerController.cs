@@ -35,6 +35,20 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
     private bool isGrounded;
 
+    [Header("Wall (벽 슬라이드 / 벽 점프)")]
+    public LayerMask wallLayer;                // 비우면 groundLayer 사용(보통 지형=벽)
+    // 튜닝값은 const로 — 인스턴스 직렬화에 안 휘둘리고 무조건 적용됨(바꾸려면 여기 숫자만 수정)
+    private const float wallSlideSpeed = 2.5f; // 벽에 붙어 미끄러질 때 최대 낙하 속도
+    private const float wallJumpForceX = 13f;  // 벽 차고 나가는 수평 힘
+    private const float wallJumpForceY = 11.5f;// 벽 점프 수직 힘
+    private const float wallJumpLockTime = 0.33f; // 벽점프 직후 수평 입력 무시(벽 쪽 키 눌러도 안 끌려가게)
+    public string wallSlideState = "WallSlide";
+    public string wallJumpState = "WallJump";
+    private bool isTouchingWall, isWallSliding;
+    private int wallDir;                        // +1 = 오른쪽 벽 / -1 = 왼쪽 벽
+    private float wallJumpLockTimer;
+    private bool _dbgPrevWall;                  // (임시 디버그) 벽 접촉 상태 변화 로그용
+
     [Header("Dash")]
     public float dashSpeed = 15f;
     public float dashDuration = 0.2f;
@@ -270,8 +284,13 @@ public class PlayerController : MonoBehaviour
             return;   // 경직: 입력/행동 무시 (피격 모션·넉백 유지)
         }
 
-        CheckInput();
         CheckGrounded();
+        CheckWall();          // 입력(점프)보다 먼저 벽 상태 갱신 → 누른 즉시 벽 점프 반응
+        CheckInput();
+        isWallSliding = isTouchingWall && rb.linearVelocity.y < 0.2f
+            && Mathf.Abs(horizontalInput) > 0.1f && (int)Mathf.Sign(horizontalInput) == wallDir;
+        if (wallJumpLockTimer > 0f) wallJumpLockTimer -= Time.deltaTime;
+        if (isTouchingWall != _dbgPrevWall) { Debug.Log($"[Wall] f{Time.frameCount} touch={isTouchingWall} dir={wallDir} velX={rb.linearVelocity.x:F1} velY={rb.linearVelocity.y:F1} hIn={horizontalInput:F1}"); _dbgPrevWall = isTouchingWall; }
 
         if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
 
@@ -325,6 +344,9 @@ public class PlayerController : MonoBehaviour
             return;
         }
         if (!cutsceneActive) Move();   // 컷씬 중엔 컷씬이 속도를 직접 제어 → Move()로 x속도를 0으로 덮어쓰지 않음
+
+        if (isWallSliding && !cutsceneActive && rb.linearVelocity.y < -wallSlideSpeed)   // 벽 슬라이드: 천천히 미끄러짐
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
 
         // 종단 속도 제한 — 너무 빠르게 낙하해 지형을 뚫고 박히는 것 방지
         if (rb.linearVelocity.y < -maxFallSpeed)
@@ -384,20 +406,29 @@ public class PlayerController : MonoBehaviour
                 lastDownTapTime = Time.time;      // 첫 탭(또는 통과 대상 없음) → 다음 탭 대기
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && !isChargingJump)
+        if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isChargingJump)
         {
-            bool wantCharge = isGrounded &&
-                (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f);
-            if (wantCharge)
+            Debug.Log($"[Jump] SPACE grounded={isGrounded} touchWall={isTouchingWall} wallDir={wallDir} jumps={currentJumps}");
+            if (!isGrounded && isTouchingWall)
             {
-                isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
-                jumpHoldTimer = 0f;
-                animBusyTimer = 0;       // 공격 캔슬하고 웅크림
-                comboStep = 0;
+                WallJump();              // 벽에 붙어 있으면 벽 점프(공중 점프 횟수 소모 X)
+                Debug.Log($"[Jump] WALLJUMP f{Time.frameCount} velX={rb.linearVelocity.x:F1} lock={wallJumpLockTime}");
             }
-            else
+            else if (currentJumps > 0)
             {
-                Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
+                bool wantCharge = isGrounded &&
+                    (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f);
+                if (wantCharge)
+                {
+                    isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
+                    jumpHoldTimer = 0f;
+                    animBusyTimer = 0;       // 공격 캔슬하고 웅크림
+                    comboStep = 0;
+                }
+                else
+                {
+                    Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
+                }
             }
         }
 
@@ -426,6 +457,7 @@ public class PlayerController : MonoBehaviour
     private void Move()
     {
         if (isChargingJump && jumpHoldTimer >= tapJumpTime) { rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }  // 차지 중 제자리 고정
+        if (wallJumpLockTimer > 0f) return;   // 벽점프 직후엔 수평 입력 무시(벽에서 밀려나는 속도 유지)
 
         float speed = isGuarding ? moveSpeed * guardSpeedMultiplier : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
@@ -445,6 +477,7 @@ public class PlayerController : MonoBehaviour
         if (animBusyTimer > 0 || animHoldTimer > 0) return;   // 1회성/플립 모션 보호
         if (isGuarding) { PlayState(guardState); return; }
         if (isChargingJump && jumpHoldTimer >= tapJumpTime) { PlayState(chargeState); return; }   // 준비자세는 0.1초 이상 홀드 때만
+        if (isWallSliding) { PlayState(wallSlideState); return; }   // 벽 슬라이드 자세
 
         string state;
         if (!isGrounded)
@@ -630,6 +663,32 @@ public class PlayerController : MonoBehaviour
             animHoldTimer = ClipLength(doubleJumpState);
         }
         // 첫 점프는 UpdateAnimations가 JumpRise로 자동 처리
+    }
+
+    // 공중에서 양옆에 벽이 있는지 검사(지면에선 검사 안 함 → 바닥 모서리 오탐 방지)
+    private void CheckWall()
+    {
+        isTouchingWall = false; wallDir = 0;
+        if (bodyCollider == null || isGrounded) return;
+        LayerMask lm = wallLayer.value != 0 ? wallLayer : groundLayer;
+        Bounds b = bodyCollider.bounds;
+        float d = 0.22f;   // 감지 여유(벽에 딱 안 붙어도 잡히도록)
+        Vector2 size = new Vector2(d, b.size.y * 0.7f);
+        if (Physics2D.OverlapBox(new Vector2(b.max.x + d * 0.5f, b.center.y), size, 0f, lm)) { isTouchingWall = true; wallDir = 1; }
+        else if (Physics2D.OverlapBox(new Vector2(b.min.x - d * 0.5f, b.center.y), size, 0f, lm)) { isTouchingWall = true; wallDir = -1; }
+    }
+
+    // 벽 점프: 벽 반대 방향으로 차고 나간다. 공중 점프 횟수는 리필.
+    private void WallJump()
+    {
+        rb.linearVelocity = new Vector2(-wallDir * wallJumpForceX, wallJumpForceY);
+        facingDir = -wallDir;
+        if (sr != null) sr.flipX = facingDir < 0;
+        wallJumpLockTimer = wallJumpLockTime;
+        currentJumps = maxJumps;   // 벽점프 후 공중 점프 다시 가능
+        isWallSliding = false; isTouchingWall = false;
+        comboStep = 0; hoverTimer = 0; animBusyTimer = 0; attackBufferTimer = 0;
+        PlayStateForced(wallJumpState);
     }
 
     private void StartDash()
