@@ -157,6 +157,16 @@ public class PlayerController : MonoBehaviour
     public void PlayAnim(string state) => PlayStateForced(state);   // 특정 애니 강제 재생
     public void ZeroVelocity() { if (rb != null) rb.linearVelocity = Vector2.zero; }
 
+    // 점프대(트램펄린) 등이 호출 — 위로 발사 + 공중 점프 리필.
+    public void Launch(float upSpeed)
+    {
+        if (rb == null) return;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, upSpeed);
+        currentJumps = maxJumps;
+        isGrounded = false;
+        hoverTimer = 0; isPlunging = false; animBusyTimer = 0;
+    }
+
     // 컷씬용 걷기: 지정 방향으로 이동 + 방향 전환 + 걷기 애니(매 프레임 호출). cutsceneActive 중 외부 컷씬이 구동.
     public void CutsceneWalk(int dir)
     {
