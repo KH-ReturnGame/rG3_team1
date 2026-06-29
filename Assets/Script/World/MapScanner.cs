@@ -5,10 +5,12 @@ using UnityEngine.SceneManagement;
 
 // '스캔' 모듈용 일반 지도 생성기. 현재 씬의 타일맵을 훑어 지형 실루엣 + 다음 맵 포탈만 담은 텍스처를 만든다.
 //  · 플레이어 위치는 표시하지 않음(정적 스캔)
-//  · 씬별로 1회 생성 후 캐시(씬이 바뀌면 자동 재생성)
+//  · 발견(MapDiscovery)한 카메라 구역만 채워 그림 — 처음엔 비어 있고 탐험하며 드러남(전체 프레임은 고정)
+//  · 씬·발견상태가 바뀌면 자동 재생성(캐시 무효화)
 public static class MapScanner
 {
     private static string builtScene;
+    private static int builtVersion = -1;    // 마지막 빌드 시점의 발견 버전(달라지면 재생성)
     private static Texture2D map;
     private const int MaxDim = 220;          // 결과 텍스처 긴 변(px)
     private const long CellCap = 600000;     // 너무 큰 타일맵은 스캔 생략(안전)
@@ -16,8 +18,9 @@ public static class MapScanner
     public static Texture2D GetMap()
     {
         string scene = SceneManager.GetActiveScene().name;
-        if (map != null && builtScene == scene) return map;
+        if (map != null && builtScene == scene && builtVersion == MapDiscovery.Version) return map;
         builtScene = scene;
+        builtVersion = MapDiscovery.Version;
         map = Build();
         return map;
     }
@@ -55,6 +58,10 @@ public static class MapScanner
             if (w.y < minY) minY = w.y; if (w.y > maxY) maxY = w.y;
         }
 
+        // 발견한 구역만 그림. null=구역 미설정 씬(전부), 빈 목록=아직 발견 0(지도 없음)
+        var areas = MapDiscovery.DiscoveredAreas();
+        if (areas != null && areas.Count == 0) return null;
+
         float worldW = Mathf.Max(1f, maxX - minX), worldH = Mathf.Max(1f, maxY - minY);
         float scale = MaxDim / Mathf.Max(worldW, worldH);
         int texW = Mathf.Clamp(Mathf.CeilToInt(worldW * scale) + 6, 8, 512);
@@ -66,8 +73,8 @@ public static class MapScanner
         Color portalC = new Color(0.30f, 0.85f, 1f, 1f);
         int cell = Mathf.Max(1, Mathf.RoundToInt(scale * 0.55f));
 
-        foreach (var p in pts) Stamp(px, texW, texH, 3 + Mathf.RoundToInt((p.x - minX) * scale), 3 + Mathf.RoundToInt((p.y - minY) * scale), cell, terrain);
-        foreach (var w in doors) Stamp(px, texW, texH, 3 + Mathf.RoundToInt((w.x - minX) * scale), 3 + Mathf.RoundToInt((w.y - minY) * scale), 3, portalC);
+        foreach (var p in pts) if (MapDiscovery.InAreas(areas, p)) Stamp(px, texW, texH, 3 + Mathf.RoundToInt((p.x - minX) * scale), 3 + Mathf.RoundToInt((p.y - minY) * scale), cell, terrain);
+        foreach (var w in doors) if (MapDiscovery.InAreas(areas, w)) Stamp(px, texW, texH, 3 + Mathf.RoundToInt((w.x - minX) * scale), 3 + Mathf.RoundToInt((w.y - minY) * scale), 3, portalC);
 
         tex.SetPixels(px);
         tex.Apply();

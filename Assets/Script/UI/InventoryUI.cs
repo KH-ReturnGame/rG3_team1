@@ -478,8 +478,8 @@ public class InventoryUI : MonoBehaviour
         string[] descs = {
             "체력 한 칸씩 증가", "체력 자동 재생력 증가",
             "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승",
-            "미니맵 표시 (주변 상자·출구·적·채집물). [M]으로 켜고 끔",
-            "일반 지도 열람 — 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭",
+            "미니맵 — 엔지니어가 망토 수리 시 장착해 줌. 탐험해 발견한 구역의 상자·출구·적·채집물 표시. [M] 토글",
+            "일반 지도 열람 — 탐험한 구역의 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭",
             "핫바(단축키) 슬롯 +1 — 더 많은 포션·아이템을 숫자키로 즉시 사용"
         };
         int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.moduleScan, gm.moduleQuickdraw };
@@ -507,7 +507,7 @@ public class InventoryUI : MonoBehaviour
                 Fill(plus, cTabOff); Border(plus, 2f, cSlotBd);
                 GUI.Label(plus, "✓", closeStyle);
             }
-            else if (hoodUpgrade)   // 엔지니어로 연 '업그레이드 모드'에서만 + 버튼
+            else if (hoodUpgrade && i != 5)   // 엔지니어 '업그레이드 모드'에서만 + 버튼 (미니맵 i==5는 망토수리로 지급 — 구매 불가)
             {
                 bool can = gm.modPoints >= costs[i];
                 Fill(plus, can ? cAccent : cTabOff); Border(plus, 2f, cBorder);
@@ -515,13 +515,12 @@ public class InventoryUI : MonoBehaviour
                 if (can && md && plus.Contains(mp))
                 {
                     if (i < 5) gm.SpendStat(i);
-                    else if (i == 5) gm.TryUnlockModule(0, costs[i]);   // 미니맵
                     else if (i == 6) gm.TryUnlockModule(1, costs[i]);   // 스캔
                     else gm.TryUpgradeQuickdraw(costs[i]);              // 빨리 뽑기(레벨형)
                     Event.current.Use();
                 }
             }
-            // else: C키로 연 조회 전용 & 미보유 → 버튼 없음
+            // else: C키 조회 전용 / 미니맵(지급형) 미보유 → 버튼 없음
         }
         if (hoverDesc != null) DrawStatTooltip(hoverDesc, mp);
     }

@@ -77,7 +77,15 @@ public class HandbookUI : MonoBehaviour
             return;
         }
         Texture2D m = MapScanner.GetMap();
-        if (m == null) { GUI.Label(area, "이 구역에서는 지도를 만들 수 없습니다.", dimStyle); return; }
+        if (m == null)
+        {
+            var areas = MapDiscovery.DiscoveredAreas();
+            if (areas != null && areas.Count == 0)
+                GUI.Label(area, "아직 탐험한 구역이 없습니다.\n맵을 돌아다니면 지나온 구역이 지도에 채워집니다.", dimStyle);
+            else
+                GUI.Label(area, "이 구역에서는 지도를 만들 수 없습니다.", dimStyle);
+            return;
+        }
 
         Fill(area, new Color(0.04f, 0.06f, 0.09f, 1f));
         float pad = 12f;
@@ -88,7 +96,7 @@ public class HandbookUI : MonoBehaviour
         Rect mr = new Rect(inner.x + (inner.width - w) * 0.5f, inner.y + (inner.height - h) * 0.5f, w, h);
         GUI.DrawTexture(mr, m, ScaleMode.ScaleToFit);
         GUI.Label(new Rect(area.x + pad, area.yMax - 20f, area.width - pad * 2f, 16f),
-            "지형 · 다음 포탈(시안)만 표시 — 플레이어 위치는 보이지 않습니다.", dimStyle);
+            "탐험한 구역만 표시(지형 · 다음 포탈=시안) — 플레이어 위치는 보이지 않습니다.", dimStyle);
     }
 
     private void DrawHelpTab(Rect area)

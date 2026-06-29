@@ -46,31 +46,38 @@ public class Minimap : MonoBehaviour
         if (Time.unscaledTime >= nextScan) { nextScan = Time.unscaledTime + refreshInterval; Scan(); }
     }
 
+    private List<Bounds> scanAreas;   // 이번 스캔에서 '발견된 구역'(블립 필터링용)
+
     private void Scan()
     {
         blips.Clear();
         if (player == null && PlayerController.Instance != null) player = PlayerController.Instance.transform;
+        scanAreas = MapDiscovery.DiscoveredAreas();   // 발견 구역만 블립 표시(fog-of-war)
 
         foreach (var c in TreasureChest.All)
-            if (c != null && !c.IsOpened) blips.Add(Mk(c.transform.position, cChest, 6f, true));
+            if (c != null && !c.IsOpened) AddBlip(c.transform.position, cChest, 6f, true);
 
         foreach (var d in FindObjectsByType<SceneDoor>(FindObjectsSortMode.None))
-            blips.Add(Mk(d.transform.position, cExit, 6f, true));
+            AddBlip(d.transform.position, cExit, 6f, true);
 
         foreach (var e in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
-            blips.Add(Mk(e.transform.position, cEnemy, 4f, false));
+            AddBlip(e.transform.position, cEnemy, 4f, false);
 
         foreach (var g in FindObjectsByType<GatheringSpawn>(FindObjectsSortMode.None))
-            blips.Add(Mk(g.transform.position, cGather, 4f, false));
+            AddBlip(g.transform.position, cGather, 4f, false);
 
         foreach (var s in FindObjectsByType<ShopStation>(FindObjectsSortMode.None))
-            blips.Add(Mk(s.transform.position, cShop, 5f, false));
+            AddBlip(s.transform.position, cShop, 5f, false);
 
         foreach (var q in FindObjectsByType<QuestBoard>(FindObjectsSortMode.None))
-            blips.Add(Mk(q.transform.position, cBoard, 5f, false));
+            AddBlip(q.transform.position, cBoard, 5f, false);
     }
 
-    private static Blip Mk(Vector2 p, Color c, float s, bool imp) => new Blip { pos = p, color = c, size = s, important = imp };
+    private void AddBlip(Vector2 p, Color c, float s, bool imp)
+    {
+        if (!MapDiscovery.InAreas(scanAreas, p)) return;   // 미발견 구역의 대상은 숨김
+        blips.Add(new Blip { pos = p, color = c, size = s, important = imp });
+    }
 
     void OnGUI()
     {
