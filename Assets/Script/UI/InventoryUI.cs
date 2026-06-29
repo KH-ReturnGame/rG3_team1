@@ -77,7 +77,8 @@ public class InventoryUI : MonoBehaviour
     {
         if (!open || Inventory.Instance == null) return;
         EnsureStyles();
-        curSlot = autoSize ? Screen.height * slotHeightRatio : slotSize;
+        UIScale.Apply();   // 해상도 독립 스케일
+        curSlot = autoSize ? UIScale.H * slotHeightRatio : slotSize;
 
         var slots = Inventory.Instance.slots;
         int cols = Mathf.Max(1, columns);

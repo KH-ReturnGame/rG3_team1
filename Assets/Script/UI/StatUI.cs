@@ -41,9 +41,10 @@ public class StatUI : MonoBehaviour
         var gm = GameManager.Instance;
         if (gm == null) return;
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;   // 시작 메뉴에선 HP 숨김
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        float x = Screen.width * origin.x;
-        float y = Screen.height * origin.y;
+        float x = UIScale.W * origin.x;
+        float y = UIScale.H * origin.y;
 
         // 하트(꽉 / 반 / 빈 칸) — 반칸 단위. 음영·외곽선·하이라이트 텍스처
         GUI.color = Color.white;

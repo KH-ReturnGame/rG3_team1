@@ -17,6 +17,7 @@ public class MenuUI : MonoBehaviour
     void OnGUI()
     {
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
         const float bw = 84f, bh = 30f, m = 10f;
         if (GUI.Button(new Rect(m, m, bw, bh), "메뉴", btnStyle)) open = !open;
 

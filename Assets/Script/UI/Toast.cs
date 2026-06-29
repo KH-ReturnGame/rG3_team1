@@ -27,10 +27,11 @@ public class Toast : MonoBehaviour
     {
         if (timer <= 0f || string.IsNullOrEmpty(msg)) return;
         EnsureStyles();
+        UIScale.Apply();     // 해상도 독립 스케일
         GUI.depth = -1000;   // 다른 모든 UI 위에
         float alpha = Mathf.Clamp01(timer < 0.6f ? timer / 0.6f : 1f);
-        float w = Mathf.Min(Screen.width * 0.8f, 640f), h = 56f;
-        float x = (Screen.width - w) * 0.5f, y = Screen.height * 0.14f;
+        float w = Mathf.Min(UIScale.W * 0.8f, 640f), h = 56f;
+        float x = (UIScale.W - w) * 0.5f, y = UIScale.H * 0.14f;
         var prev = GUI.color;
         GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
         GUI.color = new Color(0.30f, 0.80f, 0.95f, alpha);

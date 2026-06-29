@@ -86,9 +86,10 @@ public class Minimap : MonoBehaviour
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
         if (Inventory.IsUIOpen) return;   // 전체 UI 열렸을 땐 숨김
         if (player == null) { if (PlayerController.Instance != null) player = PlayerController.Instance.transform; else return; }
+        UIScale.Apply();   // 해상도 독립 스케일
 
         float bs = boxSize;
-        Rect box = new Rect(Screen.width - bs - margin, margin, bs, bs);
+        Rect box = new Rect(UIScale.W - bs - margin, margin, bs, bs);
         Fill(box, new Color(0.05f, 0.07f, 0.11f, 0.82f));
         Border(box, 2f, new Color(0.30f, 0.80f, 0.95f, 0.9f));
 
