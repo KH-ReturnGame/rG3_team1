@@ -36,10 +36,11 @@ public class HandbookUI : MonoBehaviour
     {
         if (!open) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        float pw = Mathf.Min(780f, Screen.width - 60f);
-        float ph = Mathf.Min(480f, Screen.height - 60f);
-        float px = (Screen.width - pw) * 0.5f, py = (Screen.height - ph) * 0.5f;
+        float pw = Mathf.Min(780f, UIScale.W - 60f);
+        float ph = Mathf.Min(480f, UIScale.H - 60f);
+        float px = (UIScale.W - pw) * 0.5f, py = (UIScale.H - ph) * 0.5f;
         Rect panel = new Rect(px, py, pw, ph);
 
         Fill(new Rect(px + 5, py + 6, pw, ph), new Color(0f, 0f, 0f, 0.4f));     // 그림자

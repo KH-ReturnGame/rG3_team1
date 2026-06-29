@@ -57,17 +57,18 @@ public class CraftingUI : MonoBehaviour
     {
         if (!open || Inventory.Instance == null) return;
         EnsureStyles();
-        float ss = Mathf.Clamp(Screen.height * 0.072f, 44f, 70f);
+        UIScale.Apply();   // 해상도 독립 스케일
+        float ss = Mathf.Clamp(UIScale.H * 0.072f, 44f, 70f);
         float pad = 6f, gap = 36f, headH = 104f;
         float panelW = Cols * (ss + pad) + pad;
         float gridH = Rows * (ss + pad) + pad;
         float w = panelW * 2f + gap + 40f;
         float h = headH + gridH + 64f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
+        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
         GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
         GUI.color = new Color(0.30f, 0.80f, 0.95f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
         GUI.Label(new Rect(x, y + 12f, w, 32f), "제작대", title);
@@ -279,8 +280,8 @@ public class CraftingUI : MonoBehaviour
         float dh = string.IsNullOrEmpty(desc) ? 0f : body.CalcHeight(new GUIContent(desc), tw - 16f);
         float th = nh + dh + 16f;
         float tx = m.x + 16f, tyy = m.y + 16f;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
-        if (tyy + th > Screen.height) tyy = Screen.height - th - 4f;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
+        if (tyy + th > UIScale.H) tyy = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, tyy, tw, th);
         Fill(tr, new Color(0.06f, 0.08f, 0.12f, 0.98f)); Border(tr, 2f, new Color(0.30f, 0.80f, 0.95f));
         GUI.Label(new Rect(tx + 8f, tyy + 5f, tw - 16f, nh), nm, tipName);

@@ -65,6 +65,7 @@ public class GameFlow : MonoBehaviour
     public void AdvanceStage()
     {
         if (!CanTransition) return;
+        if (QuestManager.Instance != null) QuestManager.Instance.CompleteById("guide_village");   // 우물로 내려가면 길잡이 완료
 
         if (!InRun)   // 스테이지 직접 Play 등 → 현재 씬 번호로 보정
         {
@@ -96,9 +97,12 @@ public class GameFlow : MonoBehaviour
     }
 
     // 사망 → 손실 적용 + 사망 결과창. GameManager.Die()에서 호출.
+    //  · 마을(허브)·시작메뉴·튜토리얼에서의 사망은 제외, 그 외(스테이지·보스 등)에서 죽으면 항상 결과창.
+    //    (InRun 플래그는 런 시작 플로우를 안 거치면 안 켜져서, 씬 기준으로 판정)
     public void OnRunPlayerDied()
     {
-        if (!InRun) return;   // 마을 등 런 밖 사망은 페널티 없음
+        string sc = SceneManager.GetActiveScene().name;
+        if (sc == hubScene || sc == "StartScene" || sc == "TutorialScene") return;
         ApplyDeathLosses();
         OpenResult(false);
     }
@@ -211,11 +215,12 @@ public class GameFlow : MonoBehaviour
     {
         if (!showResult) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        UITheme.Fill(new Rect(0, 0, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.72f));   // 화면 어둡게
+        UITheme.Fill(new Rect(0, 0, UIScale.W, UIScale.H), new Color(0f, 0f, 0f, 0.72f));   // 화면 어둡게
 
         float w = 500f, h = 400f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
         Rect panel = new Rect(x, y, w, h);
         UITheme.Fill(new Rect(x + 5f, y + 6f, w, h), new Color(0f, 0f, 0f, 0.4f));   // 그림자
         UITheme.Fill(panel, UITheme.BgSolid);

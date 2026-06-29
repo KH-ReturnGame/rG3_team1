@@ -77,12 +77,13 @@ public class Hotbar : MonoBehaviour
     {
         if (!showBar || Inventory.Instance == null || hotkeySlots <= 0) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        float size = Mathf.Clamp(Screen.height * slotSizeRatio, 44f, 96f);
+        float size = Mathf.Clamp(UIScale.H * slotSizeRatio, 44f, 96f);
         float pad = size * 0.12f;
         float totalW = hotkeySlots * (size + pad) - pad;
-        float x = (Screen.width - totalW) * 0.5f;
-        float y = Screen.height - size - pad * 2f;
+        float x = (UIScale.W - totalW) * 0.5f;
+        float y = UIScale.H - size - pad * 2f;
 
         var slots = Inventory.Instance.slots;
         for (int i = 0; i < hotkeySlots; i++)

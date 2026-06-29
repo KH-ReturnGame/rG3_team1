@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: cf0991b260eb94b408fcb881edcab5b4
+guid: c13640bd5388d3144817861d06a0c11d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 404137256127807114
-    second: screenshot-20260629-194017_0
+      213: -3523423175266737099
+    second: portrait_engineer_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: screenshot-20260629-194017_0
+      name: portrait_engineer_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 726
-        height: 332
+        width: 128
+        height: 128
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a8ebff771b8cb9500800000000000000
-      internalID: 404137256127807114
+      spriteID: 534e8dc3a494a1fc0800000000000000
+      internalID: -3523423175266737099
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      screenshot-20260629-194017_0: 404137256127807114
+      portrait_engineer_0: -3523423175266737099
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

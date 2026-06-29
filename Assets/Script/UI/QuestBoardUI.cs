@@ -29,6 +29,7 @@ public class QuestBoardUI : MonoBehaviour
         if (QuestManager.Instance == null) return list;
         foreach (var q in QuestManager.Instance.available)
         {
+            if (q.autoAccept) continue;   // 길잡이 등 자동 수주 퀘스트는 게시판에 안 띄움
             if (QuestManager.Instance.IsCompleted(q) || !QuestManager.Instance.IsUnlocked(q)) continue;   // 완료/미해금(선행 미완) 숨김
             if (tab == 1 && q.category != QuestCategory.Main) continue;
             if (tab == 2 && q.category == QuestCategory.Main) continue;
@@ -41,7 +42,8 @@ public class QuestBoardUI : MonoBehaviour
     {
         if (!open) return;
         EnsureStyles();
-        float W = Screen.width, H = Screen.height;
+        UIScale.Apply();   // 해상도 독립 스케일
+        float W = UIScale.W, H = UIScale.H;
         GUI.color = new Color(0.05f, 0.07f, 0.11f, 1f); GUI.DrawTexture(new Rect(0, 0, W, H), white); GUI.color = Color.white;   // 불투명 풀스크린
         float mx = W * 0.035f, my = H * 0.04f;
         Rect board = new Rect(mx, my, W - 2 * mx, H - 2 * my);

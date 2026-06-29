@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 // 미니맵(자동부팅·영구 싱글톤, OnGUI). 우상단에 플레이어 중심 레이더식 표시.
 //  · 상자(금)·출구/문(시안)·적(빨강)·채집물(초록)·마을 시설(상인/게시판/제작대)을 블립으로 표시
@@ -30,6 +31,14 @@ public class Minimap : MonoBehaviour
     private static readonly Color cGather= new Color(0.50f, 0.90f, 0.50f);
     private static readonly Color cShop  = new Color(0.90f, 0.66f, 0.32f);
     private static readonly Color cBoard = new Color(0.72f, 0.46f, 1f);
+    private static readonly Color cQuest = new Color(1f, 0.86f, 0.30f);   // 길찾기 목표(금색)
+    private static readonly Color cTerrain = new Color(0.32f, 0.45f, 0.56f, 0.92f);   // 지형 실루엣
+
+    // 지형(타일맵) 미니 텍스처 — 레이더 범위를 작은 텍스처로 구워 1회 드로우(발견 구역만)
+    private Texture2D terrainTex;
+    private Vector2 terrainCenter;
+    private float terrainHalf;
+    private const int TerrainN = 72;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -71,6 +80,49 @@ public class Minimap : MonoBehaviour
 
         foreach (var q in FindObjectsByType<QuestBoard>(FindObjectsSortMode.None))
             AddBlip(q.transform.position, cBoard, 5f, false);
+
+        // 길찾기(V) 활성 시: 추적 퀘스트 목표 — 발견 여부 무시하고 항상 큼직하게 표시
+        if (QuestTracker.PathActive)
+        {
+            Vector2 qt;
+            if (QuestTracker.TryGetPathTarget(out qt))
+                blips.Add(new Blip { pos = qt, color = cQuest, size = 9f, important = true });
+        }
+
+        BuildTerrain();   // 지형 텍스처 갱신
+    }
+
+    // 레이더 범위(플레이어 ± worldRange+여유)의 지형을 작은 텍스처로 구움. 발견한 구역만 채움.
+    private void BuildTerrain()
+    {
+        if (player == null) return;
+        Vector2 c = player.position;
+        float half = worldRange + 8f;
+        if (terrainTex == null) terrainTex = new Texture2D(TerrainN, TerrainN, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        var buf = new Color[TerrainN * TerrainN];
+        var tilemaps = FindObjectsByType<Tilemap>(FindObjectsSortMode.None);
+        float step = 2f * half / TerrainN;
+        for (int iy = 0; iy < TerrainN; iy++)
+        {
+            float wy = c.y - half + (iy + 0.5f) * step;
+            for (int ix = 0; ix < TerrainN; ix++)
+            {
+                float wx = c.x - half + (ix + 0.5f) * step;
+                Vector2 wp = new Vector2(wx, wy);
+                if (!MapDiscovery.InAreas(scanAreas, wp)) { buf[iy * TerrainN + ix] = Color.clear; continue; }
+                bool tile = false;
+                for (int t = 0; t < tilemaps.Length; t++)
+                {
+                    var tm = tilemaps[t];
+                    if (tm != null && tm.HasTile(tm.WorldToCell(wp))) { tile = true; break; }
+                }
+                buf[iy * TerrainN + ix] = tile ? cTerrain : Color.clear;
+            }
+        }
+        terrainTex.SetPixels(buf);
+        terrainTex.Apply();
+        terrainCenter = c;
+        terrainHalf = half;
     }
 
     private void AddBlip(Vector2 p, Color c, float s, bool imp)
@@ -97,6 +149,20 @@ public class Minimap : MonoBehaviour
         float half = bs * 0.5f - 6f;
         float scale = half / Mathf.Max(1f, worldRange);
         Vector2 pp = player.position;
+
+        // 발견한 지형(타일맵) 실루엣 — 박스에 클립하고 실시간 플레이어 위치로 정렬
+        if (terrainTex != null && terrainHalf > 0f)
+        {
+            float tx0 = center.x + (terrainCenter.x - terrainHalf - pp.x) * scale;
+            float tx1 = center.x + (terrainCenter.x + terrainHalf - pp.x) * scale;
+            float tyTop = center.y - (terrainCenter.y + terrainHalf - pp.y) * scale;
+            float tyBot = center.y - (terrainCenter.y - terrainHalf - pp.y) * scale;
+            GUI.BeginGroup(box);
+            Color oc = GUI.color; GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(tx0 - box.x, tyTop - box.y, tx1 - tx0, tyBot - tyTop), terrainTex);
+            GUI.color = oc;
+            GUI.EndGroup();
+        }
 
         foreach (var b in blips)
         {

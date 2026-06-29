@@ -22,6 +22,9 @@ public class Quest
     public int xpReward = 50;            // 완료 시 경험치
     public string prereqId;              // 선행 퀘스트 id(이게 완료돼야 게시판에 등장 — 연계)
     public Sprite icon;
+    public bool autoAccept;              // 마을 진입 시 자동 수주(게시판엔 안 뜸)
+    public string objectiveOverride;     // 있으면 목표 문구를 이걸로 표시(채집/처치 진행도 대신)
+    public bool pathToDescend;           // 길찾기 대상 = 하강 포탈(우물). 그 외엔 채집/처치 대상으로 자동
     [System.NonSerialized] public int progress;
 
     public string CategoryLabel()
@@ -29,7 +32,10 @@ public class Quest
     public string TargetDisplay()
     { if (!string.IsNullOrEmpty(targetName)) return targetName; if (goal == QuestGoal.Gather) { var it = ItemDatabase.Get(targetId); if (it != null) return it.itemName; } return targetId; }
     public string ObjectiveText()
-    { return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")"; }
+    {
+        if (!string.IsNullOrEmpty(objectiveOverride)) return objectiveOverride;
+        return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")";
+    }
 }
 
 // 퀘스트 전역 관리(자동부팅·영구). 연계(prereq)·완료추적·경험치 보상.
@@ -57,6 +63,11 @@ public class QuestManager : MonoBehaviour
     private void BuildQuests()
     {
         available.Clear();
+        // 길잡이(마을 진입 시 자동 수주, 게시판엔 안 뜸) — 다친 주인공이 마을에 도착한 직후 안내
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "지저 마을", title = "낯선 땅, 붉은 후드",
+            description = "튜토리얼의 추격에서 가까스로 벗어나 다친 몸을 이끌고 지저 마을에 닿았다.\n이곳엔 망토를 수리해 줄 엔지니어, 재료·포션·탐험 장비를 파는 상인들, 그리고 의뢰 게시판이 있다.\n몸을 추스르고 채비를 갖춘 뒤, 마을 한켠의 우물(하강 포탈)로 내려가 사냥을 시작하자.",
+            autoAccept = true, objectiveOverride = "마을의 NPC들을 둘러보고, 우물로 내려가 사냥을 시작하라", pathToDescend = true,
+            goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",
             description = "낯선 지저 세계. 마을을 둘러보고 지저꽃을 하나 채집해 적응을 시작하자.",
@@ -89,6 +100,36 @@ public class QuestManager : MonoBehaviour
     public bool IsAccepted(Quest q) => q != null && accepted.Contains(q);
     public bool IsCompleted(Quest q) => q != null && completed.Contains(q.id);
     public bool IsUnlocked(Quest q) => q != null && (string.IsNullOrEmpty(q.prereqId) || completed.Contains(q.prereqId));
+
+    // ── 추적(트래커 HUD/길찾기 대상) ──
+    [System.NonSerialized] public Quest tracked;
+    public Quest GetTracked()
+    {
+        if (tracked != null && accepted.Contains(tracked)) return tracked;
+        foreach (var q in accepted) if (q.category == QuestCategory.Main) return q;   // 주요 우선
+        return accepted.Count > 0 ? accepted[0] : null;
+    }
+    public void SetTracked(Quest q) { tracked = q; Changed(); }
+
+    public Quest Find(string id) => available.Find(x => x.id == id);
+
+    // 마을 진입 시: 미완료·미수주 autoAccept 퀘스트를 자동 수주. 새로 받은 첫 퀘스트 반환(없으면 null).
+    public Quest AcceptAutoQuests()
+    {
+        Quest first = null;
+        foreach (var q in available)
+            if (q.autoAccept && !IsCompleted(q) && !accepted.Contains(q))
+            { q.progress = 0; accepted.Add(q); if (first == null) first = q; }
+        if (first != null) { tracked = first; Changed(); }
+        return first;
+    }
+
+    // id로 완료(길잡이=하강 시 호출 등). 수주 중이면 보상 처리 후 완료.
+    public void CompleteById(string id)
+    {
+        var q = accepted.Find(x => x.id == id);
+        if (q != null) { Complete(q); Changed(); }
+    }
 
     public void Accept(Quest q)
     {

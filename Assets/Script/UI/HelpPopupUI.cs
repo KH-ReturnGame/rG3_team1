@@ -20,7 +20,7 @@ public class HelpPopupUI : MonoBehaviour
         public float timedUntil;   // >0이면 그 시각에 자동 종료(Timed). 0 && !manual = Sticky(코드로만).
     }
     private readonly List<Entry> stack = new List<Entry>();   // [0]=먼저 뜬 것(맨 앞), 뒤로 갈수록 나중에 뜬 것
-    public bool stackPopups = true;   // false면 중첩 안 함 — 새 도움말이 뜨면 이전 것은 즉시 사라짐(교체)
+    public bool stackPopups = false;   // 중첩 끔(기본) — 새 도움말이 뜨면 이전 것은 즉시 사라짐(교체). true면 카드처럼 쌓임
     private const float HeaderPeek = 46f;   // 뒤 도움말이 위로 삐져나오는 양(제목 보이게)
     private const int MaxCascade = 4;       // 이 이상 쌓이면 더 위로 올리지 않음
 
@@ -74,12 +74,13 @@ public class HelpPopupUI : MonoBehaviour
     {
         if (stack.Count == 0) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        float w = Mathf.Min(720f, Screen.width - 60f);
-        float x = (Screen.width - w) * 0.5f;
+        float w = Mathf.Min(720f, UIScale.W - 60f);
+        float x = (UIScale.W - w) * 0.5f;
         int n = stack.Count;
         int reveal = Mathf.Min(n - 1, MaxCascade);
-        float frontY = Screen.height * 0.05f + reveal * HeaderPeek;   // 맨 앞은 아래, 뒤로 갈수록 위로
+        float frontY = UIScale.H * 0.05f + reveal * HeaderPeek;   // 맨 앞은 아래, 뒤로 갈수록 위로
 
         int closeFront = -1;
         // 뒤(나중·깊은 것)부터 그려 z순서상 앞(먼저 뜬 것)이 위로 오게

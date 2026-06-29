@@ -89,8 +89,8 @@ public class InventoryUI : MonoBehaviour
         float equipH = 20f + curSlot + padding;            // 장신구 라벨 + 착용칸
         float w = cols * (curSlot + padding) + padding;
         float h = tabH + gridH + equipH;
-        float x0 = (Screen.width - w) * 0.5f;
-        float y0 = (Screen.height - h) * 0.5f;
+        float x0 = (UIScale.W - w) * 0.5f;
+        float y0 = (UIScale.H - h) * 0.5f;
         Rect windowRect = new Rect(x0, y0, w, h);
         float gridTop = y0 + tabH;
         float equipLabelY = gridTop + gridH;
@@ -389,8 +389,8 @@ public class InventoryUI : MonoBehaviour
         float th = nameH + descH + 18;
 
         float tx = mouse.x + 18, ty = mouse.y + 18;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4;
-        if (ty + th > Screen.height) ty = Screen.height - th - 4;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4;
+        if (ty + th > UIScale.H) ty = UIScale.H - th - 4;
 
         Rect tr = new Rect(tx, ty, tw, th);
         Fill(tr, cPanel);
@@ -423,8 +423,8 @@ public class InventoryUI : MonoBehaviour
         float tw = 290f;
         float th = tipDescStyle.CalcHeight(new GUIContent(text), tw - 16f) + 14f;
         float tx = m.x + 16f, ty = m.y + 16f;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
-        if (ty + th > Screen.height) ty = Screen.height - th - 4f;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
+        if (ty + th > UIScale.H) ty = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, ty, tw, th);
         Fill(tr, cPanel); Border(tr, 2f, cBorder);
         GUI.Label(new Rect(tx + 8f, ty + 6f, tw - 16f, th - 12f), text, tipDescStyle);

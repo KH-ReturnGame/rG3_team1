@@ -28,8 +28,9 @@ public class QuestLogUI : MonoBehaviour
     {
         if (!open) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
         var qm = QuestManager.Instance;
-        float W = Screen.width, H = Screen.height;
+        float W = UIScale.W, H = UIScale.H;
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, W, H), white); GUI.color = Color.white;
         float w = W * 0.72f, h = H * 0.72f;
         Rect p = new Rect((W - w) * 0.5f, (H - h) * 0.5f, w, h);
@@ -88,6 +89,14 @@ public class QuestLogUI : MonoBehaviour
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), it != null ? it.itemName : selected.rewardItemId, reward);
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), "x" + Mathf.Max(1, selected.rewardItemCount), rewardR);
         }
+
+        // 추적 버튼 (트래커 HUD가 따라갈 퀘스트 지정)
+        bool isTracked = qm != null && qm.GetTracked() == selected;
+        Rect tb = new Rect(p.xMax - 370f, p.yMax - 64f, 180f, 46f);
+        Fill(tb, isTracked ? new Color(0.14f, 0.30f, 0.20f) : new Color(0.16f, 0.26f, 0.34f));
+        Border(tb, 2f, isTracked ? new Color(0.50f, 0.95f, 0.60f) : new Color(0.30f, 0.80f, 0.95f));
+        GUI.Label(tb, isTracked ? "✓ 추적 중" : "이 퀘스트 추적", btn);
+        if (click && tb.Contains(m) && !isTracked) { qm.SetTracked(selected); Event.current.Use(); }
 
         // 포기 버튼
         Rect gb = new Rect(p.xMax - 170f, p.yMax - 64f, 150f, 46f);

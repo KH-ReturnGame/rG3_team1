@@ -53,17 +53,18 @@ public class ShopUI : MonoBehaviour
     {
         if (!open || Inventory.Instance == null) return;
         EnsureStyles();
-        float ss = Mathf.Clamp(Screen.height * 0.072f, 44f, 70f);
+        UIScale.Apply();   // 해상도 독립 스케일
+        float ss = Mathf.Clamp(UIScale.H * 0.072f, 44f, 70f);
         float pad = 6f, gap = 36f, headH = 104f;
         float panelW = Cols * (ss + pad) + pad;
         float gridH = Rows * (ss + pad) + pad;
         float w = panelW * 2f + gap + 40f;
         float h = headH + gridH + 64f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
+        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
         GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
         GUI.color = new Color(0.30f, 0.80f, 0.95f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
 
@@ -294,8 +295,8 @@ public class ShopUI : MonoBehaviour
         float ih = string.IsNullOrEmpty(hoverInfo) ? 0f : 22f;
         float th = nh + dh + ih + 16f;
         float tx = m.x + 16f, ty = m.y + 16f;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
-        if (ty + th > Screen.height) ty = Screen.height - th - 4f;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
+        if (ty + th > UIScale.H) ty = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, ty, tw, th);
         Fill(tr, new Color(0.06f, 0.08f, 0.12f, 0.98f)); Border(tr, 2f, new Color(0.30f, 0.80f, 0.95f));
         GUI.Label(new Rect(tx + 8f, ty + 5f, tw - 16f, nh), nm, tipName);

@@ -51,6 +51,7 @@ public class AcquireBanner : MonoBehaviour
     {
         if (!active) return;
         EnsureStyles();
+        UIScale.Apply();     // 해상도 독립 스케일(카드 바운스 ScaleAroundPivot은 이 위에 합성)
         GUI.depth = -2000;   // 토스트보다 위
         Color prev = GUI.color;
 
@@ -61,14 +62,15 @@ public class AcquireBanner : MonoBehaviour
         else { float p = Mathf.Clamp01((t - Intro - Hold) / Outro); scale = 1f - 0.05f * p; vig = 1f - p; ca = 1f - p; }
 
         // 전체 비네트(스케일 영향 없음)
-        Tex(new Rect(0, 0, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.5f * vig));
+        Tex(new Rect(0, 0, UIScale.W, UIScale.H), new Color(0f, 0f, 0f, 0.5f * vig));
 
-        float cw = Mathf.Min(Screen.width * 0.64f, 540f), ch = 152f;
-        Vector2 center = new Vector2(Screen.width * 0.5f, Screen.height * 0.42f);
+        float cw = Mathf.Min(UIScale.W * 0.64f, 540f), ch = 152f;
+        Vector2 center = new Vector2(UIScale.W * 0.5f, UIScale.H * 0.42f);
         Rect card = new Rect(center.x - cw * 0.5f, center.y - ch * 0.5f, cw, ch);
 
         Matrix4x4 m = GUI.matrix;
-        GUIUtility.ScaleAroundPivot(new Vector2(scale, scale), center);
+        float ds = Mathf.Max(0.02f, scale);   // 0 스케일 방지(역행렬 불가 행렬 경고 차단) — EaseOutBack(0)=0
+        GUIUtility.ScaleAroundPivot(new Vector2(ds, ds), center);
 
         float glow = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 6f);
         Tex(card, new Color(0.05f, 0.08f, 0.12f, 0.96f * ca));                 // 카드 배경

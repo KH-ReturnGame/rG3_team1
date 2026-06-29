@@ -8,8 +8,8 @@ public class Inventory : MonoBehaviour
 
     // 각 UI가 '자기 플래그'만 켜고/끈다(서로 덮어쓰지 않게). 하나라도 열려 있으면 IsUIOpen = true.
     // 플레이어 조작/공격/상호작용 잠금에 사용. 읽는 쪽은 IsUIOpen 그대로 사용.
-    public static bool InvUIOpen, ShopUIOpen, CraftUIOpen, QuestUIOpen, HandbookUIOpen;
-    public static bool IsUIOpen => InvUIOpen || ShopUIOpen || CraftUIOpen || QuestUIOpen || HandbookUIOpen;
+    public static bool InvUIOpen, ShopUIOpen, CraftUIOpen, QuestUIOpen, HandbookUIOpen, DialogueOpen;
+    public static bool IsUIOpen => InvUIOpen || ShopUIOpen || CraftUIOpen || QuestUIOpen || HandbookUIOpen || DialogueOpen;
 
     [System.Serializable]
     public class Slot

@@ -45,10 +45,11 @@ public class AcquireFeed : MonoBehaviour
     {
         if (entries.Count == 0) return;
         if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        UIScale.Apply();   // 해상도 독립 스케일
 
         float w = 220f, h = 32f, gap = 4f;
-        float x = Screen.width - w - 18f;
-        float baseY = Screen.height * 0.60f;
+        float x = UIScale.W - w - 18f;
+        float baseY = UIScale.H * 0.60f;
 
         for (int i = 0; i < entries.Count; i++)
         {
