@@ -31,6 +31,10 @@ public class ItemData : ScriptableObject
     public float staminaRegenBonus = 0f;
     public float attackBonus = 0f;
 
+    [Header("장신구 효과")]
+    public bool precogSlow = false;        // 예지안: 적 공격 직전 시간 감속(쿨다운, PrecogCharm이 처리)
+    public float precogCooldown = 20f;     // 발동 쿨다운(초)
+
     [Header("판매 / 가치")]
     public int sellValue = 0;                // (구) 골동품 판매가
     public int baseValue = 0;                // 상점 가치. 판매 = 80% / 되사기 = 100%

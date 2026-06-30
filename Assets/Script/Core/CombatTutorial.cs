@@ -140,7 +140,7 @@ public class CombatTutorial : MonoBehaviour
         lessonActive = true;
         lessonEnemy = e;
         lessonStartReal = Time.unscaledTime;
-        Time.timeScale = slowScale;
+        SlowMoFx.BeginHeld(slowScale);   // 시간감속 + 줌인 + 집중 연출
         if (HelpPopupUI.Instance != null)
             HelpPopupUI.Instance.ShowSticky("패링 찬스!",
                 "적의 공격이 들어옵니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
@@ -148,7 +148,7 @@ public class CombatTutorial : MonoBehaviour
 
     private void ResolveParrySuccess()
     {
-        Time.timeScale = 1f;                                       // ★ Juice보다 먼저 복구해야 히트스톱이 동작
+        SlowMoFx.End();                                            // ★ Juice보다 먼저 복구해야 히트스톱이 동작
         if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
         var p = Player();
         if (p != null) p.TutorialParrySuccess(lessonEnemy as IParryable);   // 그로기 + 반격 + "팅"
@@ -162,7 +162,7 @@ public class CombatTutorial : MonoBehaviour
     {
         if (lessonActive)
         {
-            Time.timeScale = 1f;
+            SlowMoFx.End();
             if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
             parryLessonDone = true;   // 한 번 발동했으면(성공/실패 무관) 소진
         }
