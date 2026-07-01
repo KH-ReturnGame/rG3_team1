@@ -64,9 +64,9 @@ public class QuestManager : MonoBehaviour
     {
         available.Clear();
         // 길잡이(마을 진입 시 자동 수주, 게시판엔 안 뜸) — 다친 주인공이 마을에 도착한 직후 안내
-        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "지저 마을", title = "낯선 땅, 붉은 후드",
-            description = "튜토리얼의 추격에서 가까스로 벗어나 다친 몸을 이끌고 지저 마을에 닿았다.\n이곳엔 망토를 수리해 줄 엔지니어, 재료·포션·탐험 장비를 파는 상인들, 그리고 의뢰 게시판이 있다.\n몸을 추스르고 채비를 갖춘 뒤, 마을 한켠의 우물(하강 포탈)로 내려가 사냥을 시작하자.",
-            autoAccept = true, objectiveOverride = "마을의 NPC들을 둘러보고, 우물로 내려가 사냥을 시작하라", pathToDescend = true,
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "기억을 잃은 자",
+            description = "지상으로 나가려다 추락해, 강한 충격에 기억을 잃었다.\n감지 기프트를 가진 '여울'이 쓰러진 나를 발견해 자기 집으로 데려왔다. — 여긴 지하 마을.\n몸을 추스르고 마을을 둘러보자(엔지니어·상인들·게시판). 채비가 되면 우물로 내려가 본다.",
+            autoAccept = true, objectiveOverride = "마을을 둘러보고, 우물로 내려갈 채비를 하라", pathToDescend = true,
             goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",
