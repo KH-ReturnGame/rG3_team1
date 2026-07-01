@@ -68,14 +68,15 @@ public class TreasureChest : MonoBehaviour, IInteractable
             }
         if (lootGold > 0) AddCoinDrops(drops, lootGold);
 
-        // 상자 위 공중에 한 줄로 둥둥 띄움(튀어나오지 않음, F로 줍기)
+        // 상자 안(윗부분)에서 튀어나와 → 상자 위 공중에 한 줄로 안착(둥둥 + 그림자). 순차로 팝.
         Vector3 origin = transform.position + Vector3.up * 0.9f;
+        Vector3 from = transform.position + Vector3.up * 0.35f;   // 상자 뚜껑 안쪽에서 나오기
         int n = drops.Count;
         for (int i = 0; i < n; i++)
         {
             float ox = (i - (n - 1) * 0.5f) * dropSpacing;
             Vector3 pos = origin + new Vector3(ox, 0f, 0f);
-            ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true);   // hover=true → 둥둥
+            ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true, from, i * 0.07f);   // 튀어나오는 팝 + 스태거
         }
 
         Toast.Show("보물 상자를 열었다!", 2f);
