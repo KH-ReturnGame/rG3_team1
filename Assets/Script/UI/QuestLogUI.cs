@@ -34,7 +34,7 @@ public class QuestLogUI : MonoBehaviour
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, W, H), white); GUI.color = Color.white;
         float w = W * 0.72f, h = H * 0.72f;
         Rect p = new Rect((W - w) * 0.5f, (H - h) * 0.5f, w, h);
-        Fill(p, new Color(0.06f, 0.08f, 0.12f, 0.98f)); Border(p, 4f, new Color(0.30f, 0.80f, 0.95f));
+        Fill(p, UITheme.A(UITheme.BgSolid, 0.98f)); Border(p, 4f, UITheme.Accent);
 
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
@@ -42,11 +42,11 @@ public class QuestLogUI : MonoBehaviour
         string lv = GameManager.Instance != null ? ("   ·   Lv." + GameManager.Instance.level + "  (XP " + GameManager.Instance.xp + "/" + GameManager.Instance.XpToNext + ")") : "";
         GUI.Label(new Rect(p.x, p.y + 10f, p.width, 34f), "진행 중인 의뢰" + lv, title);
         Rect cb = new Rect(p.xMax - 48f, p.y + 12f, 34f, 34f);
-        Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, new Color(0.30f, 0.80f, 0.95f)); GUI.Label(cb, "X", closeS);
+        Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, UITheme.Accent); GUI.Label(cb, "X", closeS);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }
 
         float listX = p.x + 20f, listY = p.y + 60f, listW = p.width * 0.40f, listH = p.height - 80f;
-        Fill(new Rect(listX, listY, listW, listH), new Color(0.06f, 0.08f, 0.12f, 1f));
+        Fill(new Rect(listX, listY, listW, listH), UITheme.A(UITheme.BgSolid, 1f));
 
         var acc = qm != null ? qm.accepted : null;
         if (acc == null || acc.Count == 0)
@@ -61,8 +61,8 @@ public class QuestLogUI : MonoBehaviour
         {
             Rect rr = new Rect(listX + 6f, ry, listW - 12f, 58f);
             bool sel = q == selected;
-            Fill(rr, sel ? new Color(0.16f, 0.26f, 0.34f) : new Color(0.11f, 0.15f, 0.21f));
-            Border(rr, sel ? 3f : 1f, sel ? new Color(0.45f, 0.88f, 1f) : new Color(0.26f, 0.42f, 0.54f));
+            Fill(rr, sel ? UITheme.Lighten(UITheme.Panel, 0.06f) : UITheme.Panel);
+            Border(rr, sel ? 3f : 1f, sel ? UITheme.Lighten(UITheme.Accent, 0.15f) : UITheme.Border);
             GUI.Label(new Rect(rr.x + 10f, rr.y + 6f, rr.width - 16f, 24f), "[" + q.CategoryLabel() + "] " + q.title, sel ? rowSel : row);
             GUI.Label(new Rect(rr.x + 10f, rr.y + 30f, rr.width - 16f, 22f), q.ObjectiveText(), detObj);
             if (click && rr.Contains(m)) { selected = q; Event.current.Use(); }
@@ -78,14 +78,14 @@ public class QuestLogUI : MonoBehaviour
         float ryy = p.y + p.height * 0.5f;
         GUI.Label(new Rect(dx, ryy, dw, 26f), "보수", detTitle);
         Rect rg = new Rect(dx, ryy + 32f, dw * 0.6f, 28f);
-        Fill(rg, new Color(0.06f, 0.08f, 0.12f)); Border(rg, 1f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(rg, UITheme.BgSolid); Border(rg, 1f, UITheme.Border);
         GUI.Label(new Rect(rg.x + 8, rg.y, rg.width - 16, rg.height), "골드 G", reward);
         GUI.Label(new Rect(rg.x + 8, rg.y, rg.width - 16, rg.height), "x" + selected.rewardGold, rewardR);
         if (!string.IsNullOrEmpty(selected.rewardItemId))
         {
             var it = ItemDatabase.Get(selected.rewardItemId);
             Rect ri = new Rect(dx, ryy + 64f, dw * 0.6f, 28f);
-            Fill(ri, new Color(0.06f, 0.08f, 0.12f)); Border(ri, 1f, new Color(0.26f, 0.42f, 0.54f));
+            Fill(ri, UITheme.BgSolid); Border(ri, 1f, UITheme.Border);
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), it != null ? it.itemName : selected.rewardItemId, reward);
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), "x" + Mathf.Max(1, selected.rewardItemCount), rewardR);
         }
@@ -93,14 +93,14 @@ public class QuestLogUI : MonoBehaviour
         // 추적 버튼 (트래커 HUD가 따라갈 퀘스트 지정)
         bool isTracked = qm != null && qm.GetTracked() == selected;
         Rect tb = new Rect(p.xMax - 370f, p.yMax - 64f, 180f, 46f);
-        Fill(tb, isTracked ? new Color(0.14f, 0.30f, 0.20f) : new Color(0.16f, 0.26f, 0.34f));
-        Border(tb, 2f, isTracked ? new Color(0.50f, 0.95f, 0.60f) : new Color(0.30f, 0.80f, 0.95f));
+        Fill(tb, isTracked ? new Color(0.14f, 0.30f, 0.20f) : UITheme.Lighten(UITheme.Panel, 0.06f));
+        Border(tb, 2f, isTracked ? new Color(0.50f, 0.95f, 0.60f) : UITheme.Accent);
         GUI.Label(tb, isTracked ? "✓ 추적 중" : "이 퀘스트 추적", btn);
         if (click && tb.Contains(m) && !isTracked) { qm.SetTracked(selected); Event.current.Use(); }
 
         // 포기 버튼
         Rect gb = new Rect(p.xMax - 170f, p.yMax - 64f, 150f, 46f);
-        Fill(gb, new Color(0.6f, 0.22f, 0.2f)); Border(gb, 2f, new Color(0.30f, 0.80f, 0.95f));
+        Fill(gb, new Color(0.6f, 0.22f, 0.2f)); Border(gb, 2f, UITheme.Accent);
         GUI.Label(gb, "퀘스트 포기", btn);
         if (click && gb.Contains(m)) { QuestManager.Instance.Abandon(selected); selected = null; Event.current.Use(); }
     }

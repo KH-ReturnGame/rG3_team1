@@ -181,7 +181,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractor
   interactKey: 102
   interactRadius: 1.2
-  highlightColor: {r: 0.3, g: 0.8, b: 0.95, a: 1}
+  highlightColor: {r: 0.96, g: 0.56, b: 0.16, a: 1}
   borderThickness: 4
 --- !u!114 &5994272772996261918
 MonoBehaviour:
@@ -198,6 +198,7 @@ MonoBehaviour:
   moveSpeed: 5
   guardSpeedMultiplier: 0.2
   jumpForce: 11
+  maxFallSpeed: 22
   maxJumps: 2
   doubleJumpState: FrontFlip
   chargeJumpTime: 1.5
@@ -209,6 +210,12 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
+  wallMoveEnabled: 0
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  wallSlideState: WallSlide
+  wallJumpState: WallJump
   dashSpeed: 15
   dashDuration: 0.3
   maxDashes: 1

@@ -65,8 +65,8 @@ public class ShopUI : MonoBehaviour
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
-        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.30f, 0.80f, 0.95f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
+        GUI.color = UITheme.A(UITheme.BgSolid, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = UITheme.Accent; GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
 
         int g = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
         GUI.Label(new Rect(x, y + 12f, w, 32f), MerchantName(merchant), title);
@@ -199,21 +199,17 @@ public class ShopUI : MonoBehaviour
     private Rect SlotRect(float ox, float oy, int i, float ss, float pad)
     { int r = i / Cols, c = i % Cols; return new Rect(ox + pad + c * (ss + pad), oy + pad + r * (ss + pad), ss, ss); }
 
-    // 클릭한 '그 칸'에 집기/놓기/스택/교체 (빈 칸 자동배치 X — 원하는 칸 지정)
+    // 인벤 미니뷰 클릭. (그리드 인벤 전환 후) 집기/같은칸 스택은 유지, 놓기는 '자동 배치'로.
     private void ClickInv(int i)
     {
         var inv = Inventory.Instance;
-        if (inv == null || i < 0 || i >= inv.slots.Count) return;
-        var s = inv.slots[i];
+        if (inv == null) return;
+        var s = (i >= 0 && i < inv.slots.Count) ? inv.slots[i] : null;
         if (held == null)
         {
-            if (!s.IsEmpty) { held = s.item; heldCount = s.count; s.Clear(); inv.RaiseChanged(); }     // 집기
+            if (s != null && !s.IsEmpty) { held = s.item; heldCount = s.count; s.Clear(); inv.RaiseChanged(); }   // 집기
         }
-        else if (s.IsEmpty)
-        {
-            s.item = held; s.count = heldCount; held = null; heldCount = 0; inv.RaiseChanged();          // 빈 칸에 놓기
-        }
-        else if (s.item == held)
+        else if (s != null && !s.IsEmpty && s.item == held)
         {
             int space = Mathf.Max(1, held.maxStack) - s.count;                                           // 같은 아이템 → 스택
             int move = Mathf.Min(space, heldCount);
@@ -223,9 +219,10 @@ public class ShopUI : MonoBehaviour
         }
         else
         {
-            var ti = s.item; int tc = s.count;                                                           // 다른 아이템 → 교체
-            s.item = held; s.count = heldCount; held = ti; heldCount = tc;
-            inv.RaiseChanged();
+            int left = inv.Add(held, heldCount);                                                          // 자동 배치(그리드가 자리 찾음)
+            if (left > 0 && left == heldCount) Toast.Show("소지품에 자리가 없다", 1.5f);
+            heldCount = left;
+            if (heldCount <= 0) held = null;
         }
     }
 
@@ -261,15 +258,15 @@ public class ShopUI : MonoBehaviour
     // ── 그리기 ──
     private void DrawTabBtn(Rect r, string label, bool on)
     {
-        Fill(r, on ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.11f, 0.15f, 0.21f));
-        Border(r, 2f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(r, on ? UITheme.Accent : UITheme.Panel);
+        Border(r, 2f, UITheme.Border);
         GUI.Label(r, label, on ? tabOn : tabOff);
     }
 
     private void DrawSlotBg(Rect r, bool sell)
     {
-        Fill(r, new Color(0.11f, 0.15f, 0.21f, 0.95f));
-        Border(r, 2f, sell ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.26f, 0.42f, 0.54f));
+        Fill(r, UITheme.A(UITheme.Panel, 0.95f));
+        Border(r, 2f, sell ? UITheme.Accent : UITheme.Border);
     }
 
     private void DrawItem(Rect r, ItemData it, int cnt, float ss)
@@ -298,7 +295,7 @@ public class ShopUI : MonoBehaviour
         if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
         if (ty + th > UIScale.H) ty = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, ty, tw, th);
-        Fill(tr, new Color(0.06f, 0.08f, 0.12f, 0.98f)); Border(tr, 2f, new Color(0.30f, 0.80f, 0.95f));
+        Fill(tr, UITheme.A(UITheme.BgSolid, 0.98f)); Border(tr, 2f, UITheme.Accent);
         GUI.Label(new Rect(tx + 8f, ty + 5f, tw - 16f, nh), nm, tipName);
         if (dh > 0f) GUI.Label(new Rect(tx + 8f, ty + 5f + nh, tw - 16f, dh), desc, body);
         if (ih > 0f) GUI.Label(new Rect(tx + 8f, ty + 5f + nh + dh, tw - 16f, 20f), hoverInfo, val);

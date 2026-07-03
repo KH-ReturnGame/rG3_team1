@@ -62,7 +62,7 @@ public class HelpTrigger : MonoBehaviour
                 break;
             case HelpTopic.Hotkeys:
                 title = "단축키";
-                body = "이동:  A · D  (또는 ← · →)\n점프:  Space      대시:  Shift\n공격:  좌클릭      가드 · 패링:  우클릭      스킬:  Q\n검 뽑기 · 넣기:  R      상호작용 · 줍기:  F\n인벤토리:  C / B      퀘스트:  J      모험 핸드북:  G      보물 탐지:  Z\n포션 단축키:  숫자키 (1~)";
+                body = "이동:  A · D  (또는 ← · →)\n점프:  Space      대시:  Shift\n공격:  좌클릭      가드 · 패링:  우클릭      스킬:  Q\n검 뽑기 · 넣기:  R      상호작용 · 줍기:  F\n인벤토리:  C / B      퀘스트:  J      모험 핸드북:  G      보물 탐지:  Z\n아이템 사용:  배낭(B)에서 우클릭 → [사용/N번 슬롯 등록]      포션 단축키:  숫자키 (1~)";
                 break;
             default:
                 title = customTitle;

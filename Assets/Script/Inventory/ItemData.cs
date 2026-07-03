@@ -13,6 +13,12 @@ public class ItemData : ScriptableObject
     public int maxStack = 99;
     [TextArea] public string description;
 
+    [Header("인벤토리 칸 크기 (타르코프식)")]
+    public int gridW = 1;           // 가로 칸 수
+    public int gridH = 1;           // 세로 칸 수
+    public int GridW => Mathf.Max(1, gridW);
+    public int GridH => Mathf.Max(1, gridH);
+
     [Header("종류")]
     public ItemKind kind = ItemKind.Material;
 

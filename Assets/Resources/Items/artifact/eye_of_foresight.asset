@@ -20,6 +20,8 @@ MonoBehaviour:
     \uB2FF\uAE30 \uC9C1\uC804, \uC138\uC0C1\uC774 \uD55C\uC21C\uAC04 \uB290\uB824\uC9C4\uB2E4.\n20\uCD08\uB9C8\uB2E4
     1\uD68C \u2014 \uACF5\uACA9\uC744 \uD53C\uD558\uAC70\uB098 \uD328\uB9C1\uD560
     \uD2C8\uC744 \uC900\uB2E4."
+  gridW: 2
+  gridH: 2
   kind: 2
   healHearts: 0
   restoreStamina: 0

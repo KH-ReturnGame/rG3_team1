@@ -17,6 +17,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: f788a503f9c98c84aaf4623d7d2a3f81, type: 3}
   maxStack: 1
   description: "\uCC29\uC6A9 \uC2DC \uCD5C\uB300 \uAE30\uB825 \uC99D\uAC00."
+  gridW: 2
+  gridH: 2
   kind: 2
   healHearts: 0
   restoreStamina: 0
@@ -29,6 +31,8 @@ MonoBehaviour:
   maxStaminaBonus: 30
   staminaRegenBonus: 0
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 600
   sellAtFullValue: 0

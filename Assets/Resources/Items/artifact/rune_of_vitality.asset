@@ -18,6 +18,8 @@ MonoBehaviour:
   maxStack: 1
   description: "\uCC29\uC6A9 \uC2DC \uAE30\uB825 \uC790\uC5F0 \uD68C\uBCF5\uB7C9
     \uC99D\uAC00."
+  gridW: 2
+  gridH: 2
   kind: 2
   healHearts: 0
   restoreStamina: 0
@@ -30,6 +32,8 @@ MonoBehaviour:
   maxStaminaBonus: 0
   staminaRegenBonus: 12
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 600
   sellAtFullValue: 0

@@ -101,7 +101,7 @@ public class HelpPopupUI : MonoBehaviour
         if (e.timedUntil > 0f) a *= Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / 0.5f);     // Timed 끝 페이드아웃
         if (!isFront) a *= 0.62f;                                                                  // 뒤 항목은 흐리게(앞에 집중)
 
-        Color cyan = new Color(0.30f, 0.80f, 0.95f);
+        Color cyan = UITheme.Accent;
         float pad = 24f, headH = 40f, gap = 12f, hintH = (isFront && e.manual) ? 22f : 0f;
         float bodyW = w - pad * 2f;
         float bodyH = bodyStyle.CalcHeight(new GUIContent(e.body), bodyW);
@@ -110,7 +110,7 @@ public class HelpPopupUI : MonoBehaviour
         Color prev = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, 0.35f * a);                 // 그림자
         GUI.DrawTexture(new Rect(x + 4f, y + 5f, w, h), Tex());
-        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.97f * a);       // 배경(슬레이트, 거의 불투명 → 뒤 항목 본문을 가림)
+        GUI.color = UITheme.A(UITheme.BgSolid, 0.97f * a);       // 배경(슬레이트, 거의 불투명 → 뒤 항목 본문을 가림)
         GUI.DrawTexture(new Rect(x, y, w, h), Tex());
         GUI.color = new Color(cyan.r, cyan.g, cyan.b, 0.16f * a);    // 헤더 강조 띠
         GUI.DrawTexture(new Rect(x, y, w, headH + pad), Tex());

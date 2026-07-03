@@ -73,9 +73,9 @@ public class AcquireBanner : MonoBehaviour
         GUIUtility.ScaleAroundPivot(new Vector2(ds, ds), center);
 
         float glow = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 6f);
-        Tex(card, new Color(0.05f, 0.08f, 0.12f, 0.96f * ca));                 // 카드 배경
-        Border(card, 2f, new Color(0.30f, 0.82f, 0.96f, ca));                 // 시안 테두리
-        Border(new Rect(card.x - 3f, card.y - 3f, card.width + 6f, card.height + 6f), 1f, new Color(0.30f, 0.82f, 0.96f, 0.35f * ca * glow));  // 글로우
+        Tex(card, UITheme.A(UITheme.BgSolid, 0.96f * ca));                 // 카드 배경
+        Border(card, 2f, UITheme.A(UITheme.Accent, ca));                 // 시안 테두리
+        Border(new Rect(card.x - 3f, card.y - 3f, card.width + 6f, card.height + 6f), 1f, UITheme.A(UITheme.Accent, 0.35f * ca * glow));  // 글로우
 
         float ic = 92f; Rect iconR = new Rect(card.x + 18f, center.y - ic * 0.5f, ic, ic);
         DrawIcon(iconR, cur.icon, ca, glow);
@@ -98,8 +98,8 @@ public class AcquireBanner : MonoBehaviour
         if (tex != null) { Tex(r, new Color(1, 1, 1, a)); GUI.color = new Color(1, 1, 1, a); GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit); return; }
         // 기본 '모듈 칩' 글리프: 시안 테두리 사각 + 내부 십자 격자(지도 느낌)
         Tex(r, new Color(0.08f, 0.13f, 0.18f, a));
-        Border(r, 2f, new Color(0.30f, 0.82f, 0.96f, a));
-        Color line = new Color(0.30f, 0.82f, 0.96f, a * (0.55f + 0.45f * glow));
+        Border(r, 2f, UITheme.A(UITheme.Accent, a));
+        Color line = UITheme.A(UITheme.Accent, a * (0.55f + 0.45f * glow));
         float g = r.width * 0.5f;
         Tex(new Rect(r.x + g - 1f, r.y + 8f, 2f, r.height - 16f), line);   // 세로선
         Tex(new Rect(r.x + 8f, r.y + g - 1f, r.width - 16f, 2f), line);    // 가로선

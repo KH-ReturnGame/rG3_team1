@@ -111,9 +111,12 @@ public static class SaveSystem
         }
         data.items = new List<SavedItem>();
         if (Inventory.Instance != null)
+        {
+            data.invCols = Inventory.Instance.gridWidth;   // 배낭 확장(열 수) 저장
             foreach (var s in Inventory.Instance.slots)
                 if (s != null && !s.IsEmpty)
                     data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count });
+        }
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
         if (QuestManager.Instance != null) { data.acceptedQuests = QuestManager.Instance.SaveAccepted(); data.completedQuests = new List<string>(QuestManager.Instance.completed); }
     }
@@ -133,7 +136,10 @@ public static class SaveSystem
             GameManager.Instance.moduleQuickdraw = data.moduleQuickdraw; GameManager.Instance.ApplyQuickdraw();
         }
         if (Inventory.Instance != null)
+        {
+            if (data.invCols > 0) Inventory.Instance.gridWidth = Mathf.Max(Inventory.Instance.gridWidth, data.invCols);   // 확장 열 복원(먼저 — 배치 공간 확보)
             Inventory.Instance.LoadFromSaved(data.items);
+        }
         if (Equipment.Instance != null)
             Equipment.Instance.LoadIds(data.equipped);   // 착용 장신구 복원(스탯 보너스 재적용)
         if (QuestManager.Instance != null)

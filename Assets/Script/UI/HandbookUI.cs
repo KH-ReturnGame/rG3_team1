@@ -44,8 +44,8 @@ public class HandbookUI : MonoBehaviour
         Rect panel = new Rect(px, py, pw, ph);
 
         Fill(new Rect(px + 5, py + 6, pw, ph), new Color(0f, 0f, 0f, 0.4f));     // 그림자
-        Fill(panel, new Color(0.06f, 0.08f, 0.12f, 0.98f));                      // 배경
-        Border(panel, 3f, new Color(0.30f, 0.80f, 0.95f));                       // 시안 테두리
+        Fill(panel, UITheme.A(UITheme.BgSolid, 0.98f));                      // 배경
+        Border(panel, 3f, UITheme.Accent);                       // 시안 테두리
 
         GUI.Label(new Rect(px + 20f, py + 12f, pw - 40f, 32f), "모험 핸드북", titleStyle);
         // 닫기
@@ -62,7 +62,7 @@ public class HandbookUI : MonoBehaviour
         }
 
         Rect content = new Rect(px + 150f, py + 56f, pw - 166f, ph - 72f);
-        Border(content, 1f, new Color(0.26f, 0.42f, 0.54f));
+        Border(content, 1f, UITheme.Border);
         if (tab == 0) DrawHelpTab(content);
         else if (tab == 1) DrawMapTab(content);
         else GUI.Label(content, "도감 — 준비 중", dimStyle);
@@ -127,8 +127,8 @@ public class HandbookUI : MonoBehaviour
 
     private bool Btn(Rect r, string label, bool selected)
     {
-        Fill(r, selected ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.11f, 0.15f, 0.21f));
-        Border(r, 2f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(r, selected ? UITheme.Accent : UITheme.Panel);
+        Border(r, 2f, UITheme.Border);
         itemStyle.normal.textColor = selected ? new Color(0.04f, 0.10f, 0.14f) : new Color(0.78f, 0.86f, 0.94f);
         GUI.Label(r, label, itemStyle);
         return Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition);

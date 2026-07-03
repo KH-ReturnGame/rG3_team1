@@ -75,8 +75,8 @@ public class QuestTracker : MonoBehaviour
 
         // 배경 패널(살짝 어둡게, 왼쪽 시안 띠)
         float h = PathActive ? 116f : 70f;
-        Fill(new Rect(x, y, w, h), new Color(0.05f, 0.08f, 0.12f, 0.62f));
-        Fill(new Rect(x, y, 3f, h), new Color(0.30f, 0.82f, 0.96f, 0.95f));
+        Fill(new Rect(x, y, w, h), UITheme.A(UITheme.BgSolid, 0.62f));
+        Fill(new Rect(x, y, 3f, h), UITheme.A(UITheme.Accent, 0.95f));
 
         // 제목 (◆ + 이름)
         Color gold = new Color(1f, 0.86f, 0.45f);
@@ -103,7 +103,7 @@ public class QuestTracker : MonoBehaviour
                 Vector2 dir = tp - (Vector2)pc.transform.position;
                 float dist = dir.magnitude;
                 Rect ar = new Rect(x + pad, y + 74f, 38f, 38f);
-                Fill(ar, new Color(0.30f, 0.82f, 0.96f, 0.18f));
+                Fill(ar, UITheme.A(UITheme.Accent, 0.18f));
                 arrowStyle.normal.textColor = new Color(0.45f, 0.95f, 1f);
                 GUI.Label(ar, ArrowFor(dir), arrowStyle);
                 distStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);

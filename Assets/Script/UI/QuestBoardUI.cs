@@ -44,18 +44,18 @@ public class QuestBoardUI : MonoBehaviour
         EnsureStyles();
         UIScale.Apply();   // 해상도 독립 스케일
         float W = UIScale.W, H = UIScale.H;
-        GUI.color = new Color(0.05f, 0.07f, 0.11f, 1f); GUI.DrawTexture(new Rect(0, 0, W, H), white); GUI.color = Color.white;   // 불투명 풀스크린
+        GUI.color = UITheme.A(UITheme.BgSolid, 1f); GUI.DrawTexture(new Rect(0, 0, W, H), white); GUI.color = Color.white;   // 불투명 풀스크린
         float mx = W * 0.035f, my = H * 0.04f;
         Rect board = new Rect(mx, my, W - 2 * mx, H - 2 * my);
-        Fill(board, new Color(0.08f, 0.11f, 0.16f, 1f));
-        Border(board, 4f, new Color(0.30f, 0.80f, 0.95f));
+        Fill(board, UITheme.PanelDim);
+        Border(board, 4f, UITheme.Accent);
 
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
         GUI.Label(new Rect(board.x, board.y + 8f, board.width, 38f), "의뢰 게시판", title);
         Rect cb = new Rect(board.xMax - 54f, board.y + 12f, 38f, 38f);
-        Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, new Color(0.30f, 0.80f, 0.95f)); GUI.Label(cb, "X", closeS);
+        Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, UITheme.Accent); GUI.Label(cb, "X", closeS);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }
 
         // 탭
@@ -64,8 +64,8 @@ public class QuestBoardUI : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             Rect tr = new Rect(tx + i * (tw + 8f), tyy, tw, th);
-            Fill(tr, tab == i ? new Color(0.30f, 0.80f, 0.95f) : new Color(0.14f, 0.18f, 0.24f));
-            Border(tr, 2f, new Color(0.26f, 0.42f, 0.54f));
+            Fill(tr, tab == i ? UITheme.Accent : UITheme.PanelDim);
+            Border(tr, 2f, UITheme.Border);
             GUI.Label(tr, tabs[i], tab == i ? tabOn : tabOff);
             if (click && tr.Contains(m)) { tab = i; scrollX = 0f; Event.current.Use(); }
         }
@@ -76,7 +76,7 @@ public class QuestBoardUI : MonoBehaviour
         float cardsY = tyy + th + 18f;
         float cardsH = board.yMax - cardsY - detailH - 26f;
         Rect cardArea = new Rect(board.x + 24f, cardsY, board.width - 48f, cardsH);
-        Fill(cardArea, new Color(0.08f, 0.11f, 0.16f, 1f)); Border(cardArea, 2f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(cardArea, UITheme.PanelDim); Border(cardArea, 2f, UITheme.Border);
 
         float cardW = Mathf.Min(290f, cardsH * 0.8f), gap = 24f, padIn = 18f;
         float totalW = quests.Count * (cardW + gap) + padIn;
@@ -103,7 +103,7 @@ public class QuestBoardUI : MonoBehaviour
 
         // 하단 상세
         Rect detail = new Rect(board.x + 24f, board.yMax - detailH - 16f, board.width - 48f, detailH);
-        Fill(detail, new Color(0.08f, 0.11f, 0.16f, 1f)); Border(detail, 2f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(detail, UITheme.PanelDim); Border(detail, 2f, UITheme.Border);
         if (selected != null) DrawDetail(detail, selected, m, click);
         else GUI.Label(new Rect(detail.x, detail.y, detail.width, detail.height), "퀘스트를 선택하세요", detDesc);
     }
@@ -111,12 +111,12 @@ public class QuestBoardUI : MonoBehaviour
     private void DrawCard(Rect c, Quest q)
     {
         bool sel = q == selected;
-        Fill(c, new Color(0.11f, 0.15f, 0.21f, 1f));
-        Border(c, sel ? 4f : 2f, sel ? new Color(0.45f, 0.88f, 1f) : new Color(0.26f, 0.42f, 0.54f));
+        Fill(c, UITheme.Panel);
+        Border(c, sel ? 4f : 2f, sel ? UITheme.Lighten(UITheme.Accent, 0.15f) : UITheme.Border);
         float imgS = c.width - 28f;
         Rect img = new Rect(c.x + 14f, c.y + 14f, imgS, imgS);
-        Fill(img, new Color(0.06f, 0.08f, 0.12f, 1f));
-        Border(img, 2f, sel ? new Color(0.45f, 0.88f, 1f) : new Color(0.26f, 0.42f, 0.54f));
+        Fill(img, UITheme.A(UITheme.BgSolid, 1f));
+        Border(img, 2f, sel ? UITheme.Lighten(UITheme.Accent, 0.15f) : UITheme.Border);
         if (q.icon != null) GUI.DrawTexture(new Rect(img.x + 6, img.y + 6, img.width - 12, img.height - 12), q.icon.texture, ScaleMode.ScaleToFit);
         else GUI.Label(img, "퀘스트\n이미지", ph);
         GUI.Label(new Rect(c.x + 14f, img.yMax + 8f, c.width - 22f, 26f), "[" + q.CategoryLabel() + "] " + q.title, cardCat);
@@ -135,14 +135,14 @@ public class QuestBoardUI : MonoBehaviour
         float rxx = d.x + d.width * 0.48f, rw = d.width * 0.28f;
         GUI.Label(new Rect(rxx, d.y + 12f, rw, 26f), "보수", detTitle);
         Rect rg = new Rect(rxx, d.y + 46f, rw, 28f);
-        Fill(rg, new Color(0.06f, 0.08f, 0.12f)); Border(rg, 1f, new Color(0.26f, 0.42f, 0.54f));
+        Fill(rg, UITheme.BgSolid); Border(rg, 1f, UITheme.Border);
         GUI.Label(new Rect(rg.x + 8, rg.y, rg.width - 16, rg.height), "골드 G", reward);
         GUI.Label(new Rect(rg.x + 8, rg.y, rg.width - 16, rg.height), "x" + q.rewardGold, rewardR);
         if (!string.IsNullOrEmpty(q.rewardItemId))
         {
             var it = ItemDatabase.Get(q.rewardItemId);
             Rect ri = new Rect(rxx, d.y + 78f, rw, 28f);
-            Fill(ri, new Color(0.06f, 0.08f, 0.12f)); Border(ri, 1f, new Color(0.26f, 0.42f, 0.54f));
+            Fill(ri, UITheme.BgSolid); Border(ri, 1f, UITheme.Border);
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), it != null ? it.itemName : q.rewardItemId, reward);
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), "x" + Mathf.Max(1, q.rewardItemCount), rewardR);
         }
@@ -151,7 +151,7 @@ public class QuestBoardUI : MonoBehaviour
         bool acc = QuestManager.Instance != null && QuestManager.Instance.IsAccepted(q);
         Rect ab = new Rect(d.xMax - 190f, d.y + d.height * 0.5f - 30f, 160f, 60f);
         Fill(ab, acc ? new Color(0.32f, 0.32f, 0.30f) : new Color(0.24f, 0.62f, 0.30f));
-        Border(ab, 3f, new Color(0.30f, 0.80f, 0.95f));
+        Border(ab, 3f, UITheme.Accent);
         GUI.Label(ab, acc ? "수락됨" : "수락", btn);
         if (!acc && click && ab.Contains(m)) { QuestManager.Instance.Accept(q); Event.current.Use(); }
     }

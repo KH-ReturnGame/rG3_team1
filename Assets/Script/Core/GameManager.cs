@@ -95,7 +95,19 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
-    // 빨리 뽑기 모듈 강화(레벨당 핫바 슬롯 +1). 성공 시 true.
+    // 배낭 확장(엔지니어): 개조 포인트로 소지품 그리드 가로 +1열. 성공 시 true.
+    public int maxInvCols = 10;   // 확장 상한(기본 6 + 4회)
+    public bool TryExpandBackpack(int cost)
+    {
+        if (Inventory.Instance == null || Inventory.Instance.gridWidth >= maxInvCols || modPoints < cost) return false;
+        modPoints -= cost;
+        Inventory.Instance.ExpandColumns(1);
+        AcquireBanner.Show("배낭 확장", "소지품 칸이 가로 한 열 늘었다.  (" + Inventory.Instance.gridWidth + "열)", null, "엔지니어 — 개조 완료");
+        OnStatsChanged?.Invoke();
+        return true;
+    }
+
+    // (구) 빨리 뽑기 모듈 — 핫바 폐지로 미사용(세이브 호환 유지용)
     public bool TryUpgradeQuickdraw(int cost)
     {
         if (moduleQuickdraw >= maxQuickdraw || modPoints < cost) return false;
@@ -175,6 +187,14 @@ public class GameManager : MonoBehaviour
     public void Heal(int hearts)
     {
         currentHalf = Mathf.Min(MaxHalf, currentHalf + Mathf.Max(0, hearts) * 2);
+        OnStatsChanged?.Invoke();
+    }
+
+    // 현재 체력을 '반칸 단위'로 직접 지정(튜토리얼 딸피 시작 등 연출용). 0은 사망 처리 안 함(연출 안전).
+    public void SetHalves(int halves)
+    {
+        isDead = false;
+        currentHalf = Mathf.Clamp(halves, 1, MaxHalf);
         OnStatsChanged?.Invoke();
     }
 

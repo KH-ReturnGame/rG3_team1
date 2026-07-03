@@ -33,8 +33,8 @@ public class Toast : MonoBehaviour
         float w = Mathf.Min(UIScale.W * 0.8f, 640f), h = 56f;
         float x = (UIScale.W - w) * 0.5f, y = UIScale.H * 0.14f;
         var prev = GUI.color;
-        GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.30f, 0.80f, 0.95f, alpha);
+        GUI.color = UITheme.A(UITheme.BgSolid, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = UITheme.A(UITheme.Accent, alpha);
         GUI.DrawTexture(new Rect(x, y, w, 3f), white); GUI.DrawTexture(new Rect(x, y + h - 3f, w, 3f), white);
         style.normal.textColor = new Color(0.85f, 0.95f, 1f, alpha);
         GUI.color = new Color(1f, 1f, 1f, alpha);

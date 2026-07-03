@@ -11,6 +11,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
     public Transform player;
     public float attackInterval = 3f;
     public float attackDamage = 2f;       // 플레이어에게 주는 피해 = 하트 칸 수
+    public bool nonLethal = true;         // 훈련용 — 절대 죽이지 않음(딸피 튜토리얼에서도 안전하게 패링 연습)
     public float attackRange = 2.5f;
     private float attackTimer;
 
@@ -108,7 +109,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
 
         attackFlashTimer = flashDuration * 2f;
         PlayerController pc = player.GetComponent<PlayerController>();
-        if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
+        if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position, nonLethal);
     }
 
     private void UpdateColor()

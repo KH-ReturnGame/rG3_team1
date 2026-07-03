@@ -35,5 +35,6 @@ public class SaveSlotData
     public int modPoints = 0;
     public int statRegen, statAttack, statAdapt, statLuck;   // 개조 포인트 투자 레벨
     public int moduleMinimap, moduleScan;                    // 후드 모듈 해금(0/1)
-    public int moduleQuickdraw;                              // 빨리 뽑기(핫바 슬롯) 레벨
+    public int moduleQuickdraw;                              // (구) 빨리 뽑기 — 핫바 폐지로 미사용(하위호환 유지)
+    public int invCols;                                      // 배낭 확장(그리드 가로 열 수, 0=기본)
 }

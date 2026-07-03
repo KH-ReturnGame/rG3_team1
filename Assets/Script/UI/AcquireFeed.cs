@@ -62,7 +62,7 @@ public class AcquireFeed : MonoBehaviour
             Color prev = GUI.color;
             GUI.color = new Color(0.06f, 0.07f, 0.09f, 0.85f * a);
             GUI.DrawTexture(new Rect(x + slide, y, w, h), Bg());
-            GUI.color = new Color(0.30f, 0.80f, 0.95f, a);
+            GUI.color = UITheme.A(UITheme.Accent, a);
             GUI.DrawTexture(new Rect(x + slide, y, 3f, h), Bg());                     // 좌측 강조 바
 
             GUI.color = new Color(1f, 1f, 1f, a);

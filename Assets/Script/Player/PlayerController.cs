@@ -800,7 +800,7 @@ public class PlayerController : MonoBehaviour
         Juice.ParryHit();                 // "팅" — 히트스톱 + 셰이크 + 플래시
     }
 
-    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default)
+    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default, bool nonLethal = false)
     {
         if (isDashing || hitInvincibleTimer > 0) return;   // 대시 무적 / 피격 후 무적
 
@@ -821,9 +821,17 @@ public class PlayerController : MonoBehaviour
         float eff = isGuarding ? damage * 0.5f : damage;
         int halves = Mathf.Max(1, Mathf.RoundToInt(eff * 2f));   // 반칸 단위(예: 가드로 1칸→0.5칸→반칸)
 
-        if (GameManager.Instance != null) GameManager.Instance.TakeDamageHalves(halves);
+        if (GameManager.Instance != null)
+        {
+            if (nonLethal)   // 훈련용(허수아비 등): 최소 반칸은 남겨 죽지 않게 — 딸피 튜토리얼용
+            {
+                int survivable = Mathf.Max(0, GameManager.Instance.CurrentHalf - 1);
+                halves = Mathf.Min(halves, survivable);
+            }
+            if (halves > 0) GameManager.Instance.TakeDamageHalves(halves);
+        }
 
-        Hurt(source);   // 넉백 + 경직 + 피격 모션
+        Hurt(source);   // 넉백 + 경직 + 피격 모션(피해가 0이어도 맞은 반응은 준다)
     }
 
     // 피격 반응: 진행 중 행동 취소 + 넉백 + 경직 + 피격 모션

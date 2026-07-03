@@ -26,7 +26,7 @@ public class Minimap : MonoBehaviour
     private static Texture2D _tex;
 
     private static readonly Color cChest = new Color(1f, 0.82f, 0.35f);
-    private static readonly Color cExit  = new Color(0.30f, 0.80f, 0.95f);
+    private static readonly Color cExit  = UITheme.Accent;
     private static readonly Color cEnemy = new Color(0.95f, 0.35f, 0.35f);
     private static readonly Color cGather= new Color(0.50f, 0.90f, 0.50f);
     private static readonly Color cShop  = new Color(0.90f, 0.66f, 0.32f);
@@ -142,8 +142,8 @@ public class Minimap : MonoBehaviour
 
         float bs = boxSize;
         Rect box = new Rect(UIScale.W - bs - margin, margin, bs, bs);
-        Fill(box, new Color(0.05f, 0.07f, 0.11f, 0.82f));
-        Border(box, 2f, new Color(0.30f, 0.80f, 0.95f, 0.9f));
+        Fill(box, UITheme.A(UITheme.BgSolid, 0.82f));
+        Border(box, 2f, UITheme.A(UITheme.Accent, 0.9f));
 
         Vector2 center = new Vector2(box.x + bs * 0.5f, box.y + bs * 0.5f);
         float half = bs * 0.5f - 6f;
@@ -181,7 +181,7 @@ public class Minimap : MonoBehaviour
 
         // 플레이어(중앙)
         Fill(new Rect(center.x - 3f, center.y - 3f, 6f, 6f), Color.white);
-        Border(new Rect(center.x - 3f, center.y - 3f, 6f, 6f), 1f, new Color(0.30f, 0.80f, 0.95f));
+        Border(new Rect(center.x - 3f, center.y - 3f, 6f, 6f), 1f, UITheme.Accent);
     }
 
     private static Texture2D Tex() { if (_tex == null) { _tex = new Texture2D(1, 1); _tex.SetPixel(0, 0, Color.white); _tex.Apply(); } return _tex; }
