@@ -115,7 +115,7 @@ public static class SaveSystem
             data.invCols = Inventory.Instance.gridWidth;   // 배낭 확장(열 수) 저장
             foreach (var s in Inventory.Instance.slots)
                 if (s != null && !s.IsEmpty)
-                    data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count });
+                    data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count, px = s.x, py = s.y });
         }
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
         if (QuestManager.Instance != null) { data.acceptedQuests = QuestManager.Instance.SaveAccepted(); data.completedQuests = new List<string>(QuestManager.Instance.completed); }

@@ -170,16 +170,27 @@ public class Inventory : MonoBehaviour
         return true;
     }
 
-    // 세이브 데이터로 인벤토리 복원(자동 배치 — 배치 위치는 저장 안 함)
+    // 세이브 데이터로 인벤토리 복원 — 저장된 배치 좌표(px,py)를 그대로 살리고, 못 살리면 자동 배치.
     public void LoadFromSaved(List<SavedItem> saved)
     {
         slots.Clear();
         if (saved != null)
-            foreach (var si in saved)
+        {
+            var fallback = new List<SavedItem>();
+            foreach (var si in saved)   // 1차: 기록된 좌표에 그대로 복원(스택 분할도 유지)
+            {
+                ItemData item = ItemDatabase.Get(si.id);
+                if (item == null) continue;
+                if (si.px >= 0 && si.py >= 0 && si.count <= Mathf.Max(1, item.maxStack) && CanPlace(item, si.px, si.py))
+                    Place(item, si.count, si.px, si.py);
+                else fallback.Add(si);
+            }
+            foreach (var si in fallback)   // 2차: 좌표 없거나 충돌(그리드 축소 등) → 자동 배치
             {
                 ItemData item = ItemDatabase.Get(si.id);
                 if (item != null) Add(item, si.count);
             }
+        }
         RaiseChanged();
     }
 }
