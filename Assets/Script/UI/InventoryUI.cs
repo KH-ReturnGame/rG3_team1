@@ -714,17 +714,16 @@ public class InventoryUI : MonoBehaviour
 
         float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
         int invCols = Inventory.Instance != null ? Inventory.Instance.gridWidth : 6;
-        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "스캔 모듈", "배낭 확장" };
+        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "배낭 확장" };
         string[] descs = {
             "체력 한 칸씩 증가", "체력 자동 재생력 증가",
             "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승",
-            "미니맵 — 엔지니어가 망토 수리 시 장착해 줌. 탐험해 발견한 구역의 상자·출구·적·채집물 표시. [M] 토글",
-            "일반 지도 열람 — 탐험한 구역의 지형·다음 포탈만 표시(플레이어 위치는 안 보임). 핸드북(G) 지도 탭",
+            "미니맵 — 엔지니어가 망토 수리 시 장착해 줌. 탐험해 발견한 구역의 상자·출구·적·채집물 표시. [,] 토글 · 지도는 [M]",
             "소지품 그리드 가로 +1열 (현재 " + invCols + "열, 최대 " + gm.maxInvCols + "열)"
         };
-        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.moduleScan, invCols - 6 };
-        int[] costs = { 5, 2, 1, 1, 2, 3, 3, 4 };
-        int[] maxLv = { 99, 99, 99, 99, 99, 1, 1, gm.maxInvCols - 6 };
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, invCols - 6 };
+        int[] costs = { 5, 2, 1, 1, 2, 3, 4 };
+        int[] maxLv = { 99, 99, 99, 99, 99, 1, gm.maxInvCols - 6 };
         int rows = names.Length;
         float rh = Mathf.Clamp(bodyH / rows, 22f, 40f);
         string hoverDesc = null;
@@ -759,8 +758,7 @@ public class InventoryUI : MonoBehaviour
                 if (can && md && plus.Contains(mp))
                 {
                     if (i < 5) gm.SpendStat(i);
-                    else if (i == 6) gm.TryUnlockModule(1, costs[i]);   // 스캔
-                    else if (i == 7) gm.TryExpandBackpack(costs[i]);    // 배낭 확장(+1열)
+                    else if (i == 6) gm.TryExpandBackpack(costs[i]);    // 배낭 확장(+1열)
                     Event.current.Use();
                 }
             }

@@ -8,6 +8,7 @@ public class HandbookUI : MonoBehaviour
 {
     public static HandbookUI Instance;
     public KeyCode toggleKey = KeyCode.G;
+    public KeyCode mapKey = KeyCode.M;    // 지도 탭 바로 열기/닫기
 
     private bool open;
     private int tab;          // 0 도움말 / 1 지도 / 2 도감
@@ -28,6 +29,11 @@ public class HandbookUI : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(toggleKey)) open = !open;
+        if (Input.GetKeyDown(mapKey))   // [M] = 지도 탭 바로. 이미 지도 보는 중이면 닫기
+        {
+            if (open && tab == 1) open = false;
+            else { open = true; tab = 1; sel = 0; scroll = Vector2.zero; }
+        }
         if (open && Input.GetKeyDown(KeyCode.Escape)) open = false;
         Inventory.HandbookUIOpen = open;
     }
@@ -43,9 +49,7 @@ public class HandbookUI : MonoBehaviour
         float px = (UIScale.W - pw) * 0.5f, py = (UIScale.H - ph) * 0.5f;
         Rect panel = new Rect(px, py, pw, ph);
 
-        Fill(new Rect(px + 5, py + 6, pw, ph), new Color(0f, 0f, 0f, 0.4f));     // 그림자
-        Fill(panel, UITheme.A(UITheme.BgSolid, 0.98f));                      // 배경
-        Border(panel, 3f, UITheme.Accent);                       // 시안 테두리
+        UITheme.DrawPanel(panel);   // 그림자+그라데+테두리+상단 오렌지 바
 
         GUI.Label(new Rect(px + 20f, py + 12f, pw - 40f, 32f), "모험 핸드북", titleStyle);
         // 닫기
@@ -68,15 +72,9 @@ public class HandbookUI : MonoBehaviour
         else GUI.Label(content, "도감 — 준비 중", dimStyle);
     }
 
-    // 지도 탭: 스캔 모듈을 해금했으면 일반 지도(지형·다음 포탈, 플레이어 위치 없음) 표시.
+    // 지도 탭: 일반 지도(지형·다음 포탈, 플레이어 위치 없음). 모듈 조건 없음 — [M]으로 바로.
     private void DrawMapTab(Rect area)
     {
-        var gm = GameManager.Instance;
-        if (gm == null || !gm.HasScanMap)
-        {
-            GUI.Label(area, "스캔 모듈이 필요합니다.\n후드(C) → 모듈 탭에서 '스캔 모듈'을 해금하세요.", dimStyle);
-            return;
-        }
         Texture2D m = MapScanner.GetMap();
         if (m == null)
         {
@@ -88,16 +86,27 @@ public class HandbookUI : MonoBehaviour
             return;
         }
 
-        Fill(area, new Color(0.04f, 0.06f, 0.09f, 1f));
+        Fill(area, UITheme.A(UITheme.SlotBot, 0.9f));
         float pad = 12f;
-        Rect inner = new Rect(area.x + pad, area.y + pad, area.width - pad * 2f, area.height - pad * 2f - 18f);
+
+        // 상단: 현재 구역명 + 탐사율
+        string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        string head = "현재 구역:  " + scene;
+        var zones = CameraZone.All;
+        var found = MapDiscovery.DiscoveredAreas();
+        if (zones != null && zones.Count > 0 && found != null)
+            head += "     탐사  " + found.Count + " / " + zones.Count + " 구역";
+        bodyTitleStyle.normal.textColor = new Color(1f, 0.85f, 0.42f);
+        GUI.Label(new Rect(area.x + pad, area.y + 8f, area.width - pad * 2f, 24f), head, bodyStyle);
+
+        Rect inner = new Rect(area.x + pad, area.y + pad + 24f, area.width - pad * 2f, area.height - pad * 2f - 42f);
         float ar = (float)m.width / Mathf.Max(1, m.height);
         float w = inner.width, h = w / ar;
         if (h > inner.height) { h = inner.height; w = h * ar; }
         Rect mr = new Rect(inner.x + (inner.width - w) * 0.5f, inner.y + (inner.height - h) * 0.5f, w, h);
         GUI.DrawTexture(mr, m, ScaleMode.ScaleToFit);
         GUI.Label(new Rect(area.x + pad, area.yMax - 20f, area.width - pad * 2f, 16f),
-            "탐험한 구역만 표시(지형 · 다음 포탈=시안) — 플레이어 위치는 보이지 않습니다.", dimStyle);
+            "탐험한 구역만 표시(지형 · 다음 포탈=주황) — 플레이어 위치는 보이지 않습니다.", dimStyle);
     }
 
     private void DrawHelpTab(Rect area)

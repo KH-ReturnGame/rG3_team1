@@ -12,7 +12,7 @@ public static class MapScanner
     private static string builtScene;
     private static int builtVersion = -1;    // 마지막 빌드 시점의 발견 버전(달라지면 재생성)
     private static Texture2D map;
-    private const int MaxDim = 220;          // 결과 텍스처 긴 변(px)
+    private const int MaxDim = 320;          // 결과 텍스처 긴 변(px)
     private const long CellCap = 600000;     // 너무 큰 타일맵은 스캔 생략(안전)
 
     public static Texture2D GetMap()
@@ -64,13 +64,13 @@ public static class MapScanner
 
         float worldW = Mathf.Max(1f, maxX - minX), worldH = Mathf.Max(1f, maxY - minY);
         float scale = MaxDim / Mathf.Max(worldW, worldH);
-        int texW = Mathf.Clamp(Mathf.CeilToInt(worldW * scale) + 6, 8, 512);
-        int texH = Mathf.Clamp(Mathf.CeilToInt(worldH * scale) + 6, 8, 512);
+        int texW = Mathf.Clamp(Mathf.CeilToInt(worldW * scale) + 6, 8, 640);
+        int texH = Mathf.Clamp(Mathf.CeilToInt(worldH * scale) + 6, 8, 640);
 
         var tex = new Texture2D(texW, texH, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         var px = new Color[texW * texH];     // 기본 투명
-        Color terrain = new Color(0.34f, 0.44f, 0.54f, 1f);
-        Color portalC = new Color(0.30f, 0.85f, 1f, 1f);
+        Color terrain = new Color(0.56f, 0.57f, 0.61f, 1f);   // 지형=금속 그레이(테마)
+        Color portalC = UITheme.Accent;                        // 다음 포탈=오렌지(테마)
         int cell = Mathf.Max(1, Mathf.RoundToInt(scale * 0.55f));
 
         foreach (var p in pts) if (MapDiscovery.InAreas(areas, p)) Stamp(px, texW, texH, 3 + Mathf.RoundToInt((p.x - minX) * scale), 3 + Mathf.RoundToInt((p.y - minY) * scale), cell, terrain);

@@ -19,7 +19,7 @@ public class EngineerStation : MonoBehaviour, IInteractable
             string[] first = {
                 "오, 자네가 그 빨간 망토로군. ...꼴이 영 말이 아닌데?",
                 "이리 줘 보게. 수리하는 김에 — 옜다, 미니맵 모듈도 하나 박아줬네.",
-                "이제 지나온 구역은 지도에 남을 걸세. [M]으로 켜고 끄게나."
+                "이제 지나온 구역은 지도에 남을 걸세. [,]로 켜고 끄고, 지도는 [M]으로 보게나."
             };
             DialogueUI.Show("엔지니어", face, first, () => { if (GameManager.Instance != null) GameManager.Instance.GrantMinimap(); });
             return;

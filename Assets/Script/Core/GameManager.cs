@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour
     public int moduleQuickdraw; // 빨리 뽑기: 핫바 슬롯 +N (레벨당 +1)
     public int maxQuickdraw = 4;
     public bool HasMinimap => moduleMinimap > 0;   // 미니맵은 엔지니어가 망토 수리하며 지급(GrantMinimap)
-    public bool HasScanMap => moduleScan > 0;
+    // (구) 스캔 모듈 — 지도는 이제 [M]으로 누구나 열람(모듈 폐지). moduleScan 필드는 세이브 호환용 잔존.
     public int XpToNext => level * 120;
 
     public float GoldMultiplier => 1f + statLuck * 0.1f;     // 행운 → 골드 획득량
@@ -89,8 +89,8 @@ public class GameManager : MonoBehaviour
         int cur = (id == 0) ? moduleMinimap : moduleScan;
         if (cur > 0 || modPoints < cost) return false;
         modPoints -= cost;
-        if (id == 0) { moduleMinimap = 1; AcquireBanner.Show("미니맵 모듈", "탐험한 구역이 미니맵·지도에 기록된다.   [M] 토글", null, "새 모듈 획득!"); }
-        else { moduleScan = 1; AcquireBanner.Show("스캔 모듈", "탐험한 구역의 지형·다음 포탈을 지도(G)로 열람.", null, "새 모듈 획득!"); }
+        if (id == 0) { moduleMinimap = 1; AcquireBanner.Show("미니맵 모듈", "탐험한 구역이 미니맵·지도에 기록된다.   [,] 토글", null, "새 모듈 획득!"); }
+        else { moduleScan = 1; }   // (구) 스캔 — 폐지, 호환용
         OnStatsChanged?.Invoke();
         return true;
     }
@@ -159,7 +159,7 @@ public class GameManager : MonoBehaviour
         if (moduleMinimap > 0) return;
         moduleMinimap = 1;
         OnStatsChanged?.Invoke();
-        AcquireBanner.Show("미니맵 모듈", "탐험한 구역이 미니맵·지도(G)에 기록된다.   [M]으로 미니맵 켜고 끄기", null, "엔지니어 — 망토 수리 완료");
+        AcquireBanner.Show("미니맵 모듈", "탐험한 구역이 미니맵·지도에 기록된다.   [,] 미니맵 켜고 끄기 · [M] 지도", null, "엔지니어 — 망토 수리 완료");
     }
 
     // 어느 씬에서 시작해도 스탯(체력·기력·골드)이 존재하도록 자동 생성(1회, 씬 넘어가도 유지)

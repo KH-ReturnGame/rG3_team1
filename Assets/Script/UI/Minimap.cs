@@ -5,12 +5,12 @@ using UnityEngine.Tilemaps;
 // 미니맵(자동부팅·영구 싱글톤, OnGUI). 우상단에 플레이어 중심 레이더식 표시.
 //  · 상자(금)·출구/문(시안)·적(빨강)·채집물(초록)·마을 시설(상인/게시판/제작대)을 블립으로 표시
 //  · 범위 밖이라도 '중요'한 것(상자·출구)은 가장자리에 방향 표시
-//  · [M]으로 끄고 켬. 시작 메뉴·전체 UI(인벤/상점 등) 열렸을 땐 숨김.
+//  · [,]로 끄고 켬([M]은 핸드북 지도). 시작 메뉴·전체 UI(인벤/상점 등) 열렸을 땐 숨김.
 public class Minimap : MonoBehaviour
 {
     public static Minimap Instance;
 
-    public KeyCode toggleKey = KeyCode.M;
+    public KeyCode toggleKey = KeyCode.Comma;
     public bool visible = true;
 
     [Header("크기 / 위치 / 범위")]
