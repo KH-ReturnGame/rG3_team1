@@ -42,6 +42,7 @@ public class PlayerInteractor : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (nearest == null || nearestCol == null) return;
         var cam = Camera.main;
         if (cam == null) return;

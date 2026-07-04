@@ -15,6 +15,9 @@ public class Letterbox : MonoBehaviour
     public bool IsFull => topCur >= barHeightFrac - 0.005f;
     public bool IsHidden => topCur <= 0.005f && botCur <= 0.005f;
 
+    // 컷씬 중 여부 — 막대가 '조금이라도 보이는 동안' true. HUD류 UI가 이걸 보고 숨는다(완전히 사라져야 복귀).
+    public static bool Covering => Instance != null && (Instance.topCur > 0.005f || Instance.botCur > 0.005f);
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {

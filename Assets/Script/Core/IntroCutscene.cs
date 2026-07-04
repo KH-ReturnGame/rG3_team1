@@ -8,9 +8,9 @@ using UnityEngine;
 public class IntroCutscene : MonoBehaviour
 {
     [Header("타이밍")]
-    public float startBlackHold = 0.7f;   // 시작 암전 유지(정신 잃은 상태)
-    public float fadeTime = 1.1f;         // 밝아지는 시간
-    public float afterFadeHold = 0.6f;    // 밝아진 뒤 독백 전 여백
+    public float startBlackHold = 1.0f;   // 시작 암전 유지
+    public float fadeTime = 3.2f;         // 암전이 '풀리는' 시간 — 아주 천천히 밝아짐
+    public float afterFadeHold = 0.8f;    // 밝아진 뒤 독백 전 여백
     public float wakeHold = 0.9f;         // 일어나는 모션 유지
     public float letterboxTime = 0.6f;
 

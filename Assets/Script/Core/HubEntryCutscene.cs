@@ -82,8 +82,8 @@ public class HubEntryCutscene : MonoBehaviour
         // 5) 깨어나는 모션
         pc.PlayAnim(wakeState);
         yield return new WaitForSeconds(wakeHold);
-        // 6) 여울 대사 (끝날 때까지 대기)
-        var portrait = Resources.Load<Sprite>("Portraits/portrait_yeul");
+        // 6) 여울 대사 (끝날 때까지 대기) — 초상화는 Resources/Portraits/여울.png 자동 로드(DialogueUI 규약)
+        Sprite portrait = null;
         string[] lines = {
             "그쪽은 대체 누구신가요?? 이 주변엔 이곳말곤 마을이 없을 텐데.",
             "쓰러져 있는 걸 감지해서 데려온 거예요. ...뭘 그렇게 봐요, 고맙단 인사는 됐고. 치료도 내가 아니라 다른 사람 불러서 해준 거니까.",

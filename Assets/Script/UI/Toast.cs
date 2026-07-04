@@ -25,6 +25,7 @@ public class Toast : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (timer <= 0f || string.IsNullOrEmpty(msg)) return;
         EnsureStyles();
         UIScale.Apply();     // 해상도 독립 스케일

@@ -38,6 +38,7 @@ public class StatUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         var gm = GameManager.Instance;
         if (gm == null) return;
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;   // 시작 메뉴에선 HP 숨김

@@ -33,9 +33,24 @@ public class DialogueUI : MonoBehaviour
         Instance.Begin(speaker, portrait, lines, onComplete);
     }
 
+    // 초상화 자동 로드: Resources/Portraits/<화자 이름>.png 를 찾는다.
+    //  → 초상화를 넣거나 바꾸려면 그 폴더에 '화자 이름과 같은 파일명'의 PNG(Sprite)만 두면 끝.
+    //    (NpcDialogue의 portrait 필드로 개별 지정하면 그게 우선)
+    private static readonly System.Collections.Generic.Dictionary<string, Sprite> portraitCache
+        = new System.Collections.Generic.Dictionary<string, Sprite>();
+
+    private static Sprite AutoPortrait(string speaker)
+    {
+        if (string.IsNullOrEmpty(speaker)) return null;
+        if (portraitCache.TryGetValue(speaker, out var s)) return s;
+        s = Resources.Load("Portraits/" + speaker, typeof(Sprite)) as Sprite;
+        portraitCache[speaker] = s;   // 없으면 null도 캐시(매 대사마다 디스크 조회 방지)
+        return s;
+    }
+
     private void Begin(string sp, Sprite por, string[] ln, Action done)
     {
-        speaker = sp; portrait = por; lines = ln; onComplete = done;
+        speaker = sp; portrait = por != null ? por : AutoPortrait(sp); lines = ln; onComplete = done;
         index = 0; shown = 0f; openTime = Time.unscaledTime;
         IsOpen = true; Inventory.DialogueOpen = true;
     }

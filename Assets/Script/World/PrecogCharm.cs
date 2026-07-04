@@ -28,8 +28,8 @@ public class PrecogCharm : MonoBehaviour
     {
         var eq = Equipment.Instance;
         if (eq == null) return null;
-        for (int i = 0; i < eq.slots.Length; i++)
-            if (eq.slots[i] != null && eq.slots[i].precogSlow) return eq.slots[i];
+        foreach (var it in eq.Items())
+            if (it.precogSlow) return it;
         return null;
     }
 

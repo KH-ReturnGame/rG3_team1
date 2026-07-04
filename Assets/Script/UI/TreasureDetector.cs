@@ -66,6 +66,7 @@ public class TreasureDetector : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (pingTimer <= 0f) return;
         var pc = PlayerController.Instance;
         if (pc == null) return;

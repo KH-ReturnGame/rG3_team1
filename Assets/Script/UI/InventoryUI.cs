@@ -91,11 +91,13 @@ public class InventoryUI : MonoBehaviour
         curSlot = Mathf.Clamp(UIScale.H * slotRatio, 44f, 68f);
         float titleH = 36f;
         float catH = 28f;
-        float eqSlot = curSlot * 1.22f;
+        float eqCell = curSlot * 0.92f;                                  // 장신구 3×3 그리드 칸
+        float eqGridPx = Equipment.GridW * (eqCell + pad) + pad;
+        float eqGridPy = Equipment.GridH * (eqCell + pad) + pad;
         float gridW = cols * (curSlot + pad) + pad;
         float gridH = rows * (curSlot + pad) + pad;
-        float leftW = Mathf.Max(eqSlot + pad * 2f, 150f);
-        float bodyH = Mathf.Max(catH + 4f + gridH, 24f + Equipment.SlotCount * (eqSlot + pad) + 34f);
+        float leftW = Mathf.Max(eqGridPx + 12f, 170f);
+        float bodyH = Mathf.Max(catH + 4f + gridH, 24f + eqGridPy + 44f);
         float w = pad + leftW + pad + 2f + gridW + pad;
         float h = titleH + bodyH + pad * 2f;
         float x0 = (UIScale.W - w) * 0.5f;
@@ -109,6 +111,8 @@ public class InventoryUI : MonoBehaviour
         float catY = bodyY;
         gridTop = catY + catH + 4f;
         float eqTop = bodyY + 24f;
+        float eqLeft = leftX + (leftW - eqGridPx) * 0.5f;
+        Rect eqRect = new Rect(eqLeft, eqTop, eqGridPx, eqGridPy);
         Rect gridRect = new Rect(gridLeft, gridTop, gridW, gridH);
 
         // 좌측 세로 탭(후드/배낭)
@@ -138,10 +142,9 @@ public class InventoryUI : MonoBehaviour
             else if (panelTab == 0)
             {
                 int tab = TabIndexAt(mouse, gridLeft, catY, gridW, catH);
-                int eidx = EquipSlotIndexAt(mouse, leftX, eqTop, leftW, eqSlot);
                 if (tab >= 0) selectedCat = tab;
                 else if (gridRect.Contains(mouse)) HandleGridClick(inv, mouse, gridRect);
-                else if (eidx >= 0) HandleEquipClick(eidx);
+                else if (eqRect.Contains(mouse)) HandleEquipGridClick(mouse, eqRect, eqCell);
                 else if (!windowRect.Contains(mouse) && heldItem != null) DropHeld();
                 Event.current.Use();
             }
@@ -178,19 +181,35 @@ public class InventoryUI : MonoBehaviour
             GUI.Label(new Rect(leftX + 8f, bodyY + 2f, leftW - 16f, 20f), "장신구", tabSelStyle);
 
             var eq = Equipment.Instance;
-            int hoverEquip = -1;
-            for (int i = 0; i < Equipment.SlotCount; i++)
-            {
-                Rect r = EquipSlotRect(i, leftX, eqTop, leftW, eqSlot);
-                var it = eq != null ? eq.slots[i] : null;
-                bool hover = heldItem == null && r.Contains(mouse);
-                UITheme.DrawSlot(r, UITheme.Warm, hover, 2f);   // 장신구칸=골드 테두리
-                if (it != null)
+            Equipment.Worn hoverWorn = null;
+
+            // 3×3 빈 칸 — 테두리 없이 은은한 채움만(칸 사이 간격으로만 구분)
+            for (int cy = 0; cy < Equipment.GridH; cy++)
+                for (int cx = 0; cx < Equipment.GridW; cx++)
+                    UITheme.Fill(EqCellRect(eqLeft, eqTop, eqCell, cx, cy), UITheme.A(UITheme.SlotBot, 0.45f));
+
+            // 착용 중인 장신구(발자국)
+            if (eq != null)
+                foreach (var wv in eq.worn)
                 {
-                    UITheme.RarityRing(r, it.RarityColor());
-                    DrawIcon(r, it, 1, false);
-                    if (hover) hoverEquip = i;
+                    if (wv == null || wv.item == null) continue;
+                    Rect fr = EqFootprint(eqLeft, eqTop, eqCell, wv.x, wv.y, wv.item.GridW, wv.item.GridH);
+                    bool hover = heldItem == null && fr.Contains(mouse);
+                    UITheme.FillV(fr, hover ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
+                    UITheme.Border2(fr, 1.5f, hover ? UITheme.Lighten(UITheme.Warm, 0.2f) : UITheme.A(UITheme.Warm, 0.85f));
+                    UITheme.RarityRing(fr, wv.item.RarityColor());
+                    DrawIcon(fr, wv.item, 1, false);
+                    if (hover) hoverWorn = wv;
                 }
+
+            // 장착 고스트(들고 있는 게 장신구일 때)
+            if (heldItem != null && heldItem.kind == ItemData.ItemKind.Equipment && heldCount == 1 && eq != null && eqRect.Contains(mouse))
+            {
+                EqAnchor(mouse, eqLeft, eqTop, eqCell, heldItem, out int eax, out int eay);
+                bool okp = eq.CanPlace(heldItem, eax, eay);
+                Rect gr = EqFootprint(eqLeft, eqTop, eqCell, eax, eay, heldItem.GridW, heldItem.GridH);
+                UITheme.Fill(gr, UITheme.A(okp ? cOk : cBad, 0.30f));
+                UITheme.Border2(gr, 2f, UITheme.A(okp ? cOk : cBad, 0.85f));
             }
 
             // 금화 행(왼쪽 구역 하단)
@@ -250,7 +269,7 @@ public class InventoryUI : MonoBehaviour
             if (ctxEntry == null)
             {
                 if (hoverEntry != null) DrawTooltip(hoverEntry.item, mouse);
-                else if (hoverEquip >= 0 && eq != null && eq.slots[hoverEquip] != null) DrawTooltip(eq.slots[hoverEquip], mouse);
+                else if (hoverWorn != null) DrawTooltip(hoverWorn.item, mouse);
             }
         }
 
@@ -519,37 +538,73 @@ public class InventoryUI : MonoBehaviour
         Inventory.InvUIOpen = false;
     }
 
-    // ── 장신구 착용칸 (왼쪽 구역, 세로 배치) ──
-    private Rect EquipSlotRect(int i, float leftX, float eqTop, float leftW, float eqSlot)
-        => new Rect(leftX + (leftW - eqSlot) * 0.5f, eqTop + i * (eqSlot + pad), eqSlot, eqSlot);
+    // ── 장신구 3×3 그리드 (왼쪽 구역) ──
+    private Rect EqCellRect(float eqLeft, float eqTop, float cell, int cx, int cy)
+        => new Rect(eqLeft + pad + cx * (cell + pad), eqTop + pad + cy * (cell + pad), cell, cell);
 
-    private int EquipSlotIndexAt(Vector2 m, float leftX, float eqTop, float leftW, float eqSlot)
+    private Rect EqFootprint(float eqLeft, float eqTop, float cell, int x, int y, int gw, int gh)
     {
-        for (int i = 0; i < Equipment.SlotCount; i++)
-            if (EquipSlotRect(i, leftX, eqTop, leftW, eqSlot).Contains(m)) return i;
-        return -1;
+        Rect a = EqCellRect(eqLeft, eqTop, cell, x, y);
+        return new Rect(a.x, a.y, gw * (cell + pad) - pad, gh * (cell + pad) - pad);
     }
 
-    // 장신구칸 클릭: 손에 든 장신구 장착 / 착용 중인 것 집기(해제) / 교체
-    private void HandleEquipClick(int i)
+    private void EqCellAt(Vector2 m, float eqLeft, float eqTop, float cell, out int cx, out int cy)
+    {
+        cx = Mathf.Clamp(Mathf.FloorToInt((m.x - eqLeft - pad) / (cell + pad)), 0, Equipment.GridW - 1);
+        cy = Mathf.Clamp(Mathf.FloorToInt((m.y - eqTop - pad) / (cell + pad)), 0, Equipment.GridH - 1);
+    }
+
+    private void EqAnchor(Vector2 m, float eqLeft, float eqTop, float cell, ItemData item, out int ax, out int ay)
+    {
+        EqCellAt(m, eqLeft, eqTop, cell, out int cx, out int cy);
+        ax = Mathf.Clamp(cx - (item.GridW - 1) / 2, 0, Mathf.Max(0, Equipment.GridW - item.GridW));
+        ay = Mathf.Clamp(cy - (item.GridH - 1) / 2, 0, Mathf.Max(0, Equipment.GridH - item.GridH));
+    }
+
+    // 장신구 그리드 클릭: 집기(해제) / 발자국 배치 / 1:1 교체
+    private void HandleEquipGridClick(Vector2 m, Rect eqRect, float cell)
     {
         var eq = Equipment.Instance;
         if (eq == null) return;
-        var cur = eq.slots[i];
+        float eqLeft = eqRect.x, eqTop = eqRect.y;
+
         if (heldItem == null)
         {
-            if (cur != null) { eq.Unequip(i); heldItem = cur; heldCount = 1; }
+            EqCellAt(m, eqLeft, eqTop, cell, out int cx, out int cy);
+            var e = eq.EntryAt(cx, cy);
+            if (e != null) { heldItem = e.item; heldCount = 1; eq.Remove(e); Inventory.Instance.RaiseChanged(); }
+            return;
         }
-        else
+
+        if (heldItem.kind != ItemData.ItemKind.Equipment || heldCount != 1) return;   // 장신구 1개 단위만 장착
+        EqAnchor(m, eqLeft, eqTop, cell, heldItem, out int ax, out int ay);
+
+        if (eq.CanPlace(heldItem, ax, ay))
         {
-            if (heldItem.kind != ItemData.ItemKind.Equipment) return;   // 장신구만 장착 가능
-            if (heldCount != 1) return;                                  // 스택 든 채 장착 불가(장신구는 1개 단위)
-            eq.slots[i] = heldItem;
-            eq.Recompute();
-            if (cur != null) { heldItem = cur; heldCount = 1; }          // 기존 장신구는 손에(교체)
-            else { heldItem = null; heldCount = 0; }
+            eq.Place(heldItem, ax, ay);
+            heldItem = null; heldCount = 0;
+            Inventory.Instance.RaiseChanged();
+            return;
         }
-        Inventory.Instance.RaiseChanged();
+
+        // 겹치는 착용품이 정확히 1개면 교체
+        var overlaps = new System.Collections.Generic.List<Equipment.Worn>();
+        foreach (var s in eq.worn)
+        {
+            if (s == null || s.item == null) continue;
+            if (ax < s.x + s.item.GridW && s.x < ax + heldItem.GridW && ay < s.y + s.item.GridH && s.y < ay + heldItem.GridH)
+                overlaps.Add(s);
+        }
+        if (overlaps.Count != 1) return;
+        var t = overlaps[0];
+        if (eq.CanPlace(heldItem, ax, ay, t))
+        {
+            var ti = t.item;
+            eq.Remove(t);
+            eq.Place(heldItem, ax, ay);
+            heldItem = ti; heldCount = 1;
+            Inventory.Instance.RaiseChanged();
+        }
     }
 
     private void DrawIcon(Rect r, ItemData item, int count, bool dim)

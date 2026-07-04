@@ -71,6 +71,7 @@ public class Hotbar : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (!showBar || Inventory.Instance == null || hotkeySlots <= 0) return;
         EnsureStyles();
         UIScale.Apply();

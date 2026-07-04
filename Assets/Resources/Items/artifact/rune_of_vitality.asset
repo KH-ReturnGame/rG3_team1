@@ -18,7 +18,7 @@ MonoBehaviour:
   maxStack: 1
   description: "\uCC29\uC6A9 \uC2DC \uAE30\uB825 \uC790\uC5F0 \uD68C\uBCF5\uB7C9
     \uC99D\uAC00."
-  gridW: 2
+  gridW: 1
   gridH: 2
   kind: 2
   healHearts: 0

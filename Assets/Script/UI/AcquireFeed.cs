@@ -43,6 +43,7 @@ public class AcquireFeed : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (entries.Count == 0) return;
         if (style == null) style = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
         UIScale.Apply();   // 해상도 독립 스케일

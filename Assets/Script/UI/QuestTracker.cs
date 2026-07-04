@@ -63,6 +63,7 @@ public class QuestTracker : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
         if (Inventory.IsUIOpen) return;
         var qm = QuestManager.Instance;

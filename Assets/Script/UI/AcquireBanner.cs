@@ -49,6 +49,7 @@ public class AcquireBanner : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (!active) return;
         EnsureStyles();
         UIScale.Apply();     // 해상도 독립 스케일(카드 바운스 ScaleAroundPivot은 이 위에 합성)

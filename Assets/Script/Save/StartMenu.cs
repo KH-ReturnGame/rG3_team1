@@ -65,13 +65,13 @@ public class StartMenu : MonoBehaviour
         Vector2 s1 = titleRed.CalcSize(new GUIContent(p1));
         Vector2 s2 = titleCream.CalcSize(new GUIContent(p2));
         float tx = (sw - s1.x - s2.x) * 0.5f;
-        // 그림자 → 본문
+        // 그림자 → 본문 (hover 색도 같이 고정 — 타이틀은 마우스에 반응하지 않음)
         var shadow = new Color(0f, 0f, 0f, 0.55f);
-        titleRed.normal.textColor = shadow; titleCream.normal.textColor = shadow;
+        SetCol(titleRed, shadow); SetCol(titleCream, shadow);
         GUI.Label(new Rect(tx + 3, ty + 4, s1.x, s1.y), p1, titleRed);
         GUI.Label(new Rect(tx + s1.x + 3, ty + 4, s2.x, s2.y), p2, titleCream);
-        titleRed.normal.textColor = new Color(0.86f, 0.22f, 0.20f);
-        titleCream.normal.textColor = new Color(0.93f, 0.90f, 0.85f);
+        SetCol(titleRed, new Color(0.86f, 0.22f, 0.20f));
+        SetCol(titleCream, new Color(0.93f, 0.90f, 0.85f));
         GUI.Label(new Rect(tx, ty, s1.x, s1.y), p1, titleRed);
         GUI.Label(new Rect(tx + s1.x, ty, s2.x, s2.y), p2, titleCream);
         // 서브타이틀 + 장식선
@@ -109,10 +109,10 @@ public class StartMenu : MonoBehaviour
             {
                 UITheme.Glow(r, UITheme.Accent, 8f, 0.18f);
                 UITheme.Fill(new Rect(r.x + 34f, r.y + rowH * 0.22f, 4f, rowH * 0.56f), UITheme.Accent);   // 좌측 오렌지 바
-                menuStyle.normal.textColor = Color.white;
+                SetCol(menuStyle, Color.white);
                 GUI.Label(new Rect(r.x + 46f, r.y, 30f, rowH), "▸", menuStyle);
             }
-            else menuStyle.normal.textColor = new Color(0.72f, 0.73f, 0.76f);
+            else SetCol(menuStyle, new Color(0.72f, 0.73f, 0.76f));
             GUI.Label(r, items[i], menuStyle);
 
             if (hv && click)
@@ -296,13 +296,16 @@ public class StartMenu : MonoBehaviour
         vig.SetPixels(vp); vig.Apply();
     }
 
+    // normal·hover 색을 같이 지정 — IMGUI 기본 스킨의 hover 색 반응 차단
+    private static void SetCol(GUIStyle st, Color c) { st.normal.textColor = c; st.hover.textColor = c; st.active.textColor = c; }
+
     private void EnsureStyles()
     {
         if (titleRed != null) return;
         titleRed   = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         titleCream = new GUIStyle(titleRed);
         subStyle   = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };
-        subStyle.normal.textColor = new Color(0.55f, 0.50f, 0.46f);
+        SetCol(subStyle, new Color(0.55f, 0.50f, 0.46f));
         menuStyle  = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         headerStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         headerStyle.normal.textColor = new Color(0.90f, 0.95f, 1f);

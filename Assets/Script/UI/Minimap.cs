@@ -133,6 +133,7 @@ public class Minimap : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (!visible) return;
         if (GameManager.Instance == null || !GameManager.Instance.HasMinimap) return;   // 미니맵 모듈 해금 필요
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;

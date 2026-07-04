@@ -11,8 +11,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Items/artifact/bracer_of_endurance.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Items/artifact/bracer_of_endurance.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Items/artifact/charm_of_leaping.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Items/artifact/charm_of_leaping.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Items/artifact/guardian_amulet.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Items/artifact/guardian_amulet.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Items/artifact/rune_of_vitality.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Items/artifact/rune_of_vitality.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/Items/artifact/warriors_ring.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/Items/artifact/warriors_ring.asset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/DialogueUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/DialogueUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/IntroCutscene.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/IntroCutscene.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/Letterbox.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/Letterbox.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Inventory/Equipment.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Inventory/Equipment.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Player/PlayerInteractor.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Player/PlayerInteractor.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Save/StartMenu.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Save/StartMenu.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/AcquireBanner.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/AcquireBanner.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/AcquireFeed.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/AcquireFeed.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/HelpPopupUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/HelpPopupUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/Hotbar.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/Hotbar.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/InventoryUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/InventoryUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/Minimap.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/Minimap.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/QuestTracker.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/QuestTracker.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/StatUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/StatUI.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/Toast.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/Toast.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/TreasureDetector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/TreasureDetector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/World/PrecogCharm.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/World/PrecogCharm.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,6 +65,65 @@
     <urls />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.3950206559316884" />
+      <entry key="MS500" value="1.8304700240908942" />
+      <entry key="S2" value="1.954621014139717" />
+      <entry key="S5" value="1.9815951324014034" />
+      <entry key="S10" value="1.9907548296129591" />
+      <entry key="S30" value="1.9969087304368105" />
+      <entry key="S60" value="1.998453168875141" />
+      <entry key="M2" value="1.999226285120213" />
+      <entry key="M5" value="1.9996904421822612" />
+      <entry key="M10" value="1.999845209111021" />
+      <entry key="M15" value="1.999896803411584" />
+      <entry key="M30" value="1.9999484003745316" />
+      <entry key="H1" value="1.9999741998544418" />
+      <entry key="H2" value="1.999987099844014" />
+      <entry key="H4" value="1.999993549901205" />
+      <entry key="D1" value="1.9999989249806451" />
+      <entry key="W1" value="1.9999998464257356" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.7474246271018429" />
+      <entry key="MS500" value="0.9628894108232066" />
+      <entry key="S2" value="1.3590027012174564" />
+      <entry key="S5" value="1.668558748987026" />
+      <entry key="S10" value="1.818289866132441" />
+      <entry key="S30" value="1.935475387926787" />
+      <entry key="S60" value="1.967215965242589" />
+      <entry key="M2" value="1.9834754010005093" />
+      <entry key="M5" value="1.9933580615999649" />
+      <entry key="M10" value="1.9966736575600894" />
+      <entry key="M15" value="1.997781242577617" />
+      <entry key="M30" value="1.998890022954708" />
+      <entry key="H1" value="1.9994448618119829" />
+      <entry key="H2" value="1.9997223934794128" />
+      <entry key="H4" value="1.9998611873817822" />
+      <entry key="D1" value="1.9999768632638102" />
+      <entry key="W1" value="1.999996694720139" />
+    </decayedShown>
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -140,7 +219,7 @@
       <workItem from="1781178123487" duration="2000" />
       <workItem from="1781317934715" duration="1343000" />
       <workItem from="1781540612015" duration="3629000" />
-      <workItem from="1782989731745" duration="1233000" />
+      <workItem from="1782989731745" duration="1979000" />
     </task>
     <servers />
   </component>

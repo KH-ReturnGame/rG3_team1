@@ -26200,9 +26200,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c83ee9cdb56525439f204a8a89e1d28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IntroCutscene
-  startBlackHold: 0.7
-  fadeTime: 0.7
-  afterFadeHold: 0.6
+  startBlackHold: 1
+  fadeTime: 3.2
+  afterFadeHold: 0.8
   wakeHold: 0.9
   letterboxTime: 0.5
   sprawlState: GroundSlam

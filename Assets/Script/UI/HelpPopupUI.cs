@@ -72,6 +72,7 @@ public class HelpPopupUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (stack.Count == 0) return;
         EnsureStyles();
         UIScale.Apply();   // 해상도 독립 스케일
