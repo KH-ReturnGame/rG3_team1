@@ -370,10 +370,18 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
     }
 
+    // UI(일시정지/인벤/대사창 등)를 '닫는 클릭'이 같은 프레임에 공격으로 새는 것 방지 —
+    // UI가 닫힌 뒤 짧은 유예 동안 마우스 공격/가드 입력만 무시(이동·키보드는 즉시 허용).
+    private float uiCloseGraceTimer;
+    private const float UiCloseGrace = 0.15f;
+
     private void CheckInput()
     {
         if (isPlunging) return;   // 낙하 공격 중엔 입력 무시(착지까지 커밋)
-        if (Inventory.IsUIOpen) { horizontalInput = 0f; return; }   // 인벤토리/메뉴 열려있으면 조작 잠금
+        if (Inventory.IsUIOpen) { horizontalInput = 0f; uiCloseGraceTimer = UiCloseGrace; return; }   // 인벤토리/메뉴 열려있으면 조작 잠금
+
+        if (uiCloseGraceTimer > 0f) uiCloseGraceTimer -= Time.unscaledDeltaTime;
+        bool mouseOk = uiCloseGraceTimer <= 0f;   // UI 닫은 직후엔 마우스 입력 무효
 
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
@@ -382,12 +390,12 @@ public class PlayerController : MonoBehaviour
             ToggleSheathe();
 
         // 가드/패링 (검을 들었을 때만)
-        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump && guardCooldownTimer <= 0f)
+        if (mouseOk && Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump && guardCooldownTimer <= 0f)
             StartGuard();
         if (Input.GetMouseButtonUp(1)) EndGuard();
 
         // 좌클릭: 지상=콤보 / 공중=공중 공격 (아래키 같이 누르면 낙하 공격)
-        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && !isChargingJump)
+        if (mouseOk && Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && !isChargingJump)
         {
             if (isGrounded)
             {

@@ -5,6 +5,10 @@ using UnityEngine;
 //  · 타자기 연출. Space/F/Enter/좌클릭으로 진행(타이핑 중이면 즉시 완성 → 다 보이면 다음 줄/종료).
 //  · 열려 있는 동안 Inventory.DialogueOpen=true → 플레이어 이동·공격·상호작용 잠금.
 //  · DialogueUI.Show(이름, 초상화, 줄[], 완료콜백) — 마지막 줄까지 끝나면 onComplete 실행(상점/엔지니어 열기 등).
+//  · ★연출 태그: 대사 줄 '맨 앞'에 붙이면 그 줄 동안 연출 재생(표시 텍스트에선 제거됨). 인스펙터 대사에도 그대로 사용.
+//      [놀람]   초상화가 폴짝 튀어오름(깜짝)
+//      [흔들림] 초상화+대사박스 강한 흔들림 후 잦아듦(중상·충격)
+//      [떨림]   줄이 떠 있는 내내 잘게 떨림(고통·슬픔·공포)
 public class DialogueUI : MonoBehaviour
 {
     public static DialogueUI Instance { get; private set; }
@@ -18,6 +22,58 @@ public class DialogueUI : MonoBehaviour
     private float shown;          // 현재 줄에서 보여준 글자 수(실수 — 타자 진행)
     private float openTime;
     private const float CharsPerSec = 48f;
+
+    // ── 줄 연출 ──
+    private enum LineFx { None, Surprise, Shake, Tremble }
+    private LineFx curFx;
+    private float fxStart;        // 줄 시작 시각(unscaled)
+    private string curText = ""; // 태그 제거된 표시용 본문
+
+    // 현재 줄의 태그를 파싱하고 타자기를 리셋
+    private void StartLine()
+    {
+        string raw = lines[index];
+        curFx = LineFx.None;
+        if (raw.StartsWith("[놀람]"))       { curFx = LineFx.Surprise; raw = raw.Substring("[놀람]".Length); }
+        else if (raw.StartsWith("[흔들림]")) { curFx = LineFx.Shake;    raw = raw.Substring("[흔들림]".Length); }
+        else if (raw.StartsWith("[떨림]"))   { curFx = LineFx.Tremble;  raw = raw.Substring("[떨림]".Length); }
+        curText = raw;
+        shown = 0f;
+        fxStart = Time.unscaledTime;
+    }
+
+    // 연출 오프셋(픽셀). forPortrait=false면 대사박스용(약하게).
+    private Vector2 FxOffset(bool forPortrait)
+    {
+        float t = Time.unscaledTime - fxStart;
+        switch (curFx)
+        {
+            case LineFx.Surprise:   // 폴짝 두 번 튀며 잦아듦 — 초상화만
+            {
+                const float dur = 0.55f;
+                if (!forPortrait || t >= dur) return Vector2.zero;
+                float k = t / dur;
+                return new Vector2(0f, -30f * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 2f)) * (1f - k));
+            }
+            case LineFx.Shake:      // 강한 흔들림 후 감쇠 — 초상화+박스
+            {
+                const float dur = 0.65f;
+                if (t >= dur) return Vector2.zero;
+                float amp = (forPortrait ? 11f : 7f) * (1f - t / dur);
+                return new Vector2(
+                    (Mathf.PerlinNoise(t * 38f, 0.3f) - 0.5f) * 2f * amp,
+                    (Mathf.PerlinNoise(0.7f, t * 41f) - 0.5f) * 2f * amp);
+            }
+            case LineFx.Tremble:    // 줄 내내 잔떨림 — 초상화 위주, 박스는 아주 약하게
+            {
+                float amp = forPortrait ? 2.8f : 1.2f;
+                return new Vector2(
+                    (Mathf.PerlinNoise(t * 22f, 0.5f) - 0.5f) * 2f * amp,
+                    (Mathf.PerlinNoise(0.9f, t * 24f) - 0.5f) * 2f * amp);
+            }
+        }
+        return Vector2.zero;
+    }
 
     private Texture2D white;
     private GUIStyle nameStyle, textStyle, hintStyle;
@@ -51,14 +107,15 @@ public class DialogueUI : MonoBehaviour
     private void Begin(string sp, Sprite por, string[] ln, Action done)
     {
         speaker = sp; portrait = por != null ? por : AutoPortrait(sp); lines = ln; onComplete = done;
-        index = 0; shown = 0f; openTime = Time.unscaledTime;
+        index = 0; openTime = Time.unscaledTime;
+        StartLine();
         IsOpen = true; Inventory.DialogueOpen = true;
     }
 
     void Update()
     {
         if (!IsOpen) return;
-        int len = lines[index].Length;
+        int len = curText.Length;
         if (shown < len) shown += CharsPerSec * Time.unscaledDeltaTime;
 
         if (Time.unscaledTime - openTime < 0.18f) return;   // 연 직후 입력 무시(여는 F가 첫 줄을 바로 넘기지 않게)
@@ -70,7 +127,7 @@ public class DialogueUI : MonoBehaviour
         if (shown < len) { shown = len; return; }           // 타이핑 중 → 즉시 완성
         index++;
         if (index >= lines.Length) { Close(); return; }
-        shown = 0f; openTime = Time.unscaledTime;            // 다음 줄도 살짝 입력가드(연타 방지)
+        StartLine(); openTime = Time.unscaledTime;           // 다음 줄(태그 파싱) + 살짝 입력가드(연타 방지)
     }
 
     private void Close()
@@ -91,10 +148,12 @@ public class DialogueUI : MonoBehaviour
         // ── 하단 대사 박스(넓게) ──
         float bw = Mathf.Min(W * 0.88f, 1180f), bh = 190f;
         float bx = (W - bw) * 0.5f, by = H - bh - 28f;
-        Rect box = new Rect(bx, by, bw, bh);
+        Rect boxBase = new Rect(bx, by, bw, bh);            // 연출 오프셋 없는 기준(초상화 정렬용)
+        Vector2 bo = FxOffset(false);                        // [흔들림]/[떨림] — 박스
+        Rect box = new Rect(bx + bo.x, by + bo.y, bw, bh);
 
         // 큰 초상화(왼쪽·틀 없이 컷아웃) — 박스보다 먼저 그려 박스가 앞에 오게
-        DrawBigPortrait(box, W, H);
+        DrawBigPortrait(boxBase, W, H);
 
         Fill(new Rect(box.x + 4, box.y + 5, box.width, box.height), new Color(0, 0, 0, 0.35f));   // 그림자
         Fill(box, UITheme.A(UITheme.BgSolid, 0.97f));
@@ -108,7 +167,7 @@ public class DialogueUI : MonoBehaviour
         GUI.Label(nameTag, speaker, nameStyle);
 
         // 본문(타자기)
-        string full = lines[index];
+        string full = curText;
         int n = Mathf.Clamp(Mathf.FloorToInt(shown), 0, full.Length);
         textStyle.normal.textColor = new Color(0.90f, 0.96f, 1f);
         GUI.Label(new Rect(box.x + 28f, box.y + 60f, box.width - 56f, box.height - 74f), full.Substring(0, n), textStyle);
@@ -135,7 +194,8 @@ public class DialogueUI : MonoBehaviour
 
         float pLeft = W * 0.05f;
         float pTop = box.yMax - ph;           // 초상화 밑 = 대사박스 밑에 맞춤
-        Rect pr = new Rect(pLeft, pTop, pw, ph);
+        Vector2 po = FxOffset(true);          // [놀람]/[흔들림]/[떨림] — 초상화
+        Rect pr = new Rect(pLeft + po.x, pTop + po.y, pw, ph);
         Rect tc = new Rect(tr.x / t.width, tr.y / t.height, tr.width / t.width, tr.height / t.height);
 
         Color o = GUI.color;

@@ -12,7 +12,8 @@ public class IntroCutscene : MonoBehaviour
     public float fadeTime = 3.2f;         // 암전이 '풀리는' 시간 — 아주 천천히 밝아짐
     public float afterFadeHold = 0.8f;    // 밝아진 뒤 독백 전 여백
     public float wakeHold = 0.9f;         // 일어나는 모션 유지
-    public float letterboxTime = 0.6f;
+    public float letterboxTime = 0.6f;    // 레터박스 '등장' 속도
+    public float letterboxHideTime = 2.0f; // 레터박스 '풀리는' 속도 — 독백 후 천천히 걷힘
 
     [Header("애니 클립명")]
     public string sprawlState = "GroundSlam";   // 쓰러진 자세
@@ -21,8 +22,8 @@ public class IntroCutscene : MonoBehaviour
     [Header("독백")]
     [TextArea] public string speakerName = "???";
     [TextArea] public string[] monologue = {
-        "……크윽.",
-        "온몸이... 부서질 것처럼 아프다. 겨우 숨만 붙어 있는 것 같아.",
+        "[흔들림]……크윽.",
+        "[떨림]온몸이... 부서질 것처럼 아프다. 겨우 숨만 붙어 있는 것 같아.",
         "여긴... 어디지. 위에서, 떨어진 건가.",
         "기억이 흐릿해. ...내가 누구인지조차, 떠오르질 않아."
     };
@@ -47,8 +48,8 @@ public class IntroCutscene : MonoBehaviour
         if (string.IsNullOrEmpty(speakerName)) speakerName = "???";
         if (monologue == null || monologue.Length == 0)
             monologue = new[] {
-                "……크윽.",
-                "온몸이... 부서질 것처럼 아프다. 겨우 숨만 붙어 있는 것 같아.",
+                "[흔들림]……크윽.",
+                "[떨림]온몸이... 부서질 것처럼 아프다. 겨우 숨만 붙어 있는 것 같아.",
                 "여긴... 어디지. 위에서, 떨어진 건가.",
                 "기억이 흐릿해. ...내가 누구인지조차, 떠오르질 않아."
             };
@@ -74,7 +75,7 @@ public class IntroCutscene : MonoBehaviour
         pc.PlayAnim(wakeState);
         yield return new WaitForSeconds(wakeHold);
 
-        if (Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxTime);
+        if (Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxHideTime);   // 독백 끝 — 천천히 걷힘
         yield return new WaitForSeconds(0.3f);
         pc.cutsceneActive = false;
     }
