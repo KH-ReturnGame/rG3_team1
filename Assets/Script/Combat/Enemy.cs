@@ -14,7 +14,8 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float moveSpeed = 2f;
 
     [Header("Detection / Attack")]
-    public float detectRange = 6f;       // 이 안에 플레이어가 들어오면 추격
+    public float detectRange = 6f;       // 이 안에 플레이어가 들어오면 추격(가로)
+    public float detectHeight = 2.2f;    // 감지 세로 허용(±) — 위에서 떨어지는 중엔 안 물게 좁게
     public float attackRange = 1.4f;     // 좌우 공격 도달 거리(가로)
     public float attackHeight = 1.2f;    // 공격 세로 범위(±). 이보다 위로 점프하면 회피 가능
     public float attackDamage = 2f;      // 플레이어에게 주는 피해 = 하트 칸 수
@@ -324,14 +325,31 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private void GrantRewards()
     {
         if (loot == null) return;
+        Vector3 basePos = LootBasePos();
         foreach (var d in loot)
         {
             if (d == null || d.item == null || Random.value > d.chance) continue;
             int n = Random.Range(d.minCount, d.maxCount + 1);
             if (n <= 0) continue;
-            Vector3 pos = transform.position + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
+            Vector3 pos = basePos + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
             ItemPickup.SpawnWorld(d.item, n, pos, dropSize);
         }
+    }
+
+    // 전리품 기준점: 사망 지점 아래에 지면이 없으면(공중몹이 맵 밖·허공에서 죽음) 플레이어가 주울 수 있는 곳으로.
+    private Vector3 LootBasePos()
+    {
+        int mask = LayerMask.GetMask("Ground");
+        if (Physics2D.Raycast(transform.position + Vector3.up * 0.1f, Vector2.down, 25f, mask).collider != null)
+            return transform.position;   // 아래에 지면 있음 → 그대로
+        var pc = PlayerController.Instance;
+        if (pc != null)
+        {
+            var hit = Physics2D.Raycast(pc.transform.position + Vector3.up * 0.1f, Vector2.down, 25f, mask);
+            if (hit.collider != null) return new Vector3(pc.transform.position.x, hit.point.y + 0.4f, 0f);
+            return pc.transform.position;   // 플레이어 발밑도 못 찾으면 플레이어 위치
+        }
+        return transform.position;
     }
 
     private void UpdateColor()

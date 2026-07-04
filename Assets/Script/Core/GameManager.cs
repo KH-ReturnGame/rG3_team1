@@ -179,7 +179,9 @@ public class GameManager : MonoBehaviour
         if (isDead || halves <= 0) return;
         halves = Mathf.RoundToInt(halves * (1f - DamageReduction));   // 방어 포션: 피해 감량
         if (halves <= 0) return;
-        currentHalf = Mathf.Max(0, currentHalf - halves);
+        // 튜토리얼에선 하트 반 칸 밑으로 안 내려감(죽지 않는 안전 훈련장)
+        int floor = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "TutorialScene" ? 1 : 0;
+        currentHalf = Mathf.Max(floor, currentHalf - halves);
         OnStatsChanged?.Invoke();
         if (currentHalf == 0) Die();
     }

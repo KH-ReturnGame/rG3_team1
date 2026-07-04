@@ -57,6 +57,8 @@ public class HelpPopupUI : MonoBehaviour
     // 중첩 옵션 처리: stackPopups가 false면 새 도움말이 뜰 때 기존 것을 모두 비움(교체).
     private void Push(Entry e) { if (!stackPopups) stack.Clear(); stack.Add(e); }
     public bool IsManualOpen { get { return stack.Count > 0 && stack[0].manual; } }
+    // ESC로 닫는 도움말이 떠 있는가 — MenuUI가 이걸 보고 같은 ESC에 일시정지를 안 연다.
+    public static bool ManualOpen => Instance != null && Instance.IsManualOpen;
 
     void Update()
     {

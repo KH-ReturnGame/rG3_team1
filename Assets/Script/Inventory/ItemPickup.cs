@@ -189,6 +189,12 @@ public class ItemPickup : MonoBehaviour, IInteractable
             pickup.EnsureShadow();
             if (fromPos.HasValue)
             {
+                // 상자 드랍: 상자 높이가 아니라 '아래 지면' 기준으로 둥둥 뜨게 목표점을 바닥 위로 스냅
+                int mask = LayerMask.GetMask("Ground");
+                var hit = Physics2D.Raycast(pos + Vector3.up * 0.1f, Vector2.down, 12f, mask);
+                if (hit.collider != null) pos.y = hit.point.y + 0.55f;
+                pickup.baseY = pos.y;
+
                 pickup.spawning = true;
                 pickup.spawnFrom = fromPos.Value;
                 pickup.spawnTarget = pos;

@@ -247,7 +247,7 @@ MonoBehaviour:
   skillCooldown: 5
   airAttackState: AirSlash
   airDownAttackState: AirSlashDown
-  plungeFallState: AirSlashDown
+  plungeFallState: JumpFall
   plungeLandState: GroundSlam
   plungeLandStartTime: 0.2
   airAttackDamage: 10

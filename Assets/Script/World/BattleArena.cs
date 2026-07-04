@@ -17,6 +17,9 @@ public class BattleArena : MonoBehaviour
     [Header("옵션")]
     public bool oneTime = true;   // 한 번 클리어하면 다시 안 닫힘
 
+    [Header("클리어 보상 — 전부 처치 시 활성화(보물상자·다음 길 등)")]
+    public GameObject[] onClearActivate;
+
     private bool active, cleared;
     private Collider2D zone;
 
@@ -24,7 +27,19 @@ public class BattleArena : MonoBehaviour
     {
         zone = GetComponent<Collider2D>();
         zone.isTrigger = true;
+
+        // ★배선 실수 방어: doors에 '자기 자신'이 들어가면 Awake에서 자신을 꺼버려 아레나가 영영 죽는다.
+        if (doors != null)
+            for (int i = 0; i < doors.Length; i++)
+                if (doors[i] == gameObject)
+                {
+                    Debug.LogWarning($"[BattleArena] '{name}' doors에 자기 자신이 들어있어 제외합니다. 존(트리거)과 문(벽)은 서로 다른 오브젝트여야 합니다.");
+                    doors[i] = null;
+                }
+
         SetDoors(false);
+        if (onClearActivate != null)
+            foreach (var g in onClearActivate) if (g != null) g.SetActive(false);   // 보상은 클리어 전 숨김
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -55,6 +70,8 @@ public class BattleArena : MonoBehaviour
             active = false;
             cleared = oneTime;
             SetDoors(false);
+            if (onClearActivate != null)
+                foreach (var g in onClearActivate) if (g != null) g.SetActive(true);   // 상자·다음 길 등장
             Toast.Show("구역 클리어!", 2f);
         }
     }

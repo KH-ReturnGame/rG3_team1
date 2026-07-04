@@ -23,13 +23,14 @@ public class MenuUI : MonoBehaviour
         string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         if (scene == "StartScene") { if (Paused) Resume(); return; }
 
-        if (Inventory.IsUIOpen && !Paused) lastUIOpenTime = Time.unscaledTime;
+        if ((Inventory.IsUIOpen || HelpPopupUI.ManualOpen) && !Paused) lastUIOpenTime = Time.unscaledTime;
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (Paused) Resume();
             else if (!Inventory.IsUIOpen
-                  && Time.unscaledTime - lastUIOpenTime > 0.15f   // 방금 다른 UI를 닫은 ESC와 분리
+                  && !HelpPopupUI.ManualOpen                        // ESC는 도움말 닫기 우선
+                  && Time.unscaledTime - lastUIOpenTime > 0.15f   // 방금 다른 UI/도움말을 닫은 ESC와 분리
                   && !Letterbox.Covering                            // 컷씬 중 금지
                   && Time.timeScale > 0.01f)                        // 결과창 등 이미 정지 상태면 금지
                 Pause();

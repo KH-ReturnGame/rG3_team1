@@ -25584,6 +25584,106 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 17.106392, y: 11.803173}
   m_EdgeRadius: 0
+--- !u!1 &1039848950
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1039848953}
+  - component: {fileID: 1039848952}
+  - component: {fileID: 1039848951}
+  m_Layer: 0
+  m_Name: Battle Arena 1 (Zone)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1039848951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1039848950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82c7c1b53ac5e1c4792b78d4ab09cd99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleArena
+  doors:
+  - {fileID: 1998353426}
+  enemies:
+  - {fileID: 2098380650}
+  - {fileID: 23370087}
+  - {fileID: 561495114}
+  - {fileID: 451592471}
+  oneTime: 1
+  onClearActivate: []
+--- !u!61 &1039848952
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1039848950}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 14, y: 8}
+  m_EdgeRadius: 0
+--- !u!4 &1039848953
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1039848950}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -43.5, y: -1.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1063295178
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -25653,7 +25753,6 @@ GameObject:
   - component: {fileID: 1118129898}
   - component: {fileID: 1118129897}
   - component: {fileID: 1118129896}
-  - component: {fileID: 1118129895}
   m_Layer: 0
   m_Name: Arena Wall (2)
   m_TagString: Untagged
@@ -25676,21 +25775,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2104015407}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1118129895
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1118129893}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82c7c1b53ac5e1c4792b78d4ab09cd99, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BattleArena
-  doors: []
-  enemies: []
-  oneTime: 1
 --- !u!61 &1118129896
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -26103,7 +26187,6 @@ GameObject:
   - component: {fileID: 1367594203}
   - component: {fileID: 1367594202}
   - component: {fileID: 1367594205}
-  - component: {fileID: 1367594204}
   m_Layer: 0
   m_Name: Arena Wall
   m_TagString: Untagged
@@ -26408,27 +26491,6 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
---- !u!114 &1367594204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1367594199}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82c7c1b53ac5e1c4792b78d4ab09cd99, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BattleArena
-  doors:
-  - {fileID: 1367594199}
-  - {fileID: 1118129893}
-  enemies:
-  - {fileID: 2027006429}
-  - {fileID: 1311187712}
-  - {fileID: 395732906}
-  - {fileID: 792755461}
-  oneTime: 1
 --- !u!61 &1367594205
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -26589,6 +26651,107 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fea316443f3225943a114c1b5ff885ba, type: 3}
+--- !u!1 &1533742092
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1533742095}
+  - component: {fileID: 1533742094}
+  - component: {fileID: 1533742093}
+  m_Layer: 0
+  m_Name: Battle Arena 2 (Zone)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1533742093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533742092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82c7c1b53ac5e1c4792b78d4ab09cd99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleArena
+  doors:
+  - {fileID: 1367594199}
+  - {fileID: 1118129893}
+  enemies:
+  - {fileID: 2027006429}
+  - {fileID: 1311187712}
+  - {fileID: 395732906}
+  - {fileID: 792755461}
+  oneTime: 1
+  onClearActivate: []
+--- !u!61 &1533742094
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533742092}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 25, y: 11}
+  m_EdgeRadius: 0
+--- !u!4 &1533742095
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533742092}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 46.5, y: 8.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1612946846
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26996,7 +27159,6 @@ GameObject:
   - component: {fileID: 1998353431}
   - component: {fileID: 1998353430}
   - component: {fileID: 1998353429}
-  - component: {fileID: 1998353428}
   m_Layer: 0
   m_Name: Arena Wall (1)
   m_TagString: Untagged
@@ -27013,32 +27175,12 @@ Transform:
   m_GameObject: {fileID: 1998353426}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -36, y: 0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2104015407}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1998353428
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1998353426}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82c7c1b53ac5e1c4792b78d4ab09cd99, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BattleArena
-  doors:
-  - {fileID: 1998353426}
-  enemies:
-  - {fileID: 2098380650}
-  - {fileID: 23370087}
-  - {fileID: 561495114}
-  - {fileID: 451592471}
-  oneTime: 1
 --- !u!61 &1998353429
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -27838,3 +27980,5 @@ SceneRoots:
   - {fileID: 523045051}
   - {fileID: 478439500}
   - {fileID: 847713651}
+  - {fileID: 1533742095}
+  - {fileID: 1039848953}
