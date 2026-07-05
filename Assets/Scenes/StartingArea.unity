@@ -262,7 +262,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3321963881908251708, guid: a1e8d98fb0423274abd09e0d4f861e14, type: 3}
       propertyPath: targetScene
-      value: Stage1
+      value: AllStages
       objectReference: {fileID: 0}
     - target: {fileID: 5742438316261039442, guid: a1e8d98fb0423274abd09e0d4f861e14, type: 3}
       propertyPath: m_Name
@@ -2985,6 +2985,8 @@ MonoBehaviour:
   boundsMax: {x: 46.958237, y: 1000}
   fitZoomToBounds: 1
   maxOrthoSize: 7
+  useZones: 1
+  zoneTransition: 0.35
 --- !u!114 &1886267004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11067,3 +11069,6 @@ SceneRoots:
   - {fileID: 996989181}
   - {fileID: 1847367167}
   - {fileID: 208597655}
+  - {fileID: 798501461}
+  - {fileID: 1267859743}
+  - {fileID: 2033527292}
