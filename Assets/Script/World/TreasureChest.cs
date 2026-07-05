@@ -28,7 +28,9 @@ public class TreasureChest : MonoBehaviour, IInteractable
     public float dropSpacing = 0.6f; // 공중에 한 줄로 띄울 때 간격
 
     [Header("연출 (선택)")]
-    public Sprite openedSprite;      // 열렸을 때 스프라이트(있으면 교체, 없으면 어둡게)
+    public Sprite[] openFrames;      // 열림 프레임 애니(0=닫힘 → 마지막=열림). 있으면 openedSprite보다 우선
+    public float openFps = 14f;      // 프레임 재생 속도
+    public Sprite openedSprite;      // (구) 단일 교체 — openFrames 없을 때 사용(없으면 어둡게)
     public string prompt = "F: 상자 열기";
 
     private bool isOpen;
@@ -80,7 +82,27 @@ public class TreasureChest : MonoBehaviour, IInteractable
         }
 
         Toast.Show("보물 상자를 열었다!", 2f);
-        ApplyOpenedVisual();
+
+        SetOpenedState();
+        if (sr != null && openFrames != null && openFrames.Length > 1) StartCoroutine(PlayOpenAnim());   // 뚜껑 열리는 프레임 애니
+        else ApplyOpenedVisual();
+    }
+
+    // 상호작용/감지 차단(공통)
+    private void SetOpenedState()
+    {
+        isOpen = true;
+        if (col != null) col.enabled = false;
+    }
+
+    private System.Collections.IEnumerator PlayOpenAnim()
+    {
+        float dt = 1f / Mathf.Max(1f, openFps);
+        for (int i = 0; i < openFrames.Length; i++)
+        {
+            if (openFrames[i] != null) sr.sprite = openFrames[i];
+            yield return new WaitForSeconds(dt);
+        }
     }
 
     // 골드 가치를 금화→은화→동화 순서로 환산해 드랍 목록에 추가(각 화폐 baseValue 기준)
@@ -95,14 +117,15 @@ public class TreasureChest : MonoBehaviour, IInteractable
         if (copper != null && rem > 0) { int v = Mathf.Max(1, copper.baseValue); int c = Mathf.RoundToInt(rem / (float)v); if (c > 0) drops.Add(new KeyValuePair<ItemData, int>(copper, c)); }
     }
 
+    // 즉시 '열린 상태' 비주얼(씬 재진입 복원 등 — 애니 없이 마지막 프레임으로)
     private void ApplyOpenedVisual()
     {
-        isOpen = true;
+        SetOpenedState();
         if (sr != null)
         {
-            if (openedSprite != null) sr.sprite = openedSprite;
+            if (openFrames != null && openFrames.Length > 0) sr.sprite = openFrames[openFrames.Length - 1];
+            else if (openedSprite != null) sr.sprite = openedSprite;
             else { Color c = sr.color; sr.color = new Color(c.r * 0.45f, c.g * 0.45f, c.b * 0.45f, 1f); }   // 어둡게 = 열림 표시
         }
-        if (col != null) col.enabled = false;   // 더는 상호작용/감지 대상 아님
     }
 }

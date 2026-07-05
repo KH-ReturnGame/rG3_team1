@@ -16,6 +16,7 @@ public class ShopUI : MonoBehaviour
     private int merchant;                                     // 0=재료 1=포션 2=탐험가
     private bool open;
     private ItemData held; private int heldCount;            // 손에 든 아이템(판매 탭)
+    private int heldRot;                                      // [R] 회전 단계(0~3)
     private string hoverInfo;                                // 판매탭 호버 시 가격 줄(구매탭은 null)
     private GUIStyle title, sec, tipName, body, count, gold, slotName, price, tabOn, tabOff, val, heldNum, svc;
     private Texture2D white;
@@ -43,9 +44,13 @@ public class ShopUI : MonoBehaviour
 
     public void Open(int m = 0) { merchant = m; buyItems = null; tab = 0; open = true; Inventory.ShopUIOpen = true; }
     public void Close() { ReturnHeld(); open = false; Inventory.ShopUIOpen = false; }
-    void Update() { if (open && Input.GetKeyDown(KeyCode.Escape)) Close(); }
+    void Update()
+    {
+        if (open && Input.GetKeyDown(KeyCode.Escape)) Close();
+        if (open && held != null && Input.GetKeyDown(KeyCode.R)) heldRot = (heldRot + 1) & 3;   // [R] 회전
+    }
 
-    private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; }
+    private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; heldRot = 0; }
     private static int Value(ItemData it) { return it != null ? Mathf.Max(1, it.baseValue) : 1; }
     private static float SellRate(ItemData it) { return (it != null && it.sellAtFullValue) ? 1f : 0.8f; }   // 화폐는 전액 판매
 
@@ -109,20 +114,13 @@ public class ShopUI : MonoBehaviour
         EnsureBuyItems();
         ItemData hover = null;
         float lx = x + 20f, rx = x + 20f + panelW + gap;
-        GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리  (집은 것 = 칸 클릭으로 넣기)", sec);
+        GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리  (원하는 칸에 직접 놓기)", sec);
         GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), "구매  (희귀도순 · 클릭 = 1개씩 집기)", sec);
 
-        // 왼쪽: 플레이어 인벤토리 (집은 구매품을 여기 칸 클릭으로 내려놓음)
-        var inv = Inventory.Instance.slots;
-        for (int i = 0; i < Cap; i++)
-        {
-            Rect r = SlotRect(lx, gy, i, ss, pad);
-            DrawSlotBg(r, false);
-            ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
-            int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) hover = it; }
-            if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
-        }
+        // 왼쪽: 실제 인벤 그리드 — 산 것을 원하는 칸에 직접 배치(자동배치 없음, [R] 회전)
+        float gridH2 = Rows * (ss + pad) + pad;
+        var hvItem = InvGridGUI.Draw(new Rect(lx, gy, panelW, gridH2), m, click, ref held, ref heldCount, ref heldRot);
+        if (hvItem != null) hover = hvItem;
 
         // 오른쪽: 상점 구매 목록 (클릭 = 마우스에 1개씩 집기/스택)
         if (buyItems != null)
@@ -163,7 +161,7 @@ public class ShopUI : MonoBehaviour
         if (held != null && held != it) return;                              // 다른 아이템 들고 있으면 먼저 내려놓기
         if (held == it && heldCount >= Mathf.Max(1, it.maxStack)) return;     // 스택 한도 도달
         if (!GameManager.Instance.TrySpendGold(price)) return;                // 골드 부족
-        if (held == null) { held = it; heldCount = 1; } else heldCount++;     // 집기 / 스택 +1
+        if (held == null) { held = it; heldCount = 1; heldRot = 0; } else heldCount++;   // 집기 / 스택 +1
     }
 
     // ── 판매 탭 (인벤 ↔ 판매란) ──
@@ -174,16 +172,10 @@ public class ShopUI : MonoBehaviour
         GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리", sec);
         GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), "판매란  (판매 80% / 되사기 100%)", sec);
 
-        var inv = Inventory.Instance.slots;
-        for (int i = 0; i < Cap; i++)
-        {
-            Rect r = SlotRect(lx, gy, i, ss, pad);
-            DrawSlotBg(r, false);
-            ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
-            int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) { hover = it; hoverInfo = "판매  " + Mathf.RoundToInt(Value(it) * SellRate(it)) + " G"; } }
-            if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
-        }
+        // 왼쪽: 실제 인벤 그리드 — 집어서 판매란에 클릭, 되산 것도 직접 배치([R] 회전)
+        float gridH2 = Rows * (ss + pad) + pad;
+        var hvItem = InvGridGUI.Draw(new Rect(lx, gy, panelW, gridH2), m, click, ref held, ref heldCount, ref heldRot);
+        if (hvItem != null) { hover = hvItem; hoverInfo = "판매  " + Mathf.RoundToInt(Value(hvItem) * SellRate(hvItem)) + " G"; }
         for (int i = 0; i < Cap; i++)
         {
             Rect r = SlotRect(rx, gy, i, ss, pad);
@@ -199,32 +191,7 @@ public class ShopUI : MonoBehaviour
     private Rect SlotRect(float ox, float oy, int i, float ss, float pad)
     { int r = i / Cols, c = i % Cols; return new Rect(ox + pad + c * (ss + pad), oy + pad + r * (ss + pad), ss, ss); }
 
-    // 인벤 미니뷰 클릭. (그리드 인벤 전환 후) 집기/같은칸 스택은 유지, 놓기는 '자동 배치'로.
-    private void ClickInv(int i)
-    {
-        var inv = Inventory.Instance;
-        if (inv == null) return;
-        var s = (i >= 0 && i < inv.slots.Count) ? inv.slots[i] : null;
-        if (held == null)
-        {
-            if (s != null && !s.IsEmpty) { held = s.item; heldCount = s.count; s.Clear(); inv.RaiseChanged(); }   // 집기
-        }
-        else if (s != null && !s.IsEmpty && s.item == held)
-        {
-            int space = Mathf.Max(1, held.maxStack) - s.count;                                           // 같은 아이템 → 스택
-            int move = Mathf.Min(space, heldCount);
-            s.count += move; heldCount -= move;
-            if (heldCount <= 0) { held = null; heldCount = 0; }
-            inv.RaiseChanged();
-        }
-        else
-        {
-            int left = inv.Add(held, heldCount);                                                          // 자동 배치(그리드가 자리 찾음)
-            if (left > 0 && left == heldCount) Toast.Show("소지품에 자리가 없다", 1.5f);
-            heldCount = left;
-            if (heldCount <= 0) held = null;
-        }
-    }
+    // (구 ClickInv 삭제 — 인벤 상호작용은 InvGridGUI가 실제 그리드로 처리: 직접 배치, 자동배치 없음)
 
     private void ClickSell(int i)
     {
@@ -233,7 +200,7 @@ public class ShopUI : MonoBehaviour
             int unit = Mathf.RoundToInt(Value(held) * SellRate(held));
             if (GameManager.Instance != null) GameManager.Instance.AddGold(unit * heldCount);
             AddSold(held, heldCount);
-            held = null; heldCount = 0;
+            held = null; heldCount = 0; heldRot = 0;
         }
         else if (i < sold.Count && sold[i].item != null)
         {

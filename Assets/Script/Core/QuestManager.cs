@@ -34,6 +34,7 @@ public class Quest
     public string ObjectiveText()
     {
         if (!string.IsNullOrEmpty(objectiveOverride)) return objectiveOverride;
+        if (progress >= targetCount) return "목표 달성! — 게시판에서 보상 수령";
         return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")";
     }
 }
@@ -100,6 +101,7 @@ public class QuestManager : MonoBehaviour
     public bool IsAccepted(Quest q) => q != null && accepted.Contains(q);
     public bool IsCompleted(Quest q) => q != null && completed.Contains(q.id);
     public bool IsUnlocked(Quest q) => q != null && (string.IsNullOrEmpty(q.prereqId) || completed.Contains(q.prereqId));
+    public bool IsReady(Quest q) => q != null && accepted.Contains(q) && q.progress >= q.targetCount;   // 목표 달성 — 게시판 수령 대기
 
     // ── 추적(트래커 HUD/길찾기 대상) ──
     [System.NonSerialized] public Quest tracked;
@@ -140,25 +142,38 @@ public class QuestManager : MonoBehaviour
     }
     public void Abandon(Quest q) { if (q == null) return; q.progress = 0; accepted.Remove(q); Changed(); }
 
+    // 목표 달성 시 즉시 완료하지 않음 — '보상 대기' 상태로 남고, 게시판에서 Claim으로 수령(퀘스트 보드 왕복 루프).
     public void ReportGather(string itemId, int amount)
     {
         if (string.IsNullOrEmpty(itemId) || amount <= 0) return;
-        var done = new List<Quest>(); bool changed = false;
+        bool changed = false;
         foreach (var q in accepted)
             if (q.goal == QuestGoal.Gather && q.targetId == itemId && q.progress < q.targetCount)
-            { q.progress = Mathf.Min(q.targetCount, q.progress + amount); changed = true; if (q.progress >= q.targetCount) done.Add(q); }
-        foreach (var q in done) Complete(q);
+            {
+                q.progress = Mathf.Min(q.targetCount, q.progress + amount); changed = true;
+                if (q.progress >= q.targetCount) Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+            }
         if (changed) Changed();
     }
     public void ReportKill(string killId)
     {
         if (string.IsNullOrEmpty(killId)) return;
-        var done = new List<Quest>(); bool changed = false;
+        bool changed = false;
         foreach (var q in accepted)
             if (q.goal == QuestGoal.Kill && q.targetId == killId && q.progress < q.targetCount)
-            { q.progress = Mathf.Min(q.targetCount, q.progress + 1); changed = true; if (q.progress >= q.targetCount) done.Add(q); }
-        foreach (var q in done) Complete(q);
+            {
+                q.progress = Mathf.Min(q.targetCount, q.progress + 1); changed = true;
+                if (q.progress >= q.targetCount) Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+            }
         if (changed) Changed();
+    }
+
+    // 게시판에서 보상 수령(목표 달성한 퀘스트만)
+    public void Claim(Quest q)
+    {
+        if (!IsReady(q)) return;
+        Complete(q);
+        Changed();
     }
 
     private void Complete(Quest q)
@@ -167,7 +182,7 @@ public class QuestManager : MonoBehaviour
         if (!string.IsNullOrEmpty(q.rewardItemId) && Inventory.Instance != null) { var it = ItemDatabase.Get(q.rewardItemId); if (it != null) Inventory.Instance.Add(it, Mathf.Max(1, q.rewardItemCount)); }
         accepted.Remove(q);
         if (!completed.Contains(q.id)) completed.Add(q.id);
-        Toast.Show("퀘스트 완료: " + q.title, 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
+        Toast.Show("보상 수령: " + q.title + (q.rewardGold > 0 ? "  (+" + q.rewardGold + "G)" : ""), 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
     }
 
     // ── 세이브/로드 ──

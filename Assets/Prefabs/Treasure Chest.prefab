@@ -83,7 +83,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2305204071527019509, guid: 7810966f0f690954c87305933cabf2b0, type: 3}
+  m_Sprite: {fileID: -6929924221510541977, guid: 19e07f9d107e445408633f50457d456e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -131,7 +131,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
-    oldSize: {x: 1.0625, y: 0.9375}
+    oldSize: {x: 1.0625, y: 0.90625}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 1
@@ -159,5 +159,14 @@ MonoBehaviour:
   goldCoinId: gold_coin
   dropSize: 0.6
   dropSpacing: 0.6
+  openFrames:
+  - {fileID: -6929924221510541977, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: -8385124645873774784, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: -2859092616773691244, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: 2094815519824226833, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: -2983415483628201805, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: 1880024034202856855, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  - {fileID: -3888567672798316567, guid: 19e07f9d107e445408633f50457d456e, type: 3}
+  openFps: 14
   openedSprite: {fileID: 0}
   prompt: "F: \uC0C1\uC790 \uC5F4\uAE30"

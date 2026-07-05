@@ -50,7 +50,7 @@ public class HelpTrigger : MonoBehaviour
                 break;
             case HelpTopic.ChargeJump:
                 title = "S + Space";
-                body = "S키를 누른 후 점프키를 누르면 점프 차징 상태에 들어갈 수 있습니다.\n2단 점프를 한 것과 비슷한 점프력을 보여주며, 이를 통해 2단 점프로만은 가지 못하는 곳을 갈 수 있을지도 모릅니다.";
+                body = "S키를 누른 후 점프키를 누르면 점프 차징 상태에 들어갈 수 있습니다.\n2단 점프를 한 것과 비슷한 점프력을 보여주며, 이를 통해 2단 점프로만은 가지 못하는 곳을 갈 수 있을지도 모릅니다.\n※ 통과형 발판 위에서는 S+Space가 '발판 아래로 하강'이 됩니다.";
                 break;
             case HelpTopic.Parry:
                 title = "패링";

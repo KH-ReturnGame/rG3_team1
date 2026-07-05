@@ -94,7 +94,7 @@ public class ItemPickup : MonoBehaviour, IInteractable
         shadowSr = go.AddComponent<SpriteRenderer>();
         shadowSr.sprite = ShadowSprite();
         shadowSr.color = new Color(0f, 0f, 0f, 0.4f);
-        shadowSr.sortingOrder = 0;                               // 아이템(1) 아래
+        shadowSr.sortingOrder = 9;                               // 아이템(10) 아래, 상자(5) 위
         shadow = go.transform;
         shadow.localScale = Vector3.one * shadowBaseScale;
     }
@@ -161,7 +161,7 @@ public class ItemPickup : MonoBehaviour, IInteractable
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = item.icon;
-        sr.sortingOrder = 1;
+        sr.sortingOrder = 10;   // 상자(5) 등 프롭보다 앞 — 드랍이 상자 뒤로 숨지 않게
 
         float scale = 1f;
         if (item.icon != null)

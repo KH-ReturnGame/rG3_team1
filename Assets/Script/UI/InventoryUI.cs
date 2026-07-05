@@ -29,6 +29,9 @@ public class InventoryUI : MonoBehaviour
     private bool open;
     private ItemData heldItem;
     private int heldCount;
+    private int heldRot;                                                             // R 회전 단계(0~3 = 0/90/180/270도)
+    private int HeldW => heldItem == null ? 1 : ((heldRot & 1) == 1 ? heldItem.GridH : heldItem.GridW);
+    private int HeldH => heldItem == null ? 1 : ((heldRot & 1) == 1 ? heldItem.GridW : heldItem.GridH);
     private Transform playerT;
 
     private int selectedCat;   // 0=전체 1=소비 2=재료 3=장비
@@ -73,6 +76,7 @@ public class InventoryUI : MonoBehaviour
         if (Input.GetKeyDown(toggleKey)) { if (open && panelTab == 0) { open = false; ReturnHeld(); } else { open = true; panelTab = 0; hoodUpgrade = false; TutorialFlow.OnBackpackOpened(); } }
         if (Input.GetKeyDown(hoodKey))   { if (open && panelTab == 1) { open = false; ReturnHeld(); } else { open = true; panelTab = 1; hoodUpgrade = false; } }   // C키 = 조회 전용
         if (open && Input.GetKeyDown(KeyCode.Escape)) { open = false; ReturnHeld(); hoodUpgrade = false; }   // ESC로도 닫기
+        if (open && heldItem != null && Input.GetKeyDown(KeyCode.R)) heldRot = (heldRot + 1) & 3;   // [R] 집은 아이템 회전
         Inventory.InvUIOpen = open;
     }
 
@@ -87,8 +91,10 @@ public class InventoryUI : MonoBehaviour
 
         int cols = inv.gridWidth, rows = inv.gridHeight;
 
-        // ── 치수 ──
-        curSlot = Mathf.Clamp(UIScale.H * slotRatio, 44f, 68f);
+        // ── 치수 ── 그리드 영역 픽셀 크기는 6×6 기준으로 '고정' — 칸 수가 적을수록 칸이 커짐(창 크기 유지)
+        float baseCell = Mathf.Clamp(UIScale.H * slotRatio, 44f, 68f);
+        float refPx = 6f * (baseCell + pad) + pad;
+        curSlot = (refPx - pad) / cols - pad;
         float titleH = 36f;
         float catH = 28f;
         float eqCell = curSlot * 0.92f;                                  // 장신구 3×3 그리드 칸
@@ -193,21 +199,21 @@ public class InventoryUI : MonoBehaviour
                 foreach (var wv in eq.worn)
                 {
                     if (wv == null || wv.item == null) continue;
-                    Rect fr = EqFootprint(eqLeft, eqTop, eqCell, wv.x, wv.y, wv.item.GridW, wv.item.GridH);
+                    Rect fr = EqFootprint(eqLeft, eqTop, eqCell, wv.x, wv.y, wv.W, wv.H);
                     bool hover = heldItem == null && fr.Contains(mouse);
                     UITheme.FillV(fr, hover ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
                     UITheme.Border2(fr, 1.5f, hover ? UITheme.Lighten(UITheme.Warm, 0.2f) : UITheme.A(UITheme.Warm, 0.85f));
                     UITheme.RarityRing(fr, wv.item.RarityColor());
-                    DrawIcon(fr, wv.item, 1, false);
+                    DrawIcon(fr, wv.item, 1, false, wv.rot);
                     if (hover) hoverWorn = wv;
                 }
 
-            // 장착 고스트(들고 있는 게 장신구일 때)
+            // 장착 고스트(들고 있는 게 장신구일 때 — [R] 회전 반영)
             if (heldItem != null && heldItem.kind == ItemData.ItemKind.Equipment && heldCount == 1 && eq != null && eqRect.Contains(mouse))
             {
-                EqAnchor(mouse, eqLeft, eqTop, eqCell, heldItem, out int eax, out int eay);
-                bool okp = eq.CanPlace(heldItem, eax, eay);
-                Rect gr = EqFootprint(eqLeft, eqTop, eqCell, eax, eay, heldItem.GridW, heldItem.GridH);
+                EqAnchor(mouse, eqLeft, eqTop, eqCell, HeldW, HeldH, out int eax, out int eay);
+                bool okp = eq.CanPlace(heldItem, eax, eay, heldRot);
+                Rect gr = EqFootprint(eqLeft, eqTop, eqCell, eax, eay, HeldW, HeldH);
                 UITheme.Fill(gr, UITheme.A(okp ? cOk : cBad, 0.30f));
                 UITheme.Border2(gr, 2f, UITheme.A(okp ? cOk : cBad, 0.85f));
             }
@@ -237,14 +243,14 @@ public class InventoryUI : MonoBehaviour
             foreach (var s in inv.slots)
             {
                 if (s == null || s.IsEmpty) continue;
-                Rect fr = FootprintRect(s.x, s.y, s.item.GridW, s.item.GridH);
+                Rect fr = FootprintRect(s.x, s.y, s.W, s.H);
                 bool hover = heldItem == null && fr.Contains(mouse);
                 bool dim = !MatchesCat(s.item);
 
                 UITheme.FillV(fr, hover ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
                 UITheme.Border2(fr, 1.5f, hover ? UITheme.Lighten(UITheme.Border, 0.22f) : UITheme.Border);
                 UITheme.RarityRing(fr, s.item.RarityColor());
-                DrawIcon(fr, s.item, s.count, dim);
+                DrawIcon(fr, s.item, s.count, dim, s.rot);
                 int hk = HotkeyOf(s.item);
                 if (hk > 0)   // 핫키 등록된 아이템 = 앰버 번호 배지
                 {
@@ -255,12 +261,12 @@ public class InventoryUI : MonoBehaviour
                 if (hover) hoverEntry = s;
             }
 
-            // 들고 있는 아이템: 발자국 고스트(초록/빨강) 미리보기
+            // 들고 있는 아이템: 발자국 고스트(초록/빨강) 미리보기 — [R] 회전 반영
             if (heldItem != null && gridRect.Contains(mouse))
             {
-                GetAnchor(mouse, heldItem, out int ax, out int ay);
-                bool okPlace = inv.CanPlace(heldItem, ax, ay);
-                Rect gr = FootprintRect(ax, ay, heldItem.GridW, heldItem.GridH);
+                GetAnchor(mouse, HeldW, HeldH, out int ax, out int ay);
+                bool okPlace = inv.CanPlace(heldItem, ax, ay, heldRot);
+                Rect gr = FootprintRect(ax, ay, HeldW, HeldH);
                 UITheme.Fill(gr, UITheme.A(okPlace ? cOk : cBad, 0.30f));
                 UITheme.Border2(gr, 2f, UITheme.A(okPlace ? cOk : cBad, 0.85f));
             }
@@ -273,12 +279,18 @@ public class InventoryUI : MonoBehaviour
             }
         }
 
-        // 들고 있는 아이템은 마우스에 발자국 크기로
+        // 들고 있는 아이템은 마우스에 발자국 크기로([R] 회전 반영 + 힌트)
         if (heldItem != null)
         {
-            float hw = heldItem.GridW * (curSlot + pad) - pad;
-            float hh = heldItem.GridH * (curSlot + pad) - pad;
-            DrawIcon(new Rect(mouse.x - hw * 0.5f, mouse.y - hh * 0.5f, hw, hh), heldItem, heldCount, false);
+            float hw = HeldW * (curSlot + pad) - pad;
+            float hh = HeldH * (curSlot + pad) - pad;
+            DrawIcon(new Rect(mouse.x - hw * 0.5f, mouse.y - hh * 0.5f, hw, hh), heldItem, heldCount, false, heldRot);
+            if (heldItem.GridW != heldItem.GridH)
+            {
+                hotkeyNumStyle.normal.textColor = new Color(1f, 1f, 1f, 0.75f);
+                GUI.Label(new Rect(mouse.x - 40f, mouse.y + hh * 0.5f + 4f, 80f, 18f), "[R] 회전", hotkeyNumStyle);
+                hotkeyNumStyle.normal.textColor = new Color(0.10f, 0.06f, 0.02f);
+            }
         }
 
         if (ctxEntry != null) DrawContextMenu(mouse);
@@ -305,13 +317,13 @@ public class InventoryUI : MonoBehaviour
         return true;
     }
 
-    // 들고 있는 아이템의 발자국 기준점(마우스 셀이 발자국 중앙쯤 오도록)
-    private void GetAnchor(Vector2 m, ItemData item, out int ax, out int ay)
+    // 들고 있는 아이템의 발자국 기준점(마우스 셀이 발자국 중앙쯤 오도록). w/h = 회전 반영된 유효 크기.
+    private void GetAnchor(Vector2 m, int w, int h, out int ax, out int ay)
     {
         CellAt(m, new Rect(gridLeft, gridTop, 99999f, 99999f), out int cx, out int cy);
         var inv = Inventory.Instance;
-        ax = Mathf.Clamp(cx - (item.GridW - 1) / 2, 0, Mathf.Max(0, inv.gridWidth - item.GridW));
-        ay = Mathf.Clamp(cy - (item.GridH - 1) / 2, 0, Mathf.Max(0, inv.gridHeight - item.GridH));
+        ax = Mathf.Clamp(cx - (w - 1) / 2, 0, Mathf.Max(0, inv.gridWidth - w));
+        ay = Mathf.Clamp(cy - (h - 1) / 2, 0, Mathf.Max(0, inv.gridHeight - h));
     }
 
     private Inventory.Slot EntryAtMouse(Inventory inv, Vector2 m, Rect gridRect)
@@ -320,23 +332,23 @@ public class InventoryUI : MonoBehaviour
         return inv.EntryAt(cx, cy);
     }
 
-    // ── 그리드 클릭: 집기 / 놓기 / 스택 / 교체 ──
+    // ── 그리드 클릭: 집기 / 놓기 / 스택 / 교체 (회전 반영) ──
     private void HandleGridClick(Inventory inv, Vector2 m, Rect gridRect)
     {
         if (heldItem == null)
         {
             var e = EntryAtMouse(inv, m, gridRect);
-            if (e != null) { heldItem = e.item; heldCount = e.count; inv.slots.Remove(e); inv.RaiseChanged(); }
+            if (e != null) { heldItem = e.item; heldCount = e.count; heldRot = e.rot; inv.slots.Remove(e); inv.RaiseChanged(); }
             return;
         }
 
-        GetAnchor(m, heldItem, out int ax, out int ay);
+        GetAnchor(m, HeldW, HeldH, out int ax, out int ay);
 
         // 1) 빈 자리면 그대로 놓기
-        if (inv.CanPlace(heldItem, ax, ay))
+        if (inv.CanPlace(heldItem, ax, ay, heldRot))
         {
-            inv.Place(heldItem, heldCount, ax, ay);
-            heldItem = null; heldCount = 0;
+            inv.Place(heldItem, heldCount, ax, ay, heldRot);
+            heldItem = null; heldCount = 0; heldRot = 0;
             inv.RaiseChanged();
             return;
         }
@@ -346,7 +358,7 @@ public class InventoryUI : MonoBehaviour
         foreach (var s in inv.slots)
         {
             if (s == null || s.IsEmpty) continue;
-            if (ax < s.x + s.item.GridW && s.x < ax + heldItem.GridW && ay < s.y + s.item.GridH && s.y < ay + heldItem.GridH)
+            if (ax < s.x + s.W && s.x < ax + HeldW && ay < s.y + s.H && s.y < ay + HeldH)
                 overlaps.Add(s);
         }
         if (overlaps.Count != 1) return;   // 여러 개와 겹치면 놓을 수 없음
@@ -357,16 +369,16 @@ public class InventoryUI : MonoBehaviour
             // 같은 아이템 → 스택 합치기
             int put = Mathf.Min(heldItem.maxStack - t.count, heldCount);
             t.count += put; heldCount -= put;
-            if (heldCount <= 0) { heldItem = null; heldCount = 0; }
+            if (heldCount <= 0) { heldItem = null; heldCount = 0; heldRot = 0; }
             inv.RaiseChanged();
         }
-        else if (inv.CanPlace(heldItem, ax, ay, t))
+        else if (inv.CanPlace(heldItem, ax, ay, heldRot, t))
         {
             // 교체(그 엔트리만 비켜준 자리에 들어가면 서로 교환)
-            var ti = t.item; int tc = t.count;
+            var ti = t.item; int tc = t.count; int tr = t.rot;
             inv.slots.Remove(t);
-            inv.Place(heldItem, heldCount, ax, ay);
-            heldItem = ti; heldCount = tc;
+            inv.Place(heldItem, heldCount, ax, ay, heldRot);
+            heldItem = ti; heldCount = tc; heldRot = tr;
             inv.RaiseChanged();
         }
     }
@@ -506,7 +518,7 @@ public class InventoryUI : MonoBehaviour
             Vector3 basePos = (Player() != null ? Player().position : Vector3.zero);
             SpawnWorldItem(heldItem, heldCount, basePos + Vector3.up * 0.3f);
         }
-        heldItem = null; heldCount = 0;
+        heldItem = null; heldCount = 0; heldRot = 0;
         Inventory.Instance.RaiseChanged();
     }
 
@@ -526,7 +538,7 @@ public class InventoryUI : MonoBehaviour
     private void ReturnHeld()
     {
         if (heldItem != null && Inventory.Instance != null) Inventory.Instance.Add(heldItem, heldCount);
-        heldItem = null; heldCount = 0;
+        heldItem = null; heldCount = 0; heldRot = 0;
     }
 
     // B 없이도 닫기(X 버튼) — 들고 있던 아이템은 되돌림
@@ -554,11 +566,11 @@ public class InventoryUI : MonoBehaviour
         cy = Mathf.Clamp(Mathf.FloorToInt((m.y - eqTop - pad) / (cell + pad)), 0, Equipment.GridH - 1);
     }
 
-    private void EqAnchor(Vector2 m, float eqLeft, float eqTop, float cell, ItemData item, out int ax, out int ay)
+    private void EqAnchor(Vector2 m, float eqLeft, float eqTop, float cell, int w, int h, out int ax, out int ay)
     {
         EqCellAt(m, eqLeft, eqTop, cell, out int cx, out int cy);
-        ax = Mathf.Clamp(cx - (item.GridW - 1) / 2, 0, Mathf.Max(0, Equipment.GridW - item.GridW));
-        ay = Mathf.Clamp(cy - (item.GridH - 1) / 2, 0, Mathf.Max(0, Equipment.GridH - item.GridH));
+        ax = Mathf.Clamp(cx - (w - 1) / 2, 0, Mathf.Max(0, Equipment.GridW - w));
+        ay = Mathf.Clamp(cy - (h - 1) / 2, 0, Mathf.Max(0, Equipment.GridH - h));
     }
 
     // 장신구 그리드 클릭: 집기(해제) / 발자국 배치 / 1:1 교체
@@ -572,17 +584,17 @@ public class InventoryUI : MonoBehaviour
         {
             EqCellAt(m, eqLeft, eqTop, cell, out int cx, out int cy);
             var e = eq.EntryAt(cx, cy);
-            if (e != null) { heldItem = e.item; heldCount = 1; eq.Remove(e); Inventory.Instance.RaiseChanged(); }
+            if (e != null) { heldItem = e.item; heldCount = 1; heldRot = e.rot; eq.Remove(e); Inventory.Instance.RaiseChanged(); }
             return;
         }
 
         if (heldItem.kind != ItemData.ItemKind.Equipment || heldCount != 1) return;   // 장신구 1개 단위만 장착
-        EqAnchor(m, eqLeft, eqTop, cell, heldItem, out int ax, out int ay);
+        EqAnchor(m, eqLeft, eqTop, cell, HeldW, HeldH, out int ax, out int ay);
 
-        if (eq.CanPlace(heldItem, ax, ay))
+        if (eq.CanPlace(heldItem, ax, ay, heldRot))
         {
-            eq.Place(heldItem, ax, ay);
-            heldItem = null; heldCount = 0;
+            eq.Place(heldItem, ax, ay, heldRot);
+            heldItem = null; heldCount = 0; heldRot = 0;
             Inventory.Instance.RaiseChanged();
             return;
         }
@@ -592,28 +604,42 @@ public class InventoryUI : MonoBehaviour
         foreach (var s in eq.worn)
         {
             if (s == null || s.item == null) continue;
-            if (ax < s.x + s.item.GridW && s.x < ax + heldItem.GridW && ay < s.y + s.item.GridH && s.y < ay + heldItem.GridH)
+            if (ax < s.x + s.W && s.x < ax + HeldW && ay < s.y + s.H && s.y < ay + HeldH)
                 overlaps.Add(s);
         }
         if (overlaps.Count != 1) return;
         var t = overlaps[0];
-        if (eq.CanPlace(heldItem, ax, ay, t))
+        if (eq.CanPlace(heldItem, ax, ay, heldRot, t))
         {
-            var ti = t.item;
+            var ti = t.item; int tr = t.rot;
             eq.Remove(t);
-            eq.Place(heldItem, ax, ay);
-            heldItem = ti; heldCount = 1;
+            eq.Place(heldItem, ax, ay, heldRot);
+            heldItem = ti; heldCount = 1; heldRot = tr;
             Inventory.Instance.RaiseChanged();
         }
     }
 
-    private void DrawIcon(Rect r, ItemData item, int count, bool dim)
+    private void DrawIcon(Rect r, ItemData item, int count, bool dim, int rot = 0)
     {
-        Rect inner = new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8);
         var prev = GUI.color;
         if (dim) GUI.color = new Color(1f, 1f, 1f, 0.30f);
-        if (item.icon != null) GUI.DrawTexture(inner, item.icon.texture, ScaleMode.ScaleToFit);
-        else GUI.Label(inner, item.itemName, itemLabelStyle);
+        if (item.icon != null)
+        {
+            rot &= 3;
+            if (rot != 0)
+            {
+                // rot*90도 회전해 그리기(홀수 단계는 발자국이 스왑됐으니 그리기 사각형도 스왑해서 중앙 정렬)
+                var mtx = GUI.matrix;
+                GUIUtility.RotateAroundPivot(rot * 90f, r.center);
+                Rect rr = (rot & 1) == 1
+                    ? new Rect(r.center.x - r.height * 0.5f + 4, r.center.y - r.width * 0.5f + 4, r.height - 8, r.width - 8)
+                    : new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8);
+                GUI.DrawTexture(rr, item.icon.texture, ScaleMode.ScaleToFit);
+                GUI.matrix = mtx;
+            }
+            else GUI.DrawTexture(new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8), item.icon.texture, ScaleMode.ScaleToFit);
+        }
+        else GUI.Label(new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8), item.itemName, itemLabelStyle);
         GUI.color = prev;
         if (count > 1) GUI.Label(new Rect(r.x, r.y, r.width - 4, r.height - 2), count.ToString(), countStyle);
     }
@@ -713,17 +739,17 @@ public class InventoryUI : MonoBehaviour
         GUI.Label(spriteBox, "캐릭터\n(레드 후드)\n— 추후 —", tabStyle);
 
         float sx = cx + spriteW + 12f, sw = cw - spriteW - 12f;
-        int invCols = Inventory.Instance != null ? Inventory.Instance.gridWidth : 6;
-        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "배낭 확장" };
+        int bagDim = Inventory.Instance != null ? Inventory.Instance.gridWidth : 4;
+        string[] names = { "체력 모듈", "재생력 모듈", "공격력 모듈", "적응력 모듈", "행운 모듈", "미니맵 모듈", "주머니 확장" };
         string[] descs = {
             "체력 한 칸씩 증가", "체력 자동 재생력 증가",
             "물리 공격력 증가", "마법 공격력 + 기프트 효율 상승", "골드 획득량 + 전리품 획득량 + 채집물 조우 확률 상승",
             "미니맵 — 엔지니어가 망토 수리 시 장착해 줌. 탐험해 발견한 구역의 상자·출구·적·채집물 표시. [,] 토글 · 지도는 [M]",
-            "소지품 그리드 가로 +1열 (현재 " + invCols + "열, 최대 " + gm.maxInvCols + "열)"
+            "소지품 칸 확장 — 현재 " + bagDim + "×" + bagDim + " (4×4 → 5×5 → 6×6)"
         };
-        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, invCols - 6 };
+        int[] levels = { Mathf.Max(0, gm.maxHearts - 3), gm.statRegen, gm.statAttack, gm.statAdapt, gm.statLuck, gm.moduleMinimap, gm.bagLevel };
         int[] costs = { 5, 2, 1, 1, 2, 3, 4 };
-        int[] maxLv = { 99, 99, 99, 99, 99, 1, gm.maxInvCols - 6 };
+        int[] maxLv = { 99, 99, 99, 99, 99, 1, GameManager.MaxBagLevel };
         int rows = names.Length;
         float rh = Mathf.Clamp(bodyH / rows, 22f, 40f);
         string hoverDesc = null;

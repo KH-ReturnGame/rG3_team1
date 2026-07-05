@@ -115,7 +115,7 @@ public static class SaveSystem
             data.invCols = Inventory.Instance.gridWidth;   // 배낭 확장(열 수) 저장
             foreach (var s in Inventory.Instance.slots)
                 if (s != null && !s.IsEmpty)
-                    data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count, px = s.x, py = s.y });
+                    data.items.Add(new SavedItem { id = ItemDatabase.Key(s.item), count = s.count, px = s.x, py = s.y, rot = s.rot });
         }
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
         if (QuestManager.Instance != null) { data.acceptedQuests = QuestManager.Instance.SaveAccepted(); data.completedQuests = new List<string>(QuestManager.Instance.completed); }
@@ -137,7 +137,11 @@ public static class SaveSystem
         }
         if (Inventory.Instance != null)
         {
-            if (data.invCols > 0) Inventory.Instance.gridWidth = Mathf.Max(Inventory.Instance.gridWidth, data.invCols);   // 확장 열 복원(먼저 — 배치 공간 확보)
+            // 주머니 크기 복원(먼저 — 배치 공간 확보). 옛 세이브(invCols 없음)에 아이템이 있으면 6×6 시절 → 6으로.
+            int dim = data.invCols > 0 ? Mathf.Clamp(data.invCols, 4, 6)
+                    : (data.items != null && data.items.Count > 0 ? 6 : 4);
+            if (GameManager.Instance != null) GameManager.Instance.bagLevel = dim - 4;
+            Inventory.Instance.ApplySize(dim);
             Inventory.Instance.LoadFromSaved(data.items);
         }
         if (Equipment.Instance != null)

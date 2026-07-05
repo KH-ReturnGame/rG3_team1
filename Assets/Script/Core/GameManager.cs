@@ -95,14 +95,17 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
-    // 배낭 확장(엔지니어): 개조 포인트로 소지품 그리드 가로 +1열. 성공 시 true.
-    public int maxInvCols = 10;   // 확장 상한(기본 6 + 4회)
+    // 주머니 확장(엔지니어): 개조 포인트로 소지품 4×4 → 5×5 → 6×6. 성공 시 true.
+    public int bagLevel;                 // 0=4×4, 1=5×5, 2=6×6
+    public const int MaxBagLevel = 2;
     public bool TryExpandBackpack(int cost)
     {
-        if (Inventory.Instance == null || Inventory.Instance.gridWidth >= maxInvCols || modPoints < cost) return false;
+        if (Inventory.Instance == null || bagLevel >= MaxBagLevel || modPoints < cost) return false;
         modPoints -= cost;
-        Inventory.Instance.ExpandColumns(1);
-        AcquireBanner.Show("배낭 확장", "소지품 칸이 가로 한 열 늘었다.  (" + Inventory.Instance.gridWidth + "열)", null, "엔지니어 — 개조 완료");
+        bagLevel++;
+        int dim = 4 + bagLevel;
+        Inventory.Instance.ApplySize(dim);
+        AcquireBanner.Show("주머니 확장", "소지품이 " + dim + "×" + dim + " 칸으로 늘었다.", null, "엔지니어 — 개조 완료");
         OnStatsChanged?.Invoke();
         return true;
     }

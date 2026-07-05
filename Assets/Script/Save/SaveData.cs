@@ -7,6 +7,7 @@ public class SavedItem
     public string id;
     public int count;
     public int px = -1, py = -1;   // 그리드 배치 좌표(-1 = 미기록 → 자동 배치. 옛 세이브 호환)
+    public int rot;                // R 회전 단계(0~3 = 0/90/180/270도)
 }
 
 [System.Serializable]

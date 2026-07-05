@@ -199,10 +199,8 @@ public class PlayerController : MonoBehaviour
     public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
     private Vector3 lastSafePos;
 
-    [Header("원웨이 플랫폼 (아래키 더블탭으로 통과)")]
+    [Header("원웨이 플랫폼 (S+Space로 하강)")]
     public float dropThroughTime = 0.35f;            // 통과하는 동안 발판과 충돌을 끄는 시간
-    public float dropDoubleTapTime = 0.3f;           // 이 시간 안에 아래키를 두 번 누르면 통과
-    private float lastDownTapTime = -1f;              // 마지막 아래키 탭 시각(더블탭 판정)
     private Collider2D bodyCollider;                  // 플레이어 몸 콜라이더(통과 처리용)
 
     void Awake()
@@ -421,27 +419,23 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0 && !isChargingJump)
             UseSkill();
 
-        // 점프: 스페이스 탭=누르는 즉시 일반 점프(반응 즉각) / 아래(S)+스페이스=차지 높은 점프 / 공중=즉시 2단 점프
-        // 아래키 더블탭 → 발밑 원웨이 플랫폼 아래로 통과
-        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            if (isGrounded && Time.time - lastDownTapTime <= dropDoubleTapTime && TryDropThroughPlatform())
-                lastDownTapTime = -1f;            // 통과 성공 → 더블탭 리셋
-            else
-                lastDownTapTime = Time.time;      // 첫 탭(또는 통과 대상 없음) → 다음 탭 대기
-        }
-
+        // 점프: 스페이스 탭=누르는 즉시 일반 점프 / 공중=즉시 2단 점프
+        // 아래(S)+스페이스: '원웨이 플랫폼 위'면 아래로 하강, 일반 지형이면 차지 높은 점프 (더블탭 하강은 폐지)
         if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isChargingJump)
         {
-            if (!isGrounded && isTouchingWall)
+            bool holdDown = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f;
+
+            if (isGrounded && holdDown && TryDropThroughPlatform())
+            {
+                // 플랫폼 아래로 하강 — 점프 소모 없음(DropThroughRoutine이 처리)
+            }
+            else if (!isGrounded && isTouchingWall)
             {
                 WallJump();              // 벽에 붙어 있으면 벽 점프(공중 점프 횟수 소모 X)
             }
             else if (currentJumps > 0)
             {
-                bool wantCharge = isGrounded &&
-                    (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f);
-                if (wantCharge)
+                if (isGrounded && holdDown)
                 {
                     isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
                     jumpHoldTimer = 0f;
@@ -553,6 +547,13 @@ public class PlayerController : MonoBehaviour
             animBusyTimer = ClipLength(flourish);   // 흉내 모션 "딱 그 길이만큼만" 보호
         }
         // 흉내 클립 칸을 비워두면: 연출 없이 즉시 전환(UpdateAnimations가 바로 idle/run 재생)
+    }
+
+    // 컷씬/튜토리얼용 강제 발도 — 이미 뽑았으면 무시. (아픔을 참고 검을 드는 연출 등)
+    public void CutsceneDrawSword()
+    {
+        if (isSwordDrawn) return;
+        ToggleSheathe();
     }
 
     // ───────────────────────── 전투 ─────────────────────────
@@ -750,7 +751,7 @@ public class PlayerController : MonoBehaviour
     private bool TryDropThroughPlatform()
     {
         if (groundCheck == null || bodyCollider == null) return false;
-        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.05f, groundLayer);
+        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.15f, groundLayer);   // 판정 여유(가장자리에서도 안정적으로)
         bool dropped = false;
         foreach (Collider2D c in unders)
         {

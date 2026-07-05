@@ -121,7 +121,14 @@ public class QuestBoardUI : MonoBehaviour
         else GUI.Label(img, "퀘스트\n이미지", ph);
         GUI.Label(new Rect(c.x + 14f, img.yMax + 8f, c.width - 22f, 26f), "[" + q.CategoryLabel() + "] " + q.title, cardCat);
         GUI.Label(new Rect(c.x + 14f, img.yMax + 34f, c.width - 22f, 24f), q.ObjectiveText(), cardObj);
-        if (QuestManager.Instance != null && QuestManager.Instance.IsAccepted(q))
+        if (QuestManager.Instance != null && QuestManager.Instance.IsReady(q))
+        {
+            var prev2 = cardObj.normal.textColor;
+            cardObj.normal.textColor = new Color(1f, 0.85f, 0.42f);
+            GUI.Label(new Rect(c.x + 14f, img.yMax + 58f, c.width - 22f, 22f), "★ 보상 대기", cardObj);
+            cardObj.normal.textColor = prev2;
+        }
+        else if (QuestManager.Instance != null && QuestManager.Instance.IsAccepted(q))
             GUI.Label(new Rect(c.x + 14f, img.yMax + 58f, c.width - 22f, 22f), "● 수락됨", cardObj);
     }
 
@@ -147,13 +154,26 @@ public class QuestBoardUI : MonoBehaviour
             GUI.Label(new Rect(ri.x + 8, ri.y, ri.width - 16, ri.height), "x" + Mathf.Max(1, q.rewardItemCount), rewardR);
         }
 
-        // 오른쪽: 수락 버튼
-        bool acc = QuestManager.Instance != null && QuestManager.Instance.IsAccepted(q);
+        // 오른쪽: 수락 / 수락됨 / 보상 받기(목표 달성)
+        var qm = QuestManager.Instance;
+        bool acc = qm != null && qm.IsAccepted(q);
+        bool ready = qm != null && qm.IsReady(q);
         Rect ab = new Rect(d.xMax - 190f, d.y + d.height * 0.5f - 30f, 160f, 60f);
-        Fill(ab, acc ? new Color(0.32f, 0.32f, 0.30f) : new Color(0.24f, 0.62f, 0.30f));
-        Border(ab, 3f, UITheme.Accent);
-        GUI.Label(ab, acc ? "수락됨" : "수락", btn);
-        if (!acc && click && ab.Contains(m)) { QuestManager.Instance.Accept(q); Event.current.Use(); }
+        if (ready)
+        {
+            UITheme.Glow(ab, UITheme.Gold, 6f, 0.30f);
+            Fill(ab, new Color(0.72f, 0.55f, 0.14f));
+            Border(ab, 3f, UITheme.Gold);
+            GUI.Label(ab, "보상 받기", btn);
+            if (click && ab.Contains(m)) { qm.Claim(q); selected = null; Event.current.Use(); }
+        }
+        else
+        {
+            Fill(ab, acc ? new Color(0.32f, 0.32f, 0.30f) : new Color(0.24f, 0.62f, 0.30f));
+            Border(ab, 3f, UITheme.Accent);
+            GUI.Label(ab, acc ? "수락됨" : "수락", btn);
+            if (!acc && click && ab.Contains(m)) { qm.Accept(q); Event.current.Use(); }
+        }
     }
 
     private void Fill(Rect r, Color c) { var p = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = p; }

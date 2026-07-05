@@ -23,7 +23,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float attackActive = 0.1f;    // 실제 타격 판정이 나가는 순간
     public float attackRecover = 0.5f;   // 공격 후 경직
     public float attackCooldown = 1.0f;  // 다음 공격까지 추가 대기
-    public float firstAttackDelay = 0f;  // 첫 교전(발견) 후 첫 공격까지 추가 유예(튜토리얼 등에서 사용)
+    public float firstAttackDelay = 0.6f;  // 첫 교전(발견) 후 첫 공격까지 추가 유예 — 발견 즉시 무는 느낌 방지
 
     [Header("Groggy (패링당했을 때)")]
     public float groggyDuration = 2f;
@@ -82,8 +82,11 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     // ── 튜토리얼 훅 ── 외부(CombatTutorial)가 '피격 직전(예비동작 진입)'을 감지하기 위한 정적 이벤트(기본 무구독).
     public static System.Action<Enemy> WindupStarted;
+    // 컷씬/튜토리얼용: 다음 공격까지의 대기를 외부에서 지정(접근 연출 동안 안 때리게 등)
+    public void ArmAttack(float delay) { attackCdTimer = Mathf.Max(0f, delay); }
     public Transform TargetPlayer => player;                          // 이 적이 노리는 대상
     public bool IsAttacking => state == State.Windup || state == State.Strike;
+    public bool IsAggro => state != State.Patrol && state != State.Dead;   // 플레이어를 인식해 교전(추격/공격) 중인지
     public virtual bool IsParryableMelee => true;                     // 원거리는 false로 오버라이드(투사체는 패링 레슨 제외)
 
     void Awake()
@@ -155,6 +158,11 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         return player == null ? Mathf.Infinity : Mathf.Abs(player.position.x - transform.position.x);
     }
 
+    protected float DyToPlayer()
+    {
+        return player == null ? Mathf.Infinity : Mathf.Abs(player.position.y - transform.position.y);
+    }
+
     protected virtual void TickPatrol()   // 비전투(논어그로) 상태: 행동 방식에 따라 이동
     {
         switch (moveBehavior)
@@ -164,7 +172,8 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
             case MoveBehavior.Wander:     WanderMove(); break;
         }
 
-        if (DistToPlayer() <= detectRange)
+        // 세로(detectHeight)도 만족해야 감지 — 위에서 낙하 중인 플레이어를 아래에서 물지 않게
+        if (DistToPlayer() <= detectRange && DyToPlayer() <= detectHeight)
         {
             dir = player.position.x >= transform.position.x ? 1 : -1;   // 발견 시 플레이어 쪽으로 한 번 돌아봄
             if (!engaged) { engaged = true; attackCdTimer = Mathf.Max(attackCdTimer, firstAttackDelay); }   // 첫 교전 → 첫 공격까지 유예
@@ -210,13 +219,14 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     protected virtual void TickChase()
     {
-        if (DistToPlayer() > detectRange) { state = State.Patrol; return; }
+        // 추격 이탈: 가로는 여유(1.15배), 세로는 감지의 2배(점프 정도로는 안 놓치고, 완전히 위층이면 놓아줌)
+        if (DistToPlayer() > detectRange * 1.15f || DyToPlayer() > detectHeight * 2f) { state = State.Patrol; return; }
 
         if (DistToPlayer() <= attackRange)
         {
-            // 사거리 안: 멈춰서 대기(좌우로 흔들지 않음). 쿨다운 끝나면 공격.
+            // 사거리 안: 멈춰서 대기(좌우로 흔들지 않음). 쿨다운 끝났고 '세로도 닿는 높이'일 때만 공격.
             SetMove(0);
-            if (attackCdTimer <= 0) BeginAttack();
+            if (attackCdTimer <= 0 && DyToPlayer() <= attackHeight) BeginAttack();
             return;
         }
 

@@ -182,6 +182,7 @@ MonoBehaviour:
   maxHealth: 28
   moveSpeed: 2.2
   detectRange: 9
+  detectHeight: 2.2
   attackRange: 6.5
   attackHeight: 1.2
   attackDamage: 1
@@ -189,7 +190,7 @@ MonoBehaviour:
   attackActive: 0.1
   attackRecover: 0.5
   attackCooldown: 1.6
-  firstAttackDelay: 0
+  firstAttackDelay: 0.6
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
   groggyRecoverDelay: 1.2
