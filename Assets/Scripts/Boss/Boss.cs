@@ -33,12 +33,14 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
     public BossPattern4_BasicAttack   pattern4;
     public BossPattern5_RotatingBeam  pattern5;
     public BossPattern6_ScatterBomb   pattern6;
+    public BossPattern7_BullCharge    pattern7;
 
     [Header("패턴 선택")]
-    [Tooltip("패턴 1~6 각각의 선택 가중치 (높을수록 자주 선택됨)")]
-    public float[] patternWeights  = { 2f, 2f, 2f, 1f, 1f, 2f };
+    [Tooltip("패턴 1~7 각각의 선택 가중치 (높을수록 자주 선택됨)\n" +
+             "인덱스: 0=지진파 1=대시 2=탱탱볼 3=기본평타 4=고드름 5=폭탄 6=황소돌진")]
+    public float[] patternWeights  = { 2f, 2f, 2f, 10f, 1f, 2f, 10f };
     [Tooltip("각 패턴 사용 후 재사용 불가 시간 (초)")]
-    public float[] patternCooldowns = { 3f, 2f, 4f, 1.5f, 6f, 3f };
+    public float[] patternCooldowns = { 3f, 2f, 4f, 1f, 6f, 3f, 1.5f };
     [Tooltip("직전과 동일한 패턴 연속 방지")]
     public bool preventRepeat = true;
 
@@ -63,7 +65,7 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
     void Awake()
     {
         _currentHealth = maxHealth;
-        _cdTimers = new float[6];
+        _cdTimers = new float[7];
         _rb = GetComponent<Rigidbody2D>();
     }
 
@@ -79,6 +81,7 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
         if (pattern4 == null) pattern4 = GetComponent<BossPattern4_BasicAttack>();
         if (pattern5 == null) pattern5 = GetComponent<BossPattern5_RotatingBeam>();
         if (pattern6 == null) pattern6 = GetComponent<BossPattern6_ScatterBomb>();
+        if (pattern7 == null) pattern7 = GetComponent<BossPattern7_BullCharge>();
     }
 
     // ── 메인 루프 ──────────────────────────────────────────────
@@ -138,9 +141,10 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
     int SelectPattern()
     {
         float total = 0f;
-        float[] w = new float[6];
+        float[] w = new float[7];
 
-        for (int i = 0; i < 6; i++)
+        int patternCount = Mathf.Min(patternWeights.Length, _cdTimers.Length);
+        for (int i = 0; i < patternCount; i++)
         {
             if (_cdTimers[i] > 0f) continue;
             if (preventRepeat && i == _lastPattern) continue;
@@ -153,14 +157,14 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
         {
             int best = 0;
             float minCd = float.MaxValue;
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < patternCount; i++)
                 if (_cdTimers[i] < minCd) { minCd = _cdTimers[i]; best = i; }
             return best;
         }
 
         float rand = Random.Range(0f, total);
         float acc  = 0f;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < patternCount; i++)
         {
             acc += w[i];
             if (rand <= acc) return i;
@@ -179,6 +183,7 @@ public class Boss : MonoBehaviour, IDamageable, IParryable
             case 3: if (pattern4 != null) yield return StartCoroutine(pattern4.Execute(p2)); break;
             case 4: if (pattern5 != null) yield return StartCoroutine(pattern5.Execute(p2)); break;
             case 5: if (pattern6 != null) yield return StartCoroutine(pattern6.Execute(p2)); break;
+            case 6: if (pattern7 != null) yield return StartCoroutine(pattern7.Execute(p2)); break;
         }
     }
 

@@ -162,51 +162,67 @@ public class BossPattern3_BouncingCharge : BossPatternBase
             // 중력 적용
             _vel.y -= customGravity * Time.deltaTime;
             Vector2 moveDelta = _vel * Time.deltaTime;
-            rb.MovePosition(rb.position + moveDelta);
 
-            bool bounced = false;
-
-            // 레이캐스트는 보스 "중심(transform.position)"에서 쏘기 때문에,
-            // 콜라이더 절반 크기를 더해야 실제 바닥/벽 표면에 닿기 전에 감지할 수 있음.
-            Bounds colBounds = _col != null ? _col.bounds : new Bounds(transform.position, Vector3.zero);
+            // 콜라이더 절반 크기 — 중심→표면 거리 보정에 사용
+            Bounds colBounds = _col != null ? _col.bounds : new Bounds(transform.position, Vector3.one * 0.5f);
             float halfHeight = colBounds.extents.y;
             float halfWidth  = colBounds.extents.x;
 
-            // 바닥 감지 (한 프레임 이동 거리만큼 여유를 둬서 빠른 속도에서도 터널링 방지)
-            float downDist = halfHeight + groundCheckDist + Mathf.Max(0f, -moveDelta.y);
-            RaycastHit2D groundHit = Physics2D.Raycast(
-                transform.position, Vector2.down, downDist, groundLayer);
+            bool bounced = false;
 
-            if (groundHit.collider != null && _vel.y < 0f)
-            {
-                if (_forceSettle)
-                {
-                    // 액티브 바운스 시간이 끝난 뒤의 첫 착지 — 바로 멈춤
-                    _vel = Vector2.zero;
-                    _isBouncing = false;
-                    yield break;
-                }
-
-                // 바닥 바운스: 마찰 없이 groundBounceRestitution만 적용 (수평 속도는 그대로 유지)
-                _vel.y = -_vel.y * groundBounceRestitution;
-                bounced = true;
-            }
-
-            // 벽 감지 (좌우) — 탱탱볼처럼 벽(높게 쌓은 Ground 타일맵)에 세게 튕겨나가도록 처리
+            // ━━ 벽 감지 (이동 전 위치 rb.position 기준 — 터널링 방지의 핵심) ━━
+            // MovePosition 호출 후에 체크하면 이미 벽을 통과한 뒤라서 감지 실패 가능.
+            // 상·중·하 3점 레이캐스트로 얇은 Tilemap 벽도 놓치지 않도록 처리.
             if (!_forceSettle && Mathf.Abs(_vel.x) > 0.01f)
             {
-                Vector2 xDir = new Vector2(Mathf.Sign(_vel.x), 0f);
-                float sideDist = halfWidth + wallCheckDist + Mathf.Abs(moveDelta.x);
-                RaycastHit2D wallHit = Physics2D.Raycast(
-                    transform.position, xDir, sideDist, wallLayer);
+                Vector2 xDir    = new Vector2(Mathf.Sign(_vel.x), 0f);
+                float sideDist  = halfWidth + wallCheckDist + Mathf.Abs(moveDelta.x);
+                Vector2 origin  = rb.position;
+
+                RaycastHit2D wallHit =
+                    Physics2D.Raycast(origin,                              xDir, sideDist, wallLayer);
+                if (!wallHit) wallHit =
+                    Physics2D.Raycast(origin + Vector2.up   * halfHeight * 0.7f, xDir, sideDist, wallLayer);
+                if (!wallHit) wallHit =
+                    Physics2D.Raycast(origin + Vector2.down * halfHeight * 0.7f, xDir, sideDist, wallLayer);
 
                 if (wallHit.collider != null)
                 {
-                    // 벽 바운스: 마찰 없이 wallBounceRestitution만 적용 (수직 속도는 그대로 유지)
-                    _vel.x = -_vel.x * wallBounceRestitution;
-                    bounced = true;
+                    // 이동량을 벽 직전까지로 클램핑 — 보스가 벽을 통과하지 않음
+                    float allowed  = Mathf.Max(0f, wallHit.distance - halfWidth - 0.01f);
+                    moveDelta.x    = Mathf.Sign(moveDelta.x) * allowed;
+                    _vel.x         = -_vel.x * wallBounceRestitution;
+                    bounced        = true;
                 }
             }
+
+            // ━━ 바닥 감지 (이동 전 위치 기준) ━━
+            if (_vel.y < 0f)
+            {
+                float downDist      = halfHeight + groundCheckDist + Mathf.Abs(moveDelta.y);
+                RaycastHit2D groundHit = Physics2D.Raycast(rb.position, Vector2.down, downDist, groundLayer);
+
+                if (groundHit.collider != null)
+                {
+                    if (_forceSettle)
+                    {
+                        // 액티브 바운스 시간 끝 → 다음 착지에서 바로 멈춤 ("툭")
+                        _vel      = Vector2.zero;
+                        moveDelta = Vector2.zero;
+                        _isBouncing = false;
+                        rb.MovePosition(rb.position + moveDelta);
+                        yield break;
+                    }
+
+                    // 이동량을 바닥 직전까지로 클램핑
+                    float allowedY = Mathf.Max(0f, groundHit.distance - halfHeight - 0.01f);
+                    moveDelta.y    = -allowedY;
+                    _vel.y         = -_vel.y * groundBounceRestitution;
+                    bounced        = true;
+                }
+            }
+
+            rb.MovePosition(rb.position + moveDelta);
 
             if (bounced)
             {
