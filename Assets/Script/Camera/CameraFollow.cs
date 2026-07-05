@@ -41,6 +41,8 @@ public class CameraFollow : MonoBehaviour
 
     private Camera cam;
     public static CameraFollow Instance;                 // Juice(셰이크) 접근용
+    [System.NonSerialized] public Vector2 cutsceneOffset;   // 컷씬용 카메라 오프셋(IntroCutscene 등이 설정, 끝나면 0)
+    [System.NonSerialized] public float fxZoomMul = 1f;     // 슬로우모션 집중 줌(SlowMoFx가 제어, ≤1=줌인)
     private float shakeAmt, shakeTimer, shakeDur;
     private Vector3 vel;
     private float lookDir = 1f, curAhead, aheadVel, lastX;
@@ -183,6 +185,7 @@ public class CameraFollow : MonoBehaviour
         else if (dy < -verticalDeadZone) goalY = anchoredY + verticalDeadZone;
 
         Vector3 desired = new Vector3(desiredX, goalY, transform.position.z);
+        desired += (Vector3)cutsceneOffset;   // 컷씬용 카메라 이동(부드럽게 SmoothDamp로 적용)
         Vector3 pos = Vector3.SmoothDamp(transform.position, desired, ref vel, smoothTime);
 
         if (useBounds && hasBounds && cam != null && cam.orthographic)
@@ -201,6 +204,10 @@ public class CameraFollow : MonoBehaviour
             Vector2 off = Random.insideUnitCircle * s;
             transform.position += new Vector3(off.x, off.y, 0f);
         }
+
+        // 슬로우모션 집중 줌(SlowMoFx가 fxZoomMul 제어, ≤1 = 줌인). 줌인은 보이는 영역이 줄어 경계 밖 노출 없음.
+        if (cam != null && cam.orthographic && fxZoomMul < 0.999f)
+            cam.orthographicSize *= fxZoomMul;
     }
 
     public void AddShake(float amt, float dur) { shakeAmt = Mathf.Max(shakeAmt, amt); shakeDur = Mathf.Max(0.01f, dur); shakeTimer = shakeDur; }

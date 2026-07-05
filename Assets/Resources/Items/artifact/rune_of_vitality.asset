@@ -14,13 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: rune_of_vitality
   itemName: "\uD65C\uB825\uC758 \uB8EC"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d12ab115fe47e0f4e8bb8b75cb241615, type: 3}
   maxStack: 1
   description: "\uCC29\uC6A9 \uC2DC \uAE30\uB825 \uC790\uC5F0 \uD68C\uBCF5\uB7C9
     \uC99D\uAC00."
+  gridW: 1
+  gridH: 2
   kind: 2
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -29,6 +32,9 @@ MonoBehaviour:
   maxStaminaBonus: 0
   staminaRegenBonus: 12
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 600
+  sellAtFullValue: 0
   rarity: 1

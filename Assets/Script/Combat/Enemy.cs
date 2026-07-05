@@ -14,7 +14,8 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float moveSpeed = 2f;
 
     [Header("Detection / Attack")]
-    public float detectRange = 6f;       // 이 안에 플레이어가 들어오면 추격
+    public float detectRange = 6f;       // 이 안에 플레이어가 들어오면 추격(가로)
+    public float detectHeight = 2.2f;    // 감지 세로 허용(±) — 위에서 떨어지는 중엔 안 물게 좁게
     public float attackRange = 1.4f;     // 좌우 공격 도달 거리(가로)
     public float attackHeight = 1.2f;    // 공격 세로 범위(±). 이보다 위로 점프하면 회피 가능
     public float attackDamage = 2f;      // 플레이어에게 주는 피해 = 하트 칸 수
@@ -22,6 +23,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public float attackActive = 0.1f;    // 실제 타격 판정이 나가는 순간
     public float attackRecover = 0.5f;   // 공격 후 경직
     public float attackCooldown = 1.0f;  // 다음 공격까지 추가 대기
+    public float firstAttackDelay = 0.6f;  // 첫 교전(발견) 후 첫 공격까지 추가 유예 — 발견 즉시 무는 느낌 방지
 
     [Header("Groggy (패링당했을 때)")]
     public float groggyDuration = 2f;
@@ -69,6 +71,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     protected bool struck;            // 이번 공격에서 이미 타격을 줬는지
     private float wanderTimer;
     private bool wanderPausing;
+    private bool engaged;             // 플레이어를 한 번이라도 발견(교전)했는지 — 첫 공격 유예용
     
 
     // 임시 색 구분
@@ -76,6 +79,15 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private readonly Color strikeColor = Color.red;                  // 타격 순간
     private readonly Color groggyColor = Color.cyan;                 // 그로기
     private readonly Color hitColor = Color.white;                   // 맞는 순간
+
+    // ── 튜토리얼 훅 ── 외부(CombatTutorial)가 '피격 직전(예비동작 진입)'을 감지하기 위한 정적 이벤트(기본 무구독).
+    public static System.Action<Enemy> WindupStarted;
+    // 컷씬/튜토리얼용: 다음 공격까지의 대기를 외부에서 지정(접근 연출 동안 안 때리게 등)
+    public void ArmAttack(float delay) { attackCdTimer = Mathf.Max(0f, delay); }
+    public Transform TargetPlayer => player;                          // 이 적이 노리는 대상
+    public bool IsAttacking => state == State.Windup || state == State.Strike;
+    public bool IsAggro => state != State.Patrol && state != State.Dead;   // 플레이어를 인식해 교전(추격/공격) 중인지
+    public virtual bool IsParryableMelee => true;                     // 원거리는 false로 오버라이드(투사체는 패링 레슨 제외)
 
     void Awake()
     {
@@ -146,6 +158,11 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         return player == null ? Mathf.Infinity : Mathf.Abs(player.position.x - transform.position.x);
     }
 
+    protected float DyToPlayer()
+    {
+        return player == null ? Mathf.Infinity : Mathf.Abs(player.position.y - transform.position.y);
+    }
+
     protected virtual void TickPatrol()   // 비전투(논어그로) 상태: 행동 방식에 따라 이동
     {
         switch (moveBehavior)
@@ -155,9 +172,11 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
             case MoveBehavior.Wander:     WanderMove(); break;
         }
 
-        if (DistToPlayer() <= detectRange)
+        // 세로(detectHeight)도 만족해야 감지 — 위에서 낙하 중인 플레이어를 아래에서 물지 않게
+        if (DistToPlayer() <= detectRange && DyToPlayer() <= detectHeight)
         {
             dir = player.position.x >= transform.position.x ? 1 : -1;   // 발견 시 플레이어 쪽으로 한 번 돌아봄
+            if (!engaged) { engaged = true; attackCdTimer = Mathf.Max(attackCdTimer, firstAttackDelay); }   // 첫 교전 → 첫 공격까지 유예
             state = State.Chase;
         }
     }
@@ -200,13 +219,14 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     protected virtual void TickChase()
     {
-        if (DistToPlayer() > detectRange) { state = State.Patrol; return; }
+        // 추격 이탈: 가로는 여유(1.15배), 세로는 감지의 2배(점프 정도로는 안 놓치고, 완전히 위층이면 놓아줌)
+        if (DistToPlayer() > detectRange * 1.15f || DyToPlayer() > detectHeight * 2f) { state = State.Patrol; return; }
 
         if (DistToPlayer() <= attackRange)
         {
-            // 사거리 안: 멈춰서 대기(좌우로 흔들지 않음). 쿨다운 끝나면 공격.
+            // 사거리 안: 멈춰서 대기(좌우로 흔들지 않음). 쿨다운 끝났고 '세로도 닿는 높이'일 때만 공격.
             SetMove(0);
-            if (attackCdTimer <= 0) BeginAttack();
+            if (attackCdTimer <= 0 && DyToPlayer() <= attackHeight) BeginAttack();
             return;
         }
 
@@ -222,6 +242,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         struck = false;
         state = State.Windup;
         stateTimer = attackWindup;
+        WindupStarted?.Invoke(this);   // 피격 직전(예비동작) 알림 — 튜토리얼 패링 레슨 훅
     }
 
     protected virtual void TickWindup()
@@ -314,14 +335,31 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private void GrantRewards()
     {
         if (loot == null) return;
+        Vector3 basePos = LootBasePos();
         foreach (var d in loot)
         {
             if (d == null || d.item == null || Random.value > d.chance) continue;
             int n = Random.Range(d.minCount, d.maxCount + 1);
             if (n <= 0) continue;
-            Vector3 pos = transform.position + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
+            Vector3 pos = basePos + (Vector3)(Random.insideUnitCircle * dropScatter) + Vector3.up * 0.2f;
             ItemPickup.SpawnWorld(d.item, n, pos, dropSize);
         }
+    }
+
+    // 전리품 기준점: 사망 지점 아래에 지면이 없으면(공중몹이 맵 밖·허공에서 죽음) 플레이어가 주울 수 있는 곳으로.
+    private Vector3 LootBasePos()
+    {
+        int mask = LayerMask.GetMask("Ground");
+        if (Physics2D.Raycast(transform.position + Vector3.up * 0.1f, Vector2.down, 25f, mask).collider != null)
+            return transform.position;   // 아래에 지면 있음 → 그대로
+        var pc = PlayerController.Instance;
+        if (pc != null)
+        {
+            var hit = Physics2D.Raycast(pc.transform.position + Vector3.up * 0.1f, Vector2.down, 25f, mask);
+            if (hit.collider != null) return new Vector3(pc.transform.position.x, hit.point.y + 0.4f, 0f);
+            return pc.transform.position;   // 플레이어 발밑도 못 찾으면 플레이어 위치
+        }
+        return transform.position;
     }
 
     private void UpdateColor()

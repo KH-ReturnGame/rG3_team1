@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: bracer_of_endurance
   itemName: "\uC9C0\uAD6C\uB825\uC758 \uD314\uCC0C"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f788a503f9c98c84aaf4623d7d2a3f81, type: 3}
   maxStack: 1
   description: "\uCC29\uC6A9 \uC2DC \uCD5C\uB300 \uAE30\uB825 \uC99D\uAC00."
+  gridW: 2
+  gridH: 1
   kind: 2
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -28,6 +31,9 @@ MonoBehaviour:
   maxStaminaBonus: 30
   staminaRegenBonus: 0
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 600
+  sellAtFullValue: 0
   rarity: 1

@@ -13,6 +13,12 @@ public class ItemData : ScriptableObject
     public int maxStack = 99;
     [TextArea] public string description;
 
+    [Header("인벤토리 칸 크기 (타르코프식)")]
+    public int gridW = 1;           // 가로 칸 수
+    public int gridH = 1;           // 세로 칸 수
+    public int GridW => Mathf.Max(1, gridW);
+    public int GridH => Mathf.Max(1, gridH);
+
     [Header("종류")]
     public ItemKind kind = ItemKind.Material;
 
@@ -30,6 +36,10 @@ public class ItemData : ScriptableObject
     public float maxStaminaBonus = 0f;
     public float staminaRegenBonus = 0f;
     public float attackBonus = 0f;
+
+    [Header("장신구 효과")]
+    public bool precogSlow = false;        // 예지안: 적 공격 직전 시간 감속(쿨다운, PrecogCharm이 처리)
+    public float precogCooldown = 20f;     // 발동 쿨다운(초)
 
     [Header("판매 / 가치")]
     public int sellValue = 0;                // (구) 골동품 판매가

@@ -25,17 +25,19 @@ public class Toast : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (timer <= 0f || string.IsNullOrEmpty(msg)) return;
         EnsureStyles();
+        UIScale.Apply();     // 해상도 독립 스케일
         GUI.depth = -1000;   // 다른 모든 UI 위에
         float alpha = Mathf.Clamp01(timer < 0.6f ? timer / 0.6f : 1f);
-        float w = Mathf.Min(Screen.width * 0.8f, 640f), h = 56f;
-        float x = (Screen.width - w) * 0.5f, y = Screen.height * 0.14f;
+        float w = Mathf.Min(UIScale.W * 0.8f, 640f), h = 56f;
+        float x = (UIScale.W - w) * 0.5f, y = UIScale.H * 0.14f;
         var prev = GUI.color;
-        GUI.color = new Color(0.10f, 0.08f, 0.06f, 0.92f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f, alpha);
+        GUI.color = UITheme.A(UITheme.BgSolid, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = UITheme.A(UITheme.Accent, alpha);
         GUI.DrawTexture(new Rect(x, y, w, 3f), white); GUI.DrawTexture(new Rect(x, y + h - 3f, w, 3f), white);
-        style.normal.textColor = new Color(1f, 0.93f, 0.72f, alpha);
+        style.normal.textColor = new Color(0.85f, 0.95f, 1f, alpha);
         GUI.color = new Color(1f, 1f, 1f, alpha);
         GUI.Label(new Rect(x, y, w, h), msg, style);
         GUI.color = prev;

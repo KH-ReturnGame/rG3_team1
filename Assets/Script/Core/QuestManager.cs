@@ -22,6 +22,9 @@ public class Quest
     public int xpReward = 50;            // 완료 시 경험치
     public string prereqId;              // 선행 퀘스트 id(이게 완료돼야 게시판에 등장 — 연계)
     public Sprite icon;
+    public bool autoAccept;              // 마을 진입 시 자동 수주(게시판엔 안 뜸)
+    public string objectiveOverride;     // 있으면 목표 문구를 이걸로 표시(채집/처치 진행도 대신)
+    public bool pathToDescend;           // 길찾기 대상 = 하강 포탈(우물). 그 외엔 채집/처치 대상으로 자동
     [System.NonSerialized] public int progress;
 
     public string CategoryLabel()
@@ -29,7 +32,11 @@ public class Quest
     public string TargetDisplay()
     { if (!string.IsNullOrEmpty(targetName)) return targetName; if (goal == QuestGoal.Gather) { var it = ItemDatabase.Get(targetId); if (it != null) return it.itemName; } return targetId; }
     public string ObjectiveText()
-    { return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")"; }
+    {
+        if (!string.IsNullOrEmpty(objectiveOverride)) return objectiveOverride;
+        if (progress >= targetCount) return "목표 달성! — 게시판에서 보상 수령";
+        return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")";
+    }
 }
 
 // 퀘스트 전역 관리(자동부팅·영구). 연계(prereq)·완료추적·경험치 보상.
@@ -57,6 +64,11 @@ public class QuestManager : MonoBehaviour
     private void BuildQuests()
     {
         available.Clear();
+        // 길잡이(마을 진입 시 자동 수주, 게시판엔 안 뜸) — 다친 주인공이 마을에 도착한 직후 안내
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "기억을 잃은 자",
+            description = "지상으로 나가려다 추락해, 강한 충격에 기억을 잃었다.\n감지 기프트를 가진 '여울'이 쓰러진 나를 발견해 자기 집으로 데려왔다. — 여긴 지하 마을.\n몸을 추스르고 마을을 둘러보자(엔지니어·상인들·게시판). 채비가 되면 우물로 내려가 본다.",
+            autoAccept = true, objectiveOverride = "마을을 둘러보고, 우물로 내려갈 채비를 하라", pathToDescend = true,
+            goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",
             description = "낯선 지저 세계. 마을을 둘러보고 지저꽃을 하나 채집해 적응을 시작하자.",
@@ -89,6 +101,37 @@ public class QuestManager : MonoBehaviour
     public bool IsAccepted(Quest q) => q != null && accepted.Contains(q);
     public bool IsCompleted(Quest q) => q != null && completed.Contains(q.id);
     public bool IsUnlocked(Quest q) => q != null && (string.IsNullOrEmpty(q.prereqId) || completed.Contains(q.prereqId));
+    public bool IsReady(Quest q) => q != null && accepted.Contains(q) && q.progress >= q.targetCount;   // 목표 달성 — 게시판 수령 대기
+
+    // ── 추적(트래커 HUD/길찾기 대상) ──
+    [System.NonSerialized] public Quest tracked;
+    public Quest GetTracked()
+    {
+        if (tracked != null && accepted.Contains(tracked)) return tracked;
+        foreach (var q in accepted) if (q.category == QuestCategory.Main) return q;   // 주요 우선
+        return accepted.Count > 0 ? accepted[0] : null;
+    }
+    public void SetTracked(Quest q) { tracked = q; Changed(); }
+
+    public Quest Find(string id) => available.Find(x => x.id == id);
+
+    // 마을 진입 시: 미완료·미수주 autoAccept 퀘스트를 자동 수주. 새로 받은 첫 퀘스트 반환(없으면 null).
+    public Quest AcceptAutoQuests()
+    {
+        Quest first = null;
+        foreach (var q in available)
+            if (q.autoAccept && !IsCompleted(q) && !accepted.Contains(q))
+            { q.progress = 0; accepted.Add(q); if (first == null) first = q; }
+        if (first != null) { tracked = first; Changed(); }
+        return first;
+    }
+
+    // id로 완료(길잡이=하강 시 호출 등). 수주 중이면 보상 처리 후 완료.
+    public void CompleteById(string id)
+    {
+        var q = accepted.Find(x => x.id == id);
+        if (q != null) { Complete(q); Changed(); }
+    }
 
     public void Accept(Quest q)
     {
@@ -99,25 +142,38 @@ public class QuestManager : MonoBehaviour
     }
     public void Abandon(Quest q) { if (q == null) return; q.progress = 0; accepted.Remove(q); Changed(); }
 
+    // 목표 달성 시 즉시 완료하지 않음 — '보상 대기' 상태로 남고, 게시판에서 Claim으로 수령(퀘스트 보드 왕복 루프).
     public void ReportGather(string itemId, int amount)
     {
         if (string.IsNullOrEmpty(itemId) || amount <= 0) return;
-        var done = new List<Quest>(); bool changed = false;
+        bool changed = false;
         foreach (var q in accepted)
             if (q.goal == QuestGoal.Gather && q.targetId == itemId && q.progress < q.targetCount)
-            { q.progress = Mathf.Min(q.targetCount, q.progress + amount); changed = true; if (q.progress >= q.targetCount) done.Add(q); }
-        foreach (var q in done) Complete(q);
+            {
+                q.progress = Mathf.Min(q.targetCount, q.progress + amount); changed = true;
+                if (q.progress >= q.targetCount) Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+            }
         if (changed) Changed();
     }
     public void ReportKill(string killId)
     {
         if (string.IsNullOrEmpty(killId)) return;
-        var done = new List<Quest>(); bool changed = false;
+        bool changed = false;
         foreach (var q in accepted)
             if (q.goal == QuestGoal.Kill && q.targetId == killId && q.progress < q.targetCount)
-            { q.progress = Mathf.Min(q.targetCount, q.progress + 1); changed = true; if (q.progress >= q.targetCount) done.Add(q); }
-        foreach (var q in done) Complete(q);
+            {
+                q.progress = Mathf.Min(q.targetCount, q.progress + 1); changed = true;
+                if (q.progress >= q.targetCount) Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+            }
         if (changed) Changed();
+    }
+
+    // 게시판에서 보상 수령(목표 달성한 퀘스트만)
+    public void Claim(Quest q)
+    {
+        if (!IsReady(q)) return;
+        Complete(q);
+        Changed();
     }
 
     private void Complete(Quest q)
@@ -126,7 +182,7 @@ public class QuestManager : MonoBehaviour
         if (!string.IsNullOrEmpty(q.rewardItemId) && Inventory.Instance != null) { var it = ItemDatabase.Get(q.rewardItemId); if (it != null) Inventory.Instance.Add(it, Mathf.Max(1, q.rewardItemCount)); }
         accepted.Remove(q);
         if (!completed.Contains(q.id)) completed.Add(q.id);
-        Toast.Show("퀘스트 완료: " + q.title, 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
+        Toast.Show("보상 수령: " + q.title + (q.rewardGold > 0 ? "  (+" + q.rewardGold + "G)" : ""), 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
     }
 
     // ── 세이브/로드 ──

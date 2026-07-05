@@ -66,9 +66,11 @@ public class TreasureDetector : MonoBehaviour
 
     void OnGUI()
     {
+        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (pingTimer <= 0f) return;
         var pc = PlayerController.Instance;
         if (pc == null) return;
+        UIScale.Apply();   // 해상도 독립 스케일
 
         if (arrowStyle == null)
         {
@@ -82,8 +84,8 @@ public class TreasureDetector : MonoBehaviour
         // 대상이 사라졌으면 갱신
         if (target == null || target.IsOpened) target = FindNearestUnopened();
 
-        float cx = Screen.width * 0.5f;
-        float y = Screen.height - 150f;
+        float cx = UIScale.W * 0.5f;
+        float y = UIScale.H - 150f;
 
         if (target == null)
         {

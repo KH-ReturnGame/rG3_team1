@@ -16,6 +16,7 @@ public class ShopUI : MonoBehaviour
     private int merchant;                                     // 0=재료 1=포션 2=탐험가
     private bool open;
     private ItemData held; private int heldCount;            // 손에 든 아이템(판매 탭)
+    private int heldRot;                                      // [R] 회전 단계(0~3)
     private string hoverInfo;                                // 판매탭 호버 시 가격 줄(구매탭은 null)
     private GUIStyle title, sec, tipName, body, count, gold, slotName, price, tabOn, tabOff, val, heldNum, svc;
     private Texture2D white;
@@ -43,9 +44,13 @@ public class ShopUI : MonoBehaviour
 
     public void Open(int m = 0) { merchant = m; buyItems = null; tab = 0; open = true; Inventory.ShopUIOpen = true; }
     public void Close() { ReturnHeld(); open = false; Inventory.ShopUIOpen = false; }
-    void Update() { if (open && Input.GetKeyDown(KeyCode.Escape)) Close(); }
+    void Update()
+    {
+        if (open && Input.GetKeyDown(KeyCode.Escape)) Close();
+        if (open && held != null && Input.GetKeyDown(KeyCode.R)) heldRot = (heldRot + 1) & 3;   // [R] 회전
+    }
 
-    private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; }
+    private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; heldRot = 0; }
     private static int Value(ItemData it) { return it != null ? Mathf.Max(1, it.baseValue) : 1; }
     private static float SellRate(ItemData it) { return (it != null && it.sellAtFullValue) ? 1f : 0.8f; }   // 화폐는 전액 판매
 
@@ -53,19 +58,20 @@ public class ShopUI : MonoBehaviour
     {
         if (!open || Inventory.Instance == null) return;
         EnsureStyles();
-        float ss = Mathf.Clamp(Screen.height * 0.072f, 44f, 70f);
+        UIScale.Apply();   // 해상도 독립 스케일
+        float ss = Mathf.Clamp(UIScale.H * 0.072f, 44f, 70f);
         float pad = 6f, gap = 36f, headH = 104f;
         float panelW = Cols * (ss + pad) + pad;
         float gridH = Rows * (ss + pad) + pad;
         float w = panelW * 2f + gap + 40f;
         float h = headH + gridH + 64f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
-        GUI.color = new Color(0.13f, 0.10f, 0.08f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
+        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
+        GUI.color = UITheme.A(UITheme.BgSolid, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
+        GUI.color = UITheme.Accent; GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
 
         int g = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
         GUI.Label(new Rect(x, y + 12f, w, 32f), MerchantName(merchant), title);
@@ -108,20 +114,13 @@ public class ShopUI : MonoBehaviour
         EnsureBuyItems();
         ItemData hover = null;
         float lx = x + 20f, rx = x + 20f + panelW + gap;
-        GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리  (집은 것 = 칸 클릭으로 넣기)", sec);
+        GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리  (원하는 칸에 직접 놓기)", sec);
         GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), "구매  (희귀도순 · 클릭 = 1개씩 집기)", sec);
 
-        // 왼쪽: 플레이어 인벤토리 (집은 구매품을 여기 칸 클릭으로 내려놓음)
-        var inv = Inventory.Instance.slots;
-        for (int i = 0; i < Cap; i++)
-        {
-            Rect r = SlotRect(lx, gy, i, ss, pad);
-            DrawSlotBg(r, false);
-            ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
-            int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) hover = it; }
-            if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
-        }
+        // 왼쪽: 실제 인벤 그리드 — 산 것을 원하는 칸에 직접 배치(자동배치 없음, [R] 회전)
+        float gridH2 = Rows * (ss + pad) + pad;
+        var hvItem = InvGridGUI.Draw(new Rect(lx, gy, panelW, gridH2), m, click, ref held, ref heldCount, ref heldRot);
+        if (hvItem != null) hover = hvItem;
 
         // 오른쪽: 상점 구매 목록 (클릭 = 마우스에 1개씩 집기/스택)
         if (buyItems != null)
@@ -141,35 +140,7 @@ public class ShopUI : MonoBehaviour
             }
         }
 
-        // ── 골드 소모 서비스(영구) — 탐험가에서만 ──
-        if (merchant == 2 && GameManager.Instance != null)
-        {
-            var gm = GameManager.Instance;
-            float rx2 = x + 20f + panelW + gap;
-            int brows = Mathf.CeilToInt(buyItems.Count / (float)Cols);
-            float sy0 = gy + 6f + brows * (ss + 6f) + 18f;
-            float colW = (panelW - 18f) * 0.5f, shh = 38f, sgap = 6f;
-            GUI.Label(new Rect(rx2 + 6f, sy0 - 22f, panelW - 12f, 20f), "골드 소모 (영구 강화)", sec);
-
-            // 0:단축키 1:점프 (체력·기력은 후드 탭의 개조 포인트로 강화)
-            for (int i = 0; i < 2; i++)
-            {
-                int row = i / 2, col = i % 2;
-                Rect r = new Rect(rx2 + 6f + col * (colW + sgap), sy0 + row * (shh + sgap), colW, shh);
-                DrawSlotBg(r, true);
-                string label = ""; bool maxed = false; int price = 0;
-                if (i == 0) { int cur = Hotbar.Instance != null ? Hotbar.Instance.hotkeySlots : 0, mx2 = Hotbar.Instance != null ? Hotbar.Instance.hotbarColumns : 8; maxed = cur >= mx2; price = 300; label = maxed ? "단축키 최대" : ("단축키 +1  " + price + "G"); }
-                else if (i == 1) { maxed = gm.bonusJumps >= gm.maxBonusJumps; price = 800; label = maxed ? "점프 최대" : ("점프 +1  " + price + "G"); }
-                GUI.Label(new Rect(r.x + 6f, r.y, r.width - 12f, r.height), label, svc);
-                if (!maxed && click && r.Contains(m))
-                {
-                    if (!gm.TrySpendGold(price)) Toast.Show("골드가 부족합니다.", 1.5f);
-                    else if (i == 0) { if (Hotbar.Instance != null) Hotbar.Instance.AddHotkeySlot(1); Toast.Show("단축키 슬롯 +1!", 2f); }
-                    else if (i == 1) { gm.UpgradeJumps(1); Toast.Show("점프 횟수 +1!", 2f); }
-                    Event.current.Use();
-                }
-            }
-        }
+        // (탐험가의 '단축키·점프 +1' 골드 강화는 제거됨 — 핫바 증가는 엔지니어 '빨리 뽑기 모듈'로, 점프는 장신구로 대체)
         return hover;
     }
 
@@ -190,7 +161,7 @@ public class ShopUI : MonoBehaviour
         if (held != null && held != it) return;                              // 다른 아이템 들고 있으면 먼저 내려놓기
         if (held == it && heldCount >= Mathf.Max(1, it.maxStack)) return;     // 스택 한도 도달
         if (!GameManager.Instance.TrySpendGold(price)) return;                // 골드 부족
-        if (held == null) { held = it; heldCount = 1; } else heldCount++;     // 집기 / 스택 +1
+        if (held == null) { held = it; heldCount = 1; heldRot = 0; } else heldCount++;   // 집기 / 스택 +1
     }
 
     // ── 판매 탭 (인벤 ↔ 판매란) ──
@@ -201,16 +172,10 @@ public class ShopUI : MonoBehaviour
         GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리", sec);
         GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), "판매란  (판매 80% / 되사기 100%)", sec);
 
-        var inv = Inventory.Instance.slots;
-        for (int i = 0; i < Cap; i++)
-        {
-            Rect r = SlotRect(lx, gy, i, ss, pad);
-            DrawSlotBg(r, false);
-            ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
-            int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) { hover = it; hoverInfo = "판매  " + Mathf.RoundToInt(Value(it) * SellRate(it)) + " G"; } }
-            if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
-        }
+        // 왼쪽: 실제 인벤 그리드 — 집어서 판매란에 클릭, 되산 것도 직접 배치([R] 회전)
+        float gridH2 = Rows * (ss + pad) + pad;
+        var hvItem = InvGridGUI.Draw(new Rect(lx, gy, panelW, gridH2), m, click, ref held, ref heldCount, ref heldRot);
+        if (hvItem != null) { hover = hvItem; hoverInfo = "판매  " + Mathf.RoundToInt(Value(hvItem) * SellRate(hvItem)) + " G"; }
         for (int i = 0; i < Cap; i++)
         {
             Rect r = SlotRect(rx, gy, i, ss, pad);
@@ -226,35 +191,7 @@ public class ShopUI : MonoBehaviour
     private Rect SlotRect(float ox, float oy, int i, float ss, float pad)
     { int r = i / Cols, c = i % Cols; return new Rect(ox + pad + c * (ss + pad), oy + pad + r * (ss + pad), ss, ss); }
 
-    // 클릭한 '그 칸'에 집기/놓기/스택/교체 (빈 칸 자동배치 X — 원하는 칸 지정)
-    private void ClickInv(int i)
-    {
-        var inv = Inventory.Instance;
-        if (inv == null || i < 0 || i >= inv.slots.Count) return;
-        var s = inv.slots[i];
-        if (held == null)
-        {
-            if (!s.IsEmpty) { held = s.item; heldCount = s.count; s.Clear(); inv.RaiseChanged(); }     // 집기
-        }
-        else if (s.IsEmpty)
-        {
-            s.item = held; s.count = heldCount; held = null; heldCount = 0; inv.RaiseChanged();          // 빈 칸에 놓기
-        }
-        else if (s.item == held)
-        {
-            int space = Mathf.Max(1, held.maxStack) - s.count;                                           // 같은 아이템 → 스택
-            int move = Mathf.Min(space, heldCount);
-            s.count += move; heldCount -= move;
-            if (heldCount <= 0) { held = null; heldCount = 0; }
-            inv.RaiseChanged();
-        }
-        else
-        {
-            var ti = s.item; int tc = s.count;                                                           // 다른 아이템 → 교체
-            s.item = held; s.count = heldCount; held = ti; heldCount = tc;
-            inv.RaiseChanged();
-        }
-    }
+    // (구 ClickInv 삭제 — 인벤 상호작용은 InvGridGUI가 실제 그리드로 처리: 직접 배치, 자동배치 없음)
 
     private void ClickSell(int i)
     {
@@ -263,7 +200,7 @@ public class ShopUI : MonoBehaviour
             int unit = Mathf.RoundToInt(Value(held) * SellRate(held));
             if (GameManager.Instance != null) GameManager.Instance.AddGold(unit * heldCount);
             AddSold(held, heldCount);
-            held = null; heldCount = 0;
+            held = null; heldCount = 0; heldRot = 0;
         }
         else if (i < sold.Count && sold[i].item != null)
         {
@@ -288,15 +225,15 @@ public class ShopUI : MonoBehaviour
     // ── 그리기 ──
     private void DrawTabBtn(Rect r, string label, bool on)
     {
-        Fill(r, on ? new Color(0.86f, 0.63f, 0.30f) : new Color(0.22f, 0.18f, 0.13f));
-        Border(r, 2f, new Color(0.5f, 0.4f, 0.28f));
+        Fill(r, on ? UITheme.Accent : UITheme.Panel);
+        Border(r, 2f, UITheme.Border);
         GUI.Label(r, label, on ? tabOn : tabOff);
     }
 
     private void DrawSlotBg(Rect r, bool sell)
     {
-        Fill(r, new Color(0.20f, 0.16f, 0.12f, 0.95f));
-        Border(r, 2f, sell ? new Color(0.85f, 0.55f, 0.25f) : new Color(0.45f, 0.38f, 0.28f));
+        Fill(r, UITheme.A(UITheme.Panel, 0.95f));
+        Border(r, 2f, sell ? UITheme.Accent : UITheme.Border);
     }
 
     private void DrawItem(Rect r, ItemData it, int cnt, float ss)
@@ -322,10 +259,10 @@ public class ShopUI : MonoBehaviour
         float ih = string.IsNullOrEmpty(hoverInfo) ? 0f : 22f;
         float th = nh + dh + ih + 16f;
         float tx = m.x + 16f, ty = m.y + 16f;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
-        if (ty + th > Screen.height) ty = Screen.height - th - 4f;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
+        if (ty + th > UIScale.H) ty = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, ty, tw, th);
-        Fill(tr, new Color(0.10f, 0.08f, 0.06f, 0.98f)); Border(tr, 2f, new Color(0.86f, 0.63f, 0.30f));
+        Fill(tr, UITheme.A(UITheme.BgSolid, 0.98f)); Border(tr, 2f, UITheme.Accent);
         GUI.Label(new Rect(tx + 8f, ty + 5f, tw - 16f, nh), nm, tipName);
         if (dh > 0f) GUI.Label(new Rect(tx + 8f, ty + 5f + nh, tw - 16f, dh), desc, body);
         if (ih > 0f) GUI.Label(new Rect(tx + 8f, ty + 5f + nh + dh, tw - 16f, 20f), hoverInfo, val);
@@ -342,7 +279,7 @@ public class ShopUI : MonoBehaviour
     {
         if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
         if (title != null) return;
-        Color cream = new Color(0.95f, 0.91f, 0.80f), goldC = new Color(1f, 0.85f, 0.42f);
+        Color cream = new Color(0.90f, 0.95f, 1f), goldC = new Color(1f, 0.85f, 0.42f);
         title = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         title.normal.textColor = goldC;
         sec = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold }; sec.normal.textColor = cream;
@@ -355,7 +292,7 @@ public class ShopUI : MonoBehaviour
         slotName = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.MiddleCenter, wordWrap = true };
         price = new GUIStyle(GUI.skin.label) { fontSize = 11, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         tabOn = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        tabOn.normal.textColor = new Color(0.12f, 0.09f, 0.06f);
+        tabOn.normal.textColor = new Color(0.04f, 0.10f, 0.14f);
         tabOff = new GUIStyle(tabOn); tabOff.normal.textColor = cream;
         val = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold }; val.normal.textColor = goldC;
         heldNum = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };

@@ -84,8 +84,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 3
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Color: {r: 0.7, g: 0.4, b: 0.9, a: 1}
+  m_Sprite: {fileID: 21300000, guid: a8dd0b456715c674eae4d64c16596f36, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
@@ -172,6 +172,7 @@ MonoBehaviour:
   maxHealth: 22
   moveSpeed: 2
   detectRange: 7
+  detectHeight: 2.2
   attackRange: 3
   attackHeight: 1.2
   attackDamage: 1
@@ -179,6 +180,7 @@ MonoBehaviour:
   attackActive: 0.1
   attackRecover: 0.5
   attackCooldown: 1.8
+  firstAttackDelay: 0.6
   groggyDuration: 2
   groggyDamageMultiplier: 1.5
   groggyRecoverDelay: 1.2
@@ -205,7 +207,7 @@ MonoBehaviour:
   labelHeight: 1.2
   questKillId: 
   FaceForward: 1
-  InvertSprite: 1
+  InvertSprite: 0
   flySpeed: 3.5
   chargeSpeed: 12
   chargeTime: 0.45

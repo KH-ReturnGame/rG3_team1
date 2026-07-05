@@ -8,6 +8,7 @@ public class HandbookUI : MonoBehaviour
 {
     public static HandbookUI Instance;
     public KeyCode toggleKey = KeyCode.G;
+    public KeyCode mapKey = KeyCode.M;    // 지도 탭 바로 열기/닫기
 
     private bool open;
     private int tab;          // 0 도움말 / 1 지도 / 2 도감
@@ -28,6 +29,11 @@ public class HandbookUI : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(toggleKey)) open = !open;
+        if (Input.GetKeyDown(mapKey))   // [M] = 지도 탭 바로. 이미 지도 보는 중이면 닫기
+        {
+            if (open && tab == 1) open = false;
+            else { open = true; tab = 1; sel = 0; scroll = Vector2.zero; }
+        }
         if (open && Input.GetKeyDown(KeyCode.Escape)) open = false;
         Inventory.HandbookUIOpen = open;
     }
@@ -36,15 +42,14 @@ public class HandbookUI : MonoBehaviour
     {
         if (!open) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        float pw = Mathf.Min(780f, Screen.width - 60f);
-        float ph = Mathf.Min(480f, Screen.height - 60f);
-        float px = (Screen.width - pw) * 0.5f, py = (Screen.height - ph) * 0.5f;
+        float pw = Mathf.Min(780f, UIScale.W - 60f);
+        float ph = Mathf.Min(480f, UIScale.H - 60f);
+        float px = (UIScale.W - pw) * 0.5f, py = (UIScale.H - ph) * 0.5f;
         Rect panel = new Rect(px, py, pw, ph);
 
-        Fill(new Rect(px + 5, py + 6, pw, ph), new Color(0f, 0f, 0f, 0.4f));     // 그림자
-        Fill(panel, new Color(0.09f, 0.08f, 0.07f, 0.97f));                      // 배경
-        Border(panel, 3f, new Color(0.86f, 0.63f, 0.30f));                       // 금색 테두리
+        UITheme.DrawPanel(panel);   // 그림자+그라데+테두리+상단 오렌지 바
 
         GUI.Label(new Rect(px + 20f, py + 12f, pw - 40f, 32f), "모험 핸드북", titleStyle);
         // 닫기
@@ -61,9 +66,47 @@ public class HandbookUI : MonoBehaviour
         }
 
         Rect content = new Rect(px + 150f, py + 56f, pw - 166f, ph - 72f);
-        Border(content, 1f, new Color(0.4f, 0.34f, 0.25f));
+        Border(content, 1f, UITheme.Border);
         if (tab == 0) DrawHelpTab(content);
-        else GUI.Label(content, (tab == 1 ? "지도" : "도감") + " — 준비 중", dimStyle);
+        else if (tab == 1) DrawMapTab(content);
+        else GUI.Label(content, "도감 — 준비 중", dimStyle);
+    }
+
+    // 지도 탭: 일반 지도(지형·다음 포탈, 플레이어 위치 없음). 모듈 조건 없음 — [M]으로 바로.
+    private void DrawMapTab(Rect area)
+    {
+        Texture2D m = MapScanner.GetMap();
+        if (m == null)
+        {
+            var areas = MapDiscovery.DiscoveredAreas();
+            if (areas != null && areas.Count == 0)
+                GUI.Label(area, "아직 탐험한 구역이 없습니다.\n맵을 돌아다니면 지나온 구역이 지도에 채워집니다.", dimStyle);
+            else
+                GUI.Label(area, "이 구역에서는 지도를 만들 수 없습니다.", dimStyle);
+            return;
+        }
+
+        Fill(area, UITheme.A(UITheme.SlotBot, 0.9f));
+        float pad = 12f;
+
+        // 상단: 현재 구역명 + 탐사율
+        string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        string head = "현재 구역:  " + scene;
+        var zones = CameraZone.All;
+        var found = MapDiscovery.DiscoveredAreas();
+        if (zones != null && zones.Count > 0 && found != null)
+            head += "     탐사  " + found.Count + " / " + zones.Count + " 구역";
+        bodyTitleStyle.normal.textColor = new Color(1f, 0.85f, 0.42f);
+        GUI.Label(new Rect(area.x + pad, area.y + 8f, area.width - pad * 2f, 24f), head, bodyStyle);
+
+        Rect inner = new Rect(area.x + pad, area.y + pad + 24f, area.width - pad * 2f, area.height - pad * 2f - 42f);
+        float ar = (float)m.width / Mathf.Max(1, m.height);
+        float w = inner.width, h = w / ar;
+        if (h > inner.height) { h = inner.height; w = h * ar; }
+        Rect mr = new Rect(inner.x + (inner.width - w) * 0.5f, inner.y + (inner.height - h) * 0.5f, w, h);
+        GUI.DrawTexture(mr, m, ScaleMode.ScaleToFit);
+        GUI.Label(new Rect(area.x + pad, area.yMax - 20f, area.width - pad * 2f, 16f),
+            "탐험한 구역만 표시(지형 · 다음 포탈=주황) — 플레이어 위치는 보이지 않습니다.", dimStyle);
     }
 
     private void DrawHelpTab(Rect area)
@@ -93,9 +136,9 @@ public class HandbookUI : MonoBehaviour
 
     private bool Btn(Rect r, string label, bool selected)
     {
-        Fill(r, selected ? new Color(0.86f, 0.63f, 0.30f) : new Color(0.20f, 0.17f, 0.13f));
-        Border(r, 2f, new Color(0.5f, 0.4f, 0.28f));
-        itemStyle.normal.textColor = selected ? new Color(0.12f, 0.09f, 0.05f) : new Color(0.92f, 0.88f, 0.78f);
+        Fill(r, selected ? UITheme.Accent : UITheme.Panel);
+        Border(r, 2f, UITheme.Border);
+        itemStyle.normal.textColor = selected ? new Color(0.04f, 0.10f, 0.14f) : new Color(0.78f, 0.86f, 0.94f);
         GUI.Label(r, label, itemStyle);
         return Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition);
     }
@@ -105,7 +148,7 @@ public class HandbookUI : MonoBehaviour
     private void EnsureStyles()
     {
         if (titleStyle != null) return;
-        Color cream = new Color(0.95f, 0.91f, 0.80f), gold = new Color(1f, 0.85f, 0.42f);
+        Color cream = new Color(0.90f, 0.95f, 1f), gold = new Color(1f, 0.85f, 0.42f);
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
         titleStyle.normal.textColor = gold;
         tabStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 15, fontStyle = FontStyle.Bold };
@@ -115,7 +158,7 @@ public class HandbookUI : MonoBehaviour
         bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft };
         bodyStyle.normal.textColor = cream;
         dimStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        dimStyle.normal.textColor = new Color(0.7f, 0.65f, 0.55f);
+        dimStyle.normal.textColor = new Color(0.58f, 0.68f, 0.78f);
     }
 
     private static Texture2D Tex() { if (_tex == null) { _tex = new Texture2D(1, 1); _tex.SetPixel(0, 0, Color.white); _tex.Apply(); } return _tex; }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: antique_scroll
   itemName: "\uAE68\uC9C4 \uAE30\uD504\uD2B8 \uC2A4\uD06C\uB864"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 23c994317946f8f46a88f0573d55f3d0, type: 3}
   maxStack: 99
   description: "\uC804\uC7C1 \uC911 \uC9C0\uC0C1\uC778\uC774 \uAE30\uD504\uD2B8\uB97C
     1\uD68C\uC6A9\uC73C\uB85C \uC4F0\uB358 \uC2A4\uD06C\uB864\uC758 \uC794\uD574.
@@ -22,6 +22,7 @@ MonoBehaviour:
   kind: 3
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -32,4 +33,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 1000
   baseValue: 1000
+  sellAtFullValue: 0
   rarity: 2

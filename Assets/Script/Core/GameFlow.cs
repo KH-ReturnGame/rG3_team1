@@ -65,6 +65,7 @@ public class GameFlow : MonoBehaviour
     public void AdvanceStage()
     {
         if (!CanTransition) return;
+        if (QuestManager.Instance != null) QuestManager.Instance.CompleteById("guide_village");   // 우물로 내려가면 길잡이 완료
 
         if (!InRun)   // 스테이지 직접 Play 등 → 현재 씬 번호로 보정
         {
@@ -88,17 +89,21 @@ public class GameFlow : MonoBehaviour
     }
 
     // 보스 클리어 포탈 등에서 호출 → 클리어 결과창
+    //  · 보스 씬 직접 플레이 등으로 InRun이 안 켜져 있어도 결과창은 항상 띄움(집계만 0으로).
     public void ClearRun()
     {
-        if (!InRun) return;
+        if (!InRun) SnapshotRunStart();   // 스냅샷이 없으면 지금 기준(획득 목록은 비게 됨)
         ComputeGains();
         OpenResult(true);
     }
 
     // 사망 → 손실 적용 + 사망 결과창. GameManager.Die()에서 호출.
+    //  · 마을(허브)·시작메뉴·튜토리얼에서의 사망은 제외, 그 외(스테이지·보스 등)에서 죽으면 항상 결과창.
+    //    (InRun 플래그는 런 시작 플로우를 안 거치면 안 켜져서, 씬 기준으로 판정)
     public void OnRunPlayerDied()
     {
-        if (!InRun) return;   // 마을 등 런 밖 사망은 페널티 없음
+        string sc = SceneManager.GetActiveScene().name;
+        if (sc == hubScene || sc == "StartScene" || sc == "TutorialScene") return;
         ApplyDeathLosses();
         OpenResult(false);
     }
@@ -204,62 +209,81 @@ public class GameFlow : MonoBehaviour
         SceneFader.FadeToScene(scene);   // 페이드아웃 후 로드
     }
 
-    // ───────────────── 결과창 (임시 IMGUI) ─────────────────
-    private GUIStyle titleStyle, bodyStyle, itemStyle;
-    private Texture2D white;
+    // ───────────────── 결과창 (사이버펑크 시안 테마) ─────────────────
+    private GUIStyle titleStyle, goldStyle, bodyStyle, itemStyle, btnStyle;
 
     void OnGUI()
     {
         if (!showResult) return;
         EnsureStyles();
+        UIScale.Apply();   // 해상도 독립 스케일
 
-        // 화면 어둡게
-        GUI.color = new Color(0f, 0f, 0f, 0.6f);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
+        // Enter/Space/ESC로도 확인
+        if (Event.current.type == EventType.KeyDown &&
+            (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter
+             || Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Escape))
+        { Event.current.Use(); ConfirmResult(); return; }
 
-        float w = 480f, h = 390f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
-        GUI.color = new Color(0.13f, 0.10f, 0.08f, 0.99f);
-        GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f);
-        GUI.DrawTexture(new Rect(x, y, w, 4), white);
-        GUI.DrawTexture(new Rect(x, y + h - 4, w, 4), white);
-        GUI.color = Color.white;
+        UITheme.Fill(new Rect(0, 0, UIScale.W, UIScale.H), new Color(0f, 0f, 0f, 0.72f));   // 화면 어둡게
 
-        titleStyle.normal.textColor = resultCleared ? new Color(1f, 0.85f, 0.32f) : new Color(1f, 0.42f, 0.36f);
-        GUI.Label(new Rect(x, y + 22, w, 44), resultCleared ? "탐험 완료!" : "사망", titleStyle);
+        float w = 500f, h = 410f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
+        Rect panel = new Rect(x, y, w, h);
+        UITheme.DrawPanel(panel, false);   // 그림자+그라데+테두리(강조바는 헤더 색으로 직접)
 
-        GUI.Label(new Rect(x, y + 76, w, 30),
-            resultCleared ? ($"획득 골드   +{resultGold}") : ($"잃은 골드   -{resultGold}"), bodyStyle);
+        Color titleCol = resultCleared ? UITheme.Accent : UITheme.Danger;
+        UITheme.Fill(new Rect(x + 2f, y + 2f, w - 4f, 64f), UITheme.A(titleCol, 0.13f));    // 헤더 강조 띠
+        UITheme.Fill(new Rect(x + 2f, y + 66f, w - 4f, 2f), UITheme.A(titleCol, 0.9f));
+        titleStyle.normal.textColor = titleCol;
+        GUI.Label(new Rect(x, y + 12f, w, 44f), resultCleared ? "탐험 완료" : "사망", titleStyle);
 
-        GUI.Label(new Rect(x + 28, y + 118, w - 56, 26),
-            resultCleared ? "획득한 채집물 · 전리품" : "잃어버린 아이템", bodyStyle);
+        goldStyle.normal.textColor = resultCleared ? UITheme.Gold : UITheme.Danger;
+        GUI.Label(new Rect(x, y + 84f, w, 30f), (resultCleared ? "획득 골드  +" : "잃은 골드  -") + resultGold.ToString("N0") + " G", goldStyle);
 
-        float ly = y + 150;
+        bodyStyle.normal.textColor = UITheme.TextDim;
+        GUI.Label(new Rect(x + 30f, y + 126f, w - 60f, 24f), resultCleared ? "획득한 전리품 · 채집물" : "잃어버린 아이템", bodyStyle);
+        UITheme.Fill(new Rect(x + 30f, y + 152f, w - 60f, 1f), UITheme.A(UITheme.Border, 0.6f));
+
+        float ly = y + 162f;
+        itemStyle.normal.textColor = UITheme.Text;
         if (resultItems.Count == 0)
-            GUI.Label(new Rect(x + 34, ly, w - 68, 24), "—  없음  —", itemStyle);
+            GUI.Label(new Rect(x + 36f, ly, w - 72f, 24f), "—  없음  —", itemStyle);
         else
         {
-            int shown = Mathf.Min(resultItems.Count, 9);
+            int shown = Mathf.Min(resultItems.Count, 7);
             for (int i = 0; i < shown; i++)
-                GUI.Label(new Rect(x + 36, ly + i * 24, w - 72, 24), "·  " + resultItems[i], itemStyle);
+            {
+                if ((i & 1) == 1) UITheme.Fill(new Rect(x + 30f, ly + i * 24f, w - 60f, 24f), UITheme.A(Color.white, 0.03f));   // 줄무늬
+                GUI.Label(new Rect(x + 38f, ly + i * 24f, w - 76f, 24f), "·  " + resultItems[i], itemStyle);
+            }
             if (resultItems.Count > shown)
-                GUI.Label(new Rect(x + 36, ly + shown * 24, w - 72, 24), $"…외 {resultItems.Count - shown}개", itemStyle);
+                GUI.Label(new Rect(x + 38f, ly + shown * 24f, w - 76f, 24f), $"…외 {resultItems.Count - shown}개", itemStyle);
         }
 
-        // 확인 버튼 (오른쪽 아래) → 마을
-        if (GUI.Button(new Rect(x + w - 150f, y + h - 56f, 130f, 40f), "확인"))
-            ConfirmResult();
+        // 안내 한 줄(클리어만) + 확인 버튼 → 마을
+        if (resultCleared)
+        {
+            bodyStyle.normal.textColor = UITheme.A(UITheme.TextDim, 0.8f);
+            GUI.Label(new Rect(x, y + h - 92f, w, 20f), "전리품을 챙겨 마을로 돌아간다", bodyStyle);
+        }
+
+        Rect btn = new Rect(x + (w - 180f) * 0.5f, y + h - 62f, 180f, 44f);
+        bool hover = btn.Contains(Event.current.mousePosition);
+        if (hover) UITheme.Glow(btn, titleCol, 5f, 0.25f);
+        UITheme.FillV(btn, hover ? UITheme.Lighten(UITheme.Accent, 0.08f) : UITheme.Accent, UITheme.AccentDim);
+        UITheme.Border2(btn, 1.5f, UITheme.Lighten(UITheme.Accent, 0.2f));
+        btnStyle.normal.textColor = Color.white;
+        GUI.Label(btn, "확인", btnStyle);
+        if (Event.current.type == EventType.MouseDown && hover) { Event.current.Use(); ConfirmResult(); }
     }
 
     private void EnsureStyles()
     {
-        if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
         if (titleStyle != null) return;
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 32, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.MiddleCenter };
-        bodyStyle.normal.textColor = Color.white;
+        goldStyle = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
         itemStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleLeft };
-        itemStyle.normal.textColor = new Color(0.92f, 0.9f, 0.82f);
+        btnStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
     }
 }

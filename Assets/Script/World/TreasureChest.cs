@@ -14,10 +14,9 @@ public class TreasureChest : MonoBehaviour, IInteractable
     [Header("식별 (비우면 씬+위치로 자동 생성)")]
     public string chestId = "";
 
-    [Header("보상")]
-    public string lootItemId = "";   // 추가 아이템 id (Resources/Items, 비우면 없음)
-    public int lootCount = 1;
-    public int lootGold = 0;          // 가치(골드 환산) → 동화/은화/금화 화폐로 환산해 드랍
+    [Header("보상 — 아이템 (드래그로 추가, 칸마다 확률·개수)")]
+    public LootDrop[] loot;           // 이 상자에서 나올 아이템들(각 item/chance/minCount/maxCount). 적 드롭과 동일 방식.
+    public int lootGold = 0;          // 가치(골드 환산) → 동화/은화/금화로 환산해 드랍(0이면 화폐 없음)
 
     [Header("화폐 아이템 id (Resources/Items)")]
     public string copperCoinId = "copper_coin";   // 동화
@@ -29,7 +28,9 @@ public class TreasureChest : MonoBehaviour, IInteractable
     public float dropSpacing = 0.6f; // 공중에 한 줄로 띄울 때 간격
 
     [Header("연출 (선택)")]
-    public Sprite openedSprite;      // 열렸을 때 스프라이트(있으면 교체, 없으면 어둡게)
+    public Sprite[] openFrames;      // 열림 프레임 애니(0=닫힘 → 마지막=열림). 있으면 openedSprite보다 우선
+    public float openFps = 14f;      // 프레임 재생 속도
+    public Sprite openedSprite;      // (구) 단일 교체 — openFrames 없을 때 사용(없으면 어둡게)
     public string prompt = "F: 상자 열기";
 
     private bool isOpen;
@@ -58,27 +59,50 @@ public class TreasureChest : MonoBehaviour, IInteractable
         if (isOpen) return;
         openedKeys.Add(Key);
 
-        // 떨굴 목록 구성: 추가 아이템 + 골드 가치를 환산한 동화/은화/금화
+        // 떨굴 목록 구성: loot[] 아이템(확률) + 골드 가치를 환산한 동화/은화/금화
         var drops = new List<KeyValuePair<ItemData, int>>();
-        if (!string.IsNullOrEmpty(lootItemId))
-        {
-            ItemData item = ItemDatabase.Get(lootItemId);
-            if (item != null) drops.Add(new KeyValuePair<ItemData, int>(item, Mathf.Max(1, lootCount)));
-        }
+        if (loot != null)
+            foreach (var d in loot)
+            {
+                if (d == null || d.item == null || Random.value > d.chance) continue;
+                int cnt = Random.Range(d.minCount, Mathf.Max(d.minCount, d.maxCount) + 1);
+                if (cnt > 0) drops.Add(new KeyValuePair<ItemData, int>(d.item, cnt));
+            }
         if (lootGold > 0) AddCoinDrops(drops, lootGold);
 
-        // 상자 위 공중에 한 줄로 둥둥 띄움(튀어나오지 않음, F로 줍기)
+        // 상자 안(윗부분)에서 튀어나와 → 상자 위 공중에 한 줄로 안착(둥둥 + 그림자). 순차로 팝.
         Vector3 origin = transform.position + Vector3.up * 0.9f;
+        Vector3 from = transform.position + Vector3.up * 0.35f;   // 상자 뚜껑 안쪽에서 나오기
         int n = drops.Count;
         for (int i = 0; i < n; i++)
         {
             float ox = (i - (n - 1) * 0.5f) * dropSpacing;
             Vector3 pos = origin + new Vector3(ox, 0f, 0f);
-            ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true);   // hover=true → 둥둥
+            ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true, from, i * 0.07f);   // 튀어나오는 팝 + 스태거
         }
 
         Toast.Show("보물 상자를 열었다!", 2f);
-        ApplyOpenedVisual();
+
+        SetOpenedState();
+        if (sr != null && openFrames != null && openFrames.Length > 1) StartCoroutine(PlayOpenAnim());   // 뚜껑 열리는 프레임 애니
+        else ApplyOpenedVisual();
+    }
+
+    // 상호작용/감지 차단(공통)
+    private void SetOpenedState()
+    {
+        isOpen = true;
+        if (col != null) col.enabled = false;
+    }
+
+    private System.Collections.IEnumerator PlayOpenAnim()
+    {
+        float dt = 1f / Mathf.Max(1f, openFps);
+        for (int i = 0; i < openFrames.Length; i++)
+        {
+            if (openFrames[i] != null) sr.sprite = openFrames[i];
+            yield return new WaitForSeconds(dt);
+        }
     }
 
     // 골드 가치를 금화→은화→동화 순서로 환산해 드랍 목록에 추가(각 화폐 baseValue 기준)
@@ -93,14 +117,15 @@ public class TreasureChest : MonoBehaviour, IInteractable
         if (copper != null && rem > 0) { int v = Mathf.Max(1, copper.baseValue); int c = Mathf.RoundToInt(rem / (float)v); if (c > 0) drops.Add(new KeyValuePair<ItemData, int>(copper, c)); }
     }
 
+    // 즉시 '열린 상태' 비주얼(씬 재진입 복원 등 — 애니 없이 마지막 프레임으로)
     private void ApplyOpenedVisual()
     {
-        isOpen = true;
+        SetOpenedState();
         if (sr != null)
         {
-            if (openedSprite != null) sr.sprite = openedSprite;
+            if (openFrames != null && openFrames.Length > 0) sr.sprite = openFrames[openFrames.Length - 1];
+            else if (openedSprite != null) sr.sprite = openedSprite;
             else { Color c = sr.color; sr.color = new Color(c.r * 0.45f, c.g * 0.45f, c.b * 0.45f, 1f); }   // 어둡게 = 열림 표시
         }
-        if (col != null) col.enabled = false;   // 더는 상호작용/감지 대상 아님
     }
 }
