@@ -135,7 +135,7 @@ public class Minimap : MonoBehaviour
     {
         if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (!visible) return;
-        if (GameManager.Instance == null || !GameManager.Instance.HasMinimap) return;   // 미니맵 모듈 해금 필요
+        if (GameManager.Instance == null) return;   // 미니맵은 기본 제공(모듈 해금 불필요)
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
         if (Inventory.IsUIOpen) return;   // 전체 UI 열렸을 땐 숨김
         if (player == null) { if (PlayerController.Instance != null) player = PlayerController.Instance.transform; else return; }

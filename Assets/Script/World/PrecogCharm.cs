@@ -44,14 +44,35 @@ public class PrecogCharm : MonoBehaviour
         return null;
     }
 
+    [Header("발동 타이밍")]
+    [Range(0f, 0.95f)] public float windupLateFraction = 0.85f;   // 예비동작이 이만큼 지난 '직전'에 발동
+    private bool armed;
+
     private void OnWindup(Enemy e)
     {
-        if (e == null || SlowMoFx.Active) return;            // 이미 슬로우(패링 레슨 등)면 중복 방지
+        if (e == null || SlowMoFx.Active || armed) return;    // 이미 슬로우/대기 중이면 중복 방지
         if (Time.unscaledTime < nextReadyTime) return;        // 쿨다운
         var pc = PlayerController.Instance;
         if (pc == null || e.TargetPlayer != pc.transform) return;   // 플레이어를 노리는 공격만
+        if (EquippedPrecog() == null) return;                 // 예지안 미착용
+        StartCoroutine(FireLate(e, pc));
+    }
+
+    // 예비동작 후반까지 기다렸다가 '맞기 직전'에 발동
+    private System.Collections.IEnumerator FireLate(Enemy e, PlayerController pc)
+    {
+        armed = true;
+        float wait = Mathf.Max(0f, e.attackWindup * windupLateFraction);
+        float t = 0f;
+        while (t < wait)
+        {
+            if (e == null || !e.IsAttacking) { armed = false; yield break; }   // 공격 취소
+            t += Time.deltaTime;
+            yield return null;
+        }
+        armed = false;
         var charm = EquippedPrecog();
-        if (charm == null) return;                            // 예지안 미착용
+        if (e == null || !e.IsAttacking || charm == null || SlowMoFx.Active) yield break;
 
         SlowMoFx.BeginTimed(slowScale, slowDuration);
         nextReadyTime = Time.unscaledTime + Mathf.Max(1f, charm.precogCooldown);

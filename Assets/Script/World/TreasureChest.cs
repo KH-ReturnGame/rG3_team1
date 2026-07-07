@@ -81,8 +81,6 @@ public class TreasureChest : MonoBehaviour, IInteractable
             ItemPickup.SpawnWorld(drops[i].Key, drops[i].Value, pos, dropSize, true, from, i * 0.07f);   // 튀어나오는 팝 + 스태거
         }
 
-        Toast.Show("보물 상자를 열었다!", 2f);
-
         SetOpenedState();
         if (sr != null && openFrames != null && openFrames.Length > 1) StartCoroutine(PlayOpenAnim());   // 뚜껑 열리는 프레임 애니
         else ApplyOpenedVisual();
