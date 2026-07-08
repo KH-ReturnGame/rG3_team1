@@ -110,11 +110,27 @@ public class BattleArena : MonoBehaviour
             active = false;
             cleared = oneTime;
             SetDoors(false);
+            bool chestAppeared = false;
             if (onClearActivate != null)
-                foreach (var g in onClearActivate) if (g != null) g.SetActive(true);   // 상자·다음 길 등장
+                foreach (var g in onClearActivate)
+                    if (g != null)
+                    {
+                        g.SetActive(true);   // 상자·다음 길 등장
+                        if (g.GetComponentInChildren<TreasureChest>(true) != null) chestAppeared = true;
+                    }
             Toast.Show("구역 클리어!", 2f);
+
+            // 보상 상자가 처음 등장하면 보물상자 도움말도 함께(세션당 1회)
+            if (chestAppeared && !chestHelpShown && HelpPopupUI.Instance != null)
+            {
+                chestHelpShown = true;
+                HelpPopupUI.Instance.ShowTimed("보물상자",
+                    "전투의 보상 — 보물상자가 나타났습니다!\n가까이 가서 [F]로 열면 포션·재료·장신구 같은 전리품을 얻을 수 있습니다.", 8f);
+            }
         }
     }
+
+    private static bool chestHelpShown;   // 보물상자 도움말(아레나 보상) 세션당 1회
 
     // 문 개폐 — 닫힘: 땅속에서 스르륵 올라옴 / 열림: 스르륵 내려가고 비활성.
     private void SetDoors(bool closed)
@@ -140,13 +156,27 @@ public class BattleArena : MonoBehaviour
 
         if (closed)
         {
-            // 위에서 낙하(가속) → 착지 충격
+            // 닫힘: 처음 1/3 거리는 '천천히' 내려오다가 → 그 뒤 급가속해 쾅
             d.SetActive(true);
             d.transform.position = hidden;
-            while (t < dur)
+
+            // 1단계: 거리의 1/3을 전체 시간의 60% 동안 일정 속도로(긴장감)
+            float slowDur = dur * 0.6f;
+            while (t < slowDur)
             {
-                float k = t / dur;
-                d.transform.position = Vector3.Lerp(hidden, closedPos, k * k);   // ease-in = 떨어지는 가속감
+                float k = (t / slowDur) * (1f / 3f);                       // 0 → 1/3
+                d.transform.position = Vector3.Lerp(hidden, closedPos, k);
+                t += Time.deltaTime;
+                yield return null;
+            }
+            // 2단계: 남은 2/3 거리를 급가속(ease-in 제곱)으로 쾅
+            float fastDur = dur * 0.4f;
+            t = 0f;
+            while (t < fastDur)
+            {
+                float k2 = t / fastDur;
+                float k = 1f / 3f + (2f / 3f) * (k2 * k2);                  // 1/3 → 1 (가속)
+                d.transform.position = Vector3.Lerp(hidden, closedPos, k);
                 t += Time.deltaTime;
                 yield return null;
             }

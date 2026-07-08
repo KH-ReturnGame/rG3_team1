@@ -183,6 +183,17 @@ public class CombatTutorial : MonoBehaviour
         {
             // 이후(또는 원거리): 예지만 발동 — 피하거나 스스로 패링
             SlowMoFx.BeginTimed(slowScale + 0.08f, 1.6f);
+            StartCoroutine(EndPrecogWhenOver(e));   // 패링 성공/공격 종료 시 즉시 해제
+        }
+    }
+
+    // 예지 슬로우 조기 해제: 적이 더는 공격 중이 아니면(패링당해 그로기 포함) 바로 시간 복구
+    private System.Collections.IEnumerator EndPrecogWhenOver(Enemy e)
+    {
+        while (SlowMoFx.Active)
+        {
+            if (e == null || !e.IsAttacking) { SlowMoFx.End(); yield break; }
+            yield return null;
         }
     }
 

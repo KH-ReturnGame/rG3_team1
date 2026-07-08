@@ -181,10 +181,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   maxHealth: 40
   moveSpeed: 2
-  detectRange: 6
+  detectRange: 8
   detectHeight: 2.2
-  attackRange: 1.4
-  attackHeight: 1.2
+  attackRange: 2
+  attackHeight: 1.5
   attackDamage: 1
   attackWindup: 0.45
   attackActive: 0.1

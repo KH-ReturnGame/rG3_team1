@@ -61,7 +61,10 @@ public class PlayerController : MonoBehaviour
 
     [Header("Guard & Parry")]
     public float parryWindow = 0.5f;
+    public float justParryWindow = 0.18f;   // 가드 시작 후 이 시간 안에 맞으면 '저스트 패링'(그로기+강연출). 이후는 '쳐내기'(무효+약연출)
+    public float parryChainWindow = 0.35f;  // 패링 직후 이 시간 안의 연속 근접 공격은 자동으로 쳐냄(다단기 대응)
     private float parryTimer;
+    private float parryChainTimer;
     private bool isGuarding;
     private bool isParrying;
 
@@ -310,6 +313,7 @@ public class PlayerController : MonoBehaviour
             parryTimer -= Time.deltaTime;
             if (parryTimer <= 0) isParrying = false;
         }
+        if (parryChainTimer > 0f) parryChainTimer -= Time.deltaTime;
 
         if (skillCooldownTimer > 0) skillCooldownTimer -= Time.deltaTime;
         if (animBusyTimer > 0) animBusyTimer -= Time.deltaTime;
@@ -806,7 +810,46 @@ public class PlayerController : MonoBehaviour
         isGuarding = false;
         isParrying = false;
         guardCooldownTimer = guardCooldown;   // 같은 프레임의 우클릭이 일반 가드로 중복 처리되는 것 방지
-        Juice.ParryHit();                 // "팅" — 히트스톱 + 셰이크 + 플래시
+        parryChainTimer = parryChainWindow;   // 연속 패링 개시
+        var ac = attacker as Component;
+        Juice.JustParry();                // "팅" — 히트스톱 + 셰이크 + 금빛 플래시
+        ParryFx.Spark(SparkPos(ac != null ? (Vector2)ac.transform.position : default(Vector2)), true);
+    }
+
+    // 저스트 패링 — 완벽 타이밍: 적 그로기 + 반격 모션 + Q쿨 초기화 + 강한 연출
+    private void JustParry(bool isMeleeAttacker, IParryable attacker, Vector2 source)
+    {
+        if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
+        PlayStateForced(parrySuccessState);     // 반격 모션(인스펙터에서 교체 가능)
+        animBusyTimer = ClipLength(parrySuccessState);
+        skillCooldownTimer = 0f;                // Q스킬 즉시 초기화
+        isParrying = false;                     // 이번 윈도우 소진 — 후속타는 체인이 받는다
+        guardParried = true;                    // 가드 쿨타임 면제(즉시 재가드 가능)
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;     // 연속 패링 개시
+        Juice.JustParry();
+        ParryFx.Spark(SparkPos(source), true);
+    }
+
+    // 쳐내기(디플렉트) — 늦은 패링·연속 추가타: 피해 무효 + 가벼운 연출(그로기·Q쿨 보상 없음)
+    private void Deflect(Vector2 source)
+    {
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState) * 0.5f;   // 짧게 끊어 바로 다음 행동 가능
+        isParrying = false;
+        guardParried = true;
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;     // 체인 갱신 — 다단기를 끝까지 쳐냄
+        Juice.Deflect();
+        ParryFx.Spark(SparkPos(source), false);
+    }
+
+    // 스파크 위치: 플레이어 가슴 높이에서 공격자 쪽으로 약간
+    private Vector2 SparkPos(Vector2 source)
+    {
+        Vector2 me = (Vector2)transform.position + Vector2.up * 0.7f;
+        if (source == default(Vector2)) return me;
+        return me + new Vector2(Mathf.Sign(source.x - transform.position.x) * 0.55f, 0f);
     }
 
     public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default, bool nonLethal = false)
@@ -815,13 +858,16 @@ public class PlayerController : MonoBehaviour
 
         if (isParrying)
         {
-            if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
-            PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
-            animBusyTimer = ClipLength(parrySuccessState);
-            skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
-            guardParried = true;       // 패링 성공 → 가드 쿨타임 초기화(해제해도 안 걸림 → 즉시 재가드)
-            guardCooldownTimer = 0f;
-            Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
+            // 판정 세분화: 윈도우 앞부분 = 저스트 패링(그로기+강연출) / 뒷부분 = 쳐내기(무효+약연출)
+            if (parryWindow - parryTimer <= justParryWindow) JustParry(isMeleeAttacker, attacker, source);
+            else Deflect(source);
+            return;
+        }
+
+        // 연속 패링: 패링 직후 짧은 시간 안의 근접 추가타는 자동으로 쳐냄(다단 공격 대응)
+        if (parryChainTimer > 0f && isMeleeAttacker)
+        {
+            Deflect(source);
             return;
         }
 

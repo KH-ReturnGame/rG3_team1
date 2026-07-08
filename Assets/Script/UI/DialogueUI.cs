@@ -23,6 +23,11 @@ public class DialogueUI : MonoBehaviour
     private float openTime;
     private const float CharsPerSec = 48f;
 
+    // 대사 스킵: [Ctrl]을 길게 누르면 대화 전체를 건너뜀(onComplete는 정상 실행 — 컷씬 체인 안전)
+    public KeyCode skipKey = KeyCode.LeftControl;
+    public float skipHold = 0.6f;
+    private float skipTimer;
+
     // ── 줄 연출 ──
     private enum LineFx { None, Surprise, Shake, Tremble }
     private LineFx curFx;
@@ -118,6 +123,14 @@ public class DialogueUI : MonoBehaviour
         int len = curText.Length;
         if (shown < len) shown += CharsPerSec * Time.unscaledDeltaTime;
 
+        // [Ctrl] 길게 → 대화 전체 스킵
+        if (Input.GetKey(skipKey))
+        {
+            skipTimer += Time.unscaledDeltaTime;
+            if (skipTimer >= skipHold) { skipTimer = 0f; Close(); return; }
+        }
+        else skipTimer = 0f;
+
         if (Time.unscaledTime - openTime < 0.18f) return;   // 연 직후 입력 무시(여는 F가 첫 줄을 바로 넘기지 않게)
         bool advance = Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.F)
             || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)
@@ -177,6 +190,16 @@ public class DialogueUI : MonoBehaviour
         {
             hintStyle.normal.textColor = UITheme.Lighten(UITheme.Accent, 0.2f);
             GUI.Label(new Rect(box.xMax - 42f, box.yMax - 34f, 24f, 24f), "▼", hintStyle);
+        }
+
+        // 스킵 힌트(우상단) + 홀드 진행 게이지
+        nameStyle.normal.textColor = new Color(0.55f, 0.56f, 0.60f);
+        GUI.Label(new Rect(box.xMax - 190f, box.y + 10f, 175f, 20f), "[Ctrl] 길게 — 건너뛰기", nameStyle);
+        if (skipTimer > 0.02f)
+        {
+            Rect sg = new Rect(box.xMax - 190f, box.y + 32f, 170f, 4f);
+            UITheme.Fill(sg, UITheme.A(UITheme.Border, 0.4f));
+            UITheme.Fill(new Rect(sg.x, sg.y, sg.width * Mathf.Clamp01(skipTimer / skipHold), sg.height), UITheme.Accent);
         }
     }
 

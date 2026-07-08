@@ -23591,6 +23591,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 985411727}
     m_Modifications:
+    - target: {fileID: 3729243189143462223, guid: bbbaec114f535aa4f94df0d4a587490c, type: 3}
+      propertyPath: moveBehavior
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 6103463829659848265, guid: bbbaec114f535aa4f94df0d4a587490c, type: 3}
       propertyPath: m_Name
       value: Enemy_Melee
@@ -24290,7 +24294,7 @@ Transform:
   m_GameObject: {fileID: 1866856719}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 54.2, y: -2.18, z: 0}
+  m_LocalPosition: {x: 42.4, y: 6.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -24348,7 +24352,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 8.02075, y: 1.371069}
+  m_Offset: {x: 9.961971, y: 1.371069}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -24358,7 +24362,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 19.0415, y: 6.742138}
+  m_Size: {x: 15.159058, y: 6.742138}
   m_EdgeRadius: 0
 --- !u!1 &1910015169
 GameObject:

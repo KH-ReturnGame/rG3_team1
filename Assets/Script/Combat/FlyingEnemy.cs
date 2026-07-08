@@ -24,6 +24,7 @@ public class FlyingEnemy : Enemy
     private Vector2 wanderTarget;
     private float wanderNext;
     private float flutterSeed;
+    private int wallMask;               // 벽/지형(Ground) — 뚫고 못 지나가게 속도 차단
 
     private Vector2 chargeDir;
     private float bobPhase;
@@ -36,11 +37,25 @@ public class FlyingEnemy : Enemy
         flutterSeed = Random.Range(0f, 100f);
         wanderTarget = spawnPos;
         wanderNext = Time.time + Random.Range(0.3f, 1.2f);   // 개체별 위상 분산
+        wallMask = LayerMask.GetMask("Ground");
     }
 
     // 날개 파닥임(빠른 잔진동) — 속도에 더해 '펄럭이며 나는' 느낌을 만든다
     private float Flap(float strength = 1f)
         => Mathf.Sin(Time.time * flapHz + bobPhase) * flutterAmp * strength;
+
+    // 벽 차단: 콜라이더가 트리거(지형 통과)라 물리로는 안 막힘 → 이동 방향에 벽이 있으면 그 축 속도를 0으로.
+    private Vector2 BlockWalls(Vector2 vel)
+    {
+        const float skin = 0.45f;   // 벽 앞 여유
+        if (Mathf.Abs(vel.x) > 0.01f &&
+            Physics2D.Raycast(transform.position, new Vector2(Mathf.Sign(vel.x), 0f), Mathf.Abs(vel.x) * Time.deltaTime + skin, wallMask).collider != null)
+            vel.x = 0f;
+        if (Mathf.Abs(vel.y) > 0.01f &&
+            Physics2D.Raycast(transform.position, new Vector2(0f, Mathf.Sign(vel.y)), Mathf.Abs(vel.y) * Time.deltaTime + skin, wallMask).collider != null)
+            vel.y = 0f;
+        return vel;
+    }
 
     private float Dist2D() => player == null ? Mathf.Infinity : Vector2.Distance(player.position, transform.position);
     private void FaceMoveDir(float vx) { if (Mathf.Abs(vx) > 0.05f) dir = vx >= 0 ? 1 : -1; }
@@ -61,7 +76,7 @@ public class FlyingEnemy : Enemy
         // 목표로 향하는 부드러운 속도 + 날개 파닥임(수직 잔진동) → 위아래로 펄럭이며 전진
         Vector2 seek = Vector2.ClampMagnitude(to * 2.2f, flySpeed);
         seek.y += Flap();                                   // 파닥임
-        SetVelocity(seek);
+        SetVelocity(BlockWalls(seek));
 
         if (Dist2D() <= detectRange) state = State.Chase;
     }
@@ -74,7 +89,7 @@ public class FlyingEnemy : Enemy
         Vector2 to = (Vector2)(player.position - transform.position);
         FaceMoveDir(to.x);
         if (to.magnitude <= attackRange) { SetVelocity(Vector2.zero); if (attackCdTimer <= 0) BeginAttack(); }
-        else { Vector2 v = to.normalized * flySpeed; v.y += Flap(0.5f); SetVelocity(v); }   // 쫓을 때도 살짝 파닥임
+        else { Vector2 v = to.normalized * flySpeed; v.y += Flap(0.5f); SetVelocity(BlockWalls(v)); }   // 쫓을 때도 살짝 파닥임
     }
 
     protected override void TickWindup()   // 정지 후 돌진 방향 조준(텔레그래프 — 패링 노릴 구간)
@@ -93,6 +108,13 @@ public class FlyingEnemy : Enemy
 
     protected override void TickStrike()   // 돌진(직진) + 접촉 피해
     {
+        // 돌진 경로에 벽 → 벽 앞에서 돌진 종료(뚫고 나가지 않음)
+        if (Physics2D.Raycast(transform.position, chargeDir, chargeSpeed * Time.deltaTime + 0.5f, wallMask).collider != null)
+        {
+            SetVelocity(Vector2.zero);
+            state = State.Recover; stateTimer = attackRecover;
+            return;
+        }
         SetVelocity(chargeDir * chargeSpeed);
         if (!struck && player != null && Dist2D() <= contactRange)
         {

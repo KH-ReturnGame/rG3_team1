@@ -11,8 +11,8 @@ public class TutorialSequence : MonoBehaviour
     [Header("접근 몬스터")]
     public GameObject meleePrefab;         // Enemy_Melee 프리팹
     public float spawnOffsetX = -12f;      // 플레이어 기준 왼쪽 스폰 거리
-    public float alarmDistance = 4.5f;     // 이 거리 안으로 오면 경고 독백
     public float approachSpeed = 1.1f;     // 천천히 걸어오는 속도
+    public float lineGap = 1.6f;           // 첫 독백 끝 ~ 경고 대사 사이 간격(적이 다가오는 그림을 보는 시간)
 
     [Header("아레나 클리어 안내(보상 상자 달린 아레나)")]
     public BattleArena arena;
@@ -55,15 +55,12 @@ public class TutorialSequence : MonoBehaviour
         float tail = 6f;
         while (pc.cutsceneActive && tail > 0f) { tail -= Time.deltaTime; yield return null; }
 
-        // 접근몹이 가까워질 때까지
-        float safety = 20f;
-        while (approacher != null && safety > 0f
-               && Vector2.Distance(approacher.transform.position, pc.transform.position) > alarmDistance)
-        { safety -= Time.deltaTime; yield return null; }
+        // ★대사는 한 흐름으로: 조작을 풀지 않고 잠깐의 '간격'(적이 걸어오는 그림) 후 바로 경고 독백
+        pc.cutsceneActive = true; pc.ZeroVelocity();
+        yield return new WaitForSeconds(lineGap);
 
         // 경고 독백 → 발도(아픔을 참고)
         bool done = false;
-        pc.cutsceneActive = true; pc.ZeroVelocity();
         DialogueUI.Show("???", null, alarmLines, () => done = true);
         while (!done) yield return null;
         pc.CutsceneDrawSword();

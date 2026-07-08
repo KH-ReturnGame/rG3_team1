@@ -21,7 +21,11 @@ public class Juice : MonoBehaviour
     public static void Flash(Color c, float dur) { if (Instance != null) { Instance.flashColor = c; Instance.flashDur = Mathf.Max(0.01f, dur); Instance.flashTimer = Instance.flashDur; } }
 
     public static void Hit()      { HitStop(0.05f); Shake(0.14f, 0.12f); }                                          // 적 적중
-    public static void ParryHit() { HitStop(0.12f); Shake(0.38f, 0.25f); Flash(new Color(1f, 1f, 1f, 0.32f), 0.12f); } // 패링 성공(강하게)
+    // 저스트 패링 — 세키로식 '팅': 긴 히트스톱 + 강한 셰이크 + 금빛 플래시
+    public static void JustParry() { HitStop(0.17f); Shake(0.55f, 0.3f); Flash(new Color(1f, 0.86f, 0.45f, 0.4f), 0.15f); }
+    // 일반 쳐내기(디플렉트) — 가볍게 '탁'
+    public static void Deflect()   { HitStop(0.05f); Shake(0.20f, 0.14f); }
+    public static void ParryHit() => JustParry();   // (구) 호환 별칭
 
     private void DoHitStop(float dur)
     {

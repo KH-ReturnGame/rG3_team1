@@ -78,6 +78,13 @@ public class PrecogCharm : MonoBehaviour
         nextReadyTime = Time.unscaledTime + Mathf.Max(1f, charm.precogCooldown);
         SpawnEyeFlash(pc);
         Toast.Show("예지안 — 시간이 느려진다", 1.2f);
+
+        // 조기 해제: 패링 성공(그로기)·공격 종료 시 즉시 시간 복구
+        while (SlowMoFx.Active)
+        {
+            if (e == null || !e.IsAttacking) { SlowMoFx.End(); yield break; }
+            yield return null;
+        }
     }
 
     // 외부(튜토리얼 각성 등)에서 눈빛 연출만 재생
