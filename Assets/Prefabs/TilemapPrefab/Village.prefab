@@ -124,7 +124,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7095354989424828615}
   - component: {fileID: 3693848306361867998}
-  - component: {fileID: 7409841597261922281}
   - component: {fileID: 6640301285613467106}
   m_Layer: 0
   m_Name: Teleport
@@ -207,18 +206,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &7409841597261922281
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1373710728737088973}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5cf6cf60f8c0e0245a6c359cf3b4f172, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StartAreaTeleporter
 --- !u!58 &6640301285613467106
 CircleCollider2D:
   m_ObjectHideFlags: 0

@@ -143,7 +143,7 @@ public class HelpPopupUI : MonoBehaviour
         GUI.Label(new Rect(x + pad + 16f, hy, 76f, headH), "도움말", tagStyle);
         titleStyle.normal.textColor = new Color(0.97f, 0.96f, 0.94f, a);
         GUI.Label(new Rect(x + pad + 92f, hy - 2f, w - pad * 2f - 92f - 36f, headH), e.title, titleStyle);
-        UITheme.Fill(new Rect(x + pad, hy + headH, w - pad * 2f, 1f), UITheme.A(UITheme.Border, 0.5f * a));
+        UITheme.Divider(x + pad, hy + headH, w - pad * 2f, 0.5f * a);   // 장식 구분선(양끝 다이아)
 
         // 본문([키]·*강조*는 오렌지 볼드)
         bodyStyle.normal.textColor = new Color(0.90f, 0.91f, 0.94f, a);

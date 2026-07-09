@@ -136,8 +136,15 @@ public class Hotbar : MonoBehaviour
         {
             UITheme.Shadow(ctxRect, 8f, 0.4f);
             UITheme.FillV(ctxRect, UITheme.PanelTop, UITheme.PanelBot);
-            UITheme.Border2(ctxRect, 2f, UITheme.Accent);
-            if (ctxRect.Contains(mouse)) UITheme.Fill(ctxRect, UITheme.A(UITheme.Accent, 0.16f));
+            UITheme.Border2(ctxRect, 1.2f, UITheme.A(UITheme.Accent, 0.85f));
+            UITheme.Corners(ctxRect, 8f, 2f);
+            bool ctxHv = ctxRect.Contains(mouse);
+            if (ctxHv)
+            {
+                UITheme.Fill(ctxRect, UITheme.A(UITheme.Accent, 0.14f));
+                UITheme.Fill(new Rect(ctxRect.x, ctxRect.y + 5f, 3f, ctxRect.height - 10f), UITheme.Accent);   // 좌측 금바
+            }
+            ctxStyle.normal.textColor = ctxHv ? Color.white : UITheme.Text;
             GUI.Label(ctxRect, "슬롯에서 제거", ctxStyle);
             if (GUI.Button(ctxRect, GUIContent.none, GUIStyle.none)) { UnregisterSlot(ctxSlot); ctxSlot = -1; }
         }

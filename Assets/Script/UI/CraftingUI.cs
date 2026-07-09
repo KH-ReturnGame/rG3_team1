@@ -144,6 +144,7 @@ public class CraftingUI : MonoBehaviour
             GUI.Label(tr, tabs[i], on ? tabOn : tabOff);
             if (click && tr.Contains(m)) { tab = i; selected = null; Event.current.Use(); }
         }
+        UITheme.Divider(x + pad, ty + tabH + 1f, w - pad * 2f, 0.35f);   // 탭 아래 장식 구분선
 
         float bodyY = ty + tabH + 6f;
 
@@ -167,7 +168,7 @@ public class CraftingUI : MonoBehaviour
 
             if (sel) UITheme.Glow(slot, UITheme.Accent, 5f, 0.30f);
             UITheme.DrawSlot(slot, sel ? UITheme.Accent : UITheme.Border, hv, sel ? 2.5f : 1.5f);
-            UITheme.RarityRing(slot, outIt.RarityColor());
+            UITheme.RarityRing(slot, outIt);
 
             var prev = GUI.color;
             if (!can) GUI.color = new Color(1f, 1f, 1f, 0.32f);   // 재료 부족 = 흐림
@@ -201,7 +202,7 @@ public class CraftingUI : MonoBehaviour
                 float bigS = 76f;
                 Rect big = new Rect(det.x, det.y + 4f, bigS, bigS);
                 UITheme.DrawSlot(big, UITheme.Border, false, 1.5f);
-                UITheme.RarityRing(big, outIt.RarityColor());
+                UITheme.RarityRing(big, outIt);
                 if (outIt.icon != null) GUI.DrawTexture(new Rect(big.x + 7, big.y + 7, bigS - 14, bigS - 14), outIt.icon.texture, ScaleMode.ScaleToFit);
 
                 name_.normal.textColor = outIt.RarityColor();
@@ -269,23 +270,31 @@ public class CraftingUI : MonoBehaviour
         return enabled && click && r.Contains(m);
     }
 
+    private GUIStyle tipSub;   // 등급명 전용(다른 스타일 색 오염 방지)
     private void DrawTip(ItemData it, Vector2 m)
     {
+        if (tipSub == null) tipSub = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperRight };
         float tw = 290f;
-        name_.normal.textColor = it.RarityColor();
+        Color rc = it.RarityColor();
+        name_.normal.textColor = rc;
         string nm = it.itemName, desc = it.description;
-        float nh = name_.CalcHeight(new GUIContent(nm), tw - 16f);
-        float dh = string.IsNullOrEmpty(desc) ? 0f : body.CalcHeight(new GUIContent(desc), tw - 16f);
-        float th = nh + dh + 16f;
+        float nh = name_.CalcHeight(new GUIContent(nm), tw - 20f);
+        float dh = string.IsNullOrEmpty(desc) ? 0f : body.CalcHeight(new GUIContent(desc), tw - 20f);
+        float th = 10f + nh + 9f + (dh > 0f ? dh + 4f : 0f) + 8f;
         float tx = m.x + 16f, tyy = m.y + 16f;
         if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
         if (tyy + th > UIScale.H) tyy = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, tyy, tw, th);
-        UITheme.Shadow(tr, 10f, 0.32f);
-        UITheme.FillV(tr, UITheme.PanelTop, UITheme.PanelBot);
-        UITheme.Border2(tr, 2f, UITheme.A(it.RarityColor(), 0.85f));
-        GUI.Label(new Rect(tx + 8f, tyy + 5f, tw - 16f, nh), nm, name_);
-        if (dh > 0f) GUI.Label(new Rect(tx + 8f, tyy + 5f + nh, tw - 16f, dh), desc, body);
+        UITheme.TipFrame(tr, rc);   // 금테 + 상단 희귀도 라인 + 코너 캡
+
+        float cy = tyy + 10f;
+        GUI.Label(new Rect(tx + 10f, cy, tw - 20f, nh), nm, name_);
+        tipSub.normal.textColor = UITheme.A(rc, 0.9f);
+        GUI.Label(new Rect(tx + 10f, cy + 3f, tw - 22f, 18f), UITheme.RarityName(it.rarity), tipSub);
+        cy += nh + 3f;
+        UITheme.Fill(new Rect(tx + 10f, cy, tw - 20f, 1f), UITheme.A(UITheme.Border, 0.5f));
+        cy += 6f;
+        if (dh > 0f) GUI.Label(new Rect(tx + 10f, cy, tw - 20f, dh), desc, body);
     }
 
     private void EnsureStyles()

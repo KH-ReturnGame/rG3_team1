@@ -40,7 +40,7 @@ public static class InvGridGUI
             bool hv = held == null && fr.Contains(mouse);
             UITheme.FillV(fr, hv ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
             UITheme.Border2(fr, 1.2f, hv ? UITheme.Lighten(UITheme.Border, 0.22f) : UITheme.Border);
-            UITheme.RarityRing(fr, s.item.RarityColor());
+            UITheme.RarityRing(fr, s.item);
             DrawIcon(fr, s.item, s.count, s.rot);
             if (hv) hover = s.item;
         }

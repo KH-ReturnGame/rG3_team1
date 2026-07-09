@@ -144,7 +144,9 @@ public class Minimap : MonoBehaviour
         float bs = boxSize;
         Rect box = new Rect(UIScale.W - bs - margin, margin, bs, bs);
         Fill(box, UITheme.A(UITheme.BgSolid, 0.82f));
-        Border(box, 2f, UITheme.A(UITheme.Accent, 0.9f));
+        Border(box, 1.5f, UITheme.A(UITheme.Accent, 0.8f));                                      // 얇은 금테
+        Border(new Rect(box.x + 4f, box.y + 4f, box.width - 8f, box.height - 8f), 1f, UITheme.A(UITheme.Accent, 0.20f));   // 안쪽 이중 프레임
+        UITheme.Corners(box, 12f, 2.5f);                                                          // 금색 코너 브래킷
 
         Vector2 center = new Vector2(box.x + bs * 0.5f, box.y + bs * 0.5f);
         float half = bs * 0.5f - 6f;

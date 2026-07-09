@@ -147,10 +147,78 @@ public static class UITheme
         Border2(r, hover ? thickness + 0.5f : thickness, hover ? Lighten(border, 0.22f) : border);
     }
 
-    // 아이템 희귀도 링(슬롯 안쪽 얇은 테두리)
+    // 아이템 희귀도 테두리(등급별 차등) — 등급이 오를수록 장식이 한 겹씩 쌓인다.
+    //  Common: 옅은 링만(조용하게) / Uncommon: 링+대각 캡 / Rare: +4코너 캡+글로우
+    //  Epic: +안쪽 이중 링+상단 다이아 / Legendary: +숨쉬는 펄스 글로우+하단 다이아
+    public static void RarityRing(Rect r, ItemData item)
+    {
+        if (item == null) return;
+        Color c = item.RarityColor();
+        int tier = (int)item.rarity;
+        Rect rr = new Rect(r.x + 2f, r.y + 2f, r.width - 4f, r.height - 4f);
+
+        if (tier <= 0) { Border2(rr, 1f, A(c, 0.28f)); return; }   // Common — 존재감 낮게
+
+        Border2(rr, 1.2f, A(c, 0.78f));
+        float len = Mathf.Clamp(rr.width * 0.24f, 5f, 10f);
+        Color cc = A(c, 1f);
+        Fill(new Rect(rr.x, rr.y, len, 2f), cc);                  Fill(new Rect(rr.x, rr.y, 2f, len), cc);                  // 좌상 캡
+        Fill(new Rect(rr.xMax - len, rr.yMax - 2f, len, 2f), cc); Fill(new Rect(rr.xMax - 2f, rr.yMax - len, 2f, len), cc); // 우하 캡
+
+        if (tier >= 2)   // Rare+: 나머지 두 코너 캡 + 은은한 글로우
+        {
+            Fill(new Rect(rr.xMax - len, rr.y, len, 2f), cc);     Fill(new Rect(rr.xMax - 2f, rr.y, 2f, len), cc);
+            Fill(new Rect(rr.x, rr.yMax - 2f, len, 2f), cc);      Fill(new Rect(rr.x, rr.yMax - len, 2f, len), cc);
+            Glow(rr, c, 4f, 0.10f);
+        }
+        if (tier >= 3)   // Epic+: 안쪽 이중 링 + 상단 중앙 다이아
+        {
+            Border2(new Rect(rr.x + 3f, rr.y + 3f, rr.width - 6f, rr.height - 6f), 1f, A(c, 0.30f));
+            Diamond(new Vector2(rr.center.x, rr.y + 1f), 6f, cc);
+        }
+        if (tier >= 4)   // Legendary: 숨쉬는 글로우 펄스 + 하단 다이아
+        {
+            float k = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3.2f);
+            Glow(rr, c, 6f + 3f * k, 0.10f + 0.10f * k);
+            Diamond(new Vector2(rr.center.x, rr.yMax - 1f), 6f, cc);
+        }
+    }
+
+    // 희귀도 한글 등급명(툴팁 표기)
+    public static string RarityName(ItemData.Rarity r)
+    {
+        switch (r)
+        {
+            case ItemData.Rarity.Uncommon:  return "고급";
+            case ItemData.Rarity.Rare:      return "희귀";
+            case ItemData.Rarity.Epic:      return "에픽";
+            case ItemData.Rarity.Legendary: return "전설";
+            default:                        return "일반";
+        }
+    }
+
+    // 아이템 툴팁 프레임(고급): 그림자 + 먹색 그라데 + 금테 + 상단 희귀도 라인 + 희귀도 코너 캡(링과 같은 문법)
+    public static void TipFrame(Rect r, Color rarity)
+    {
+        Shadow(r, 12f, 0.40f);
+        FillV(r, PanelTop, PanelBot);
+        Fill(new Rect(r.x, r.y, r.width, 1f), A(Color.white, 0.05f));
+        Border2(r, 1.2f, A(Accent, 0.8f));                                       // 금테
+        Fill(new Rect(r.x + 1f, r.y + 1f, r.width - 2f, 3f), A(rarity, 0.95f));  // 상단 희귀도 라인
+        float len = 10f; Color c = A(rarity, 0.95f);
+        Fill(new Rect(r.x, r.y, len, 2f), c);                Fill(new Rect(r.x, r.y, 2f, len), c);                // 좌상 캡
+        Fill(new Rect(r.xMax - len, r.yMax - 2f, len, 2f), c); Fill(new Rect(r.xMax - 2f, r.yMax - len, 2f, len), c); // 우하 캡
+    }
+
+    // (구) 색만 받는 버전 — 호환용(Uncommon급 기본 장식)
     public static void RarityRing(Rect r, Color rarity)
     {
-        Border2(new Rect(r.x + 2f, r.y + 2f, r.width - 4f, r.height - 4f), 1.5f, A(rarity, 0.85f));
+        Rect rr = new Rect(r.x + 2f, r.y + 2f, r.width - 4f, r.height - 4f);
+        Border2(rr, 1.2f, A(rarity, 0.75f));
+        float len = Mathf.Clamp(rr.width * 0.24f, 5f, 10f);
+        Color c = A(rarity, 1f);
+        Fill(new Rect(rr.x, rr.y, len, 2f), c);              Fill(new Rect(rr.x, rr.y, 2f, len), c);
+        Fill(new Rect(rr.xMax - len, rr.yMax - 2f, len, 2f), c); Fill(new Rect(rr.xMax - 2f, rr.yMax - len, 2f, len), c);
     }
 
     // ── 통일 헤더: ▌◆ 태그 제목 ────(헤어라인) — 전 창(인벤/상점/제작/게시판/핸드북/도움말) 공통 문법 ──

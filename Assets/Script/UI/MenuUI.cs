@@ -63,11 +63,12 @@ public class MenuUI : MonoBehaviour
         // 어두운 오버레이(게임 화면이 비쳐 보이게)
         UITheme.Fill(new Rect(0, 0, sw, sh), new Color(0f, 0f, 0f, 0.66f));
 
-        // 제목
+        // 제목 + 장식(◆ 다이아 + 양끝 다이아 구분선 — 금테 문법)
         titleStyle.fontSize = Mathf.RoundToInt(sh * 0.052f);
         GUI.Label(new Rect(0, sh * 0.20f, sw, sh * 0.08f), "일시정지", titleStyle);
         float lineW = Mathf.Min(sw * 0.24f, 340f);
-        UITheme.Fill(new Rect((sw - lineW) * 0.5f, sh * 0.285f, lineW, 2f), UITheme.A(UITheme.Accent, 0.7f));
+        UITheme.Divider((sw - lineW) * 0.5f, sh * 0.285f, lineW, 0.85f);
+        UITheme.Diamond(new Vector2(sw * 0.5f, sh * 0.285f + 1f), 9f, UITheme.Accent);   // 중앙 큰 다이아
 
         // 메뉴(타이틀 화면과 같은 텍스트 리스트 + 호버)
         itemStyle.fontSize = Mathf.RoundToInt(sh * 0.030f);

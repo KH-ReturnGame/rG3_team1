@@ -64,6 +64,8 @@ public class GameOverUI : MonoBehaviour
         GUI.Label(new Rect(3f, sh * 0.34f + 4f, sw, sh * 0.12f), "GAME OVER", titleStyle);
         SetCol(titleStyle, new Color(0.82f, 0.16f, 0.14f, ta));
         GUI.Label(new Rect(0, sh * 0.34f, sw, sh * 0.12f), "GAME OVER", titleStyle);
+        float lw = Mathf.Min(sw * 0.26f, 380f);
+        UITheme.Divider((sw - lw) * 0.5f, sh * 0.475f, lw, 0.6f * ta);   // 제목 아래 장식 구분선
 
         // 선택지(입력 유예 후)
         float ba = Mathf.Clamp01((el - 0.7f) / 0.6f);

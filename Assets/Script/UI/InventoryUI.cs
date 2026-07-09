@@ -201,7 +201,7 @@ public class InventoryUI : MonoBehaviour
                     bool hover = heldItem == null && fr.Contains(mouse);
                     UITheme.FillV(fr, hover ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
                     UITheme.Border2(fr, 1.5f, hover ? UITheme.Lighten(UITheme.Warm, 0.2f) : UITheme.A(UITheme.Warm, 0.85f));
-                    UITheme.RarityRing(fr, wv.item.RarityColor());
+                    UITheme.RarityRing(fr, wv.item);
                     DrawIcon(fr, wv.item, 1, false, wv.rot);
                     if (hover) hoverWorn = wv;
                 }
@@ -247,7 +247,7 @@ public class InventoryUI : MonoBehaviour
 
                 UITheme.FillV(fr, hover ? UITheme.Lighten(UITheme.SlotTop, 0.10f) : UITheme.Lighten(UITheme.SlotTop, 0.03f), UITheme.SlotBot);
                 UITheme.Border2(fr, 1.5f, hover ? UITheme.Lighten(UITheme.Border, 0.22f) : UITheme.Border);
-                UITheme.RarityRing(fr, s.item.RarityColor());
+                UITheme.RarityRing(fr, s.item);
                 DrawIcon(fr, s.item, s.count, dim, s.rot);
                 int hk = HotkeyOf(s.item);
                 if (hk > 0)   // 핫키 등록된 아이템 = 앰버 번호 배지
@@ -396,23 +396,34 @@ public class InventoryUI : MonoBehaviour
         if (usable) for (int k = 0; k < hkCount; k++) { int kk = k; labels.Add((k + 1) + "번 슬롯에 등록"); acts.Add(() => CtxRegister(kk)); }
         labels.Add("버리기"); acts.Add(CtxDrop);
 
-        float mw = 200f, rowH = 32f, mpad = 5f;
-        float mh = labels.Count * rowH + mpad * 2f;
+        float mw = 210f, rowH = 32f, mpad = 6f, headR = 30f;
+        float mh = headR + labels.Count * rowH + mpad * 2f + 4f;
         float mx = Mathf.Min(ctxPos.x, UIScale.W - mw - 6f);
         float my = Mathf.Min(ctxPos.y, UIScale.H - mh - 6f);
         ctxMenuRect = new Rect(mx, my, mw, mh);
 
+        // 고급 프레임: 그림자 + 먹색 그라데 + 금테 + 코너 브래킷
         UITheme.Shadow(ctxMenuRect, 12f, 0.42f);
         UITheme.FillV(ctxMenuRect, UITheme.PanelTop, UITheme.PanelBot);
-        UITheme.Border2(ctxMenuRect, 2f, UITheme.Accent);
-        UITheme.Fill(new Rect(mx + 2f, my + 2f, mw - 4f, 3f), UITheme.Accent);
+        UITheme.Border2(ctxMenuRect, 1.2f, UITheme.A(UITheme.Accent, 0.85f));
+        UITheme.Corners(ctxMenuRect, 10f, 2f);
+
+        // 헤더: 아이템 이름(희귀도 색) + 장식 구분선
+        ctxStyle.normal.textColor = item.RarityColor();
+        GUI.Label(new Rect(mx + 12f, my + mpad, mw - 24f, headR - 6f), item.itemName, ctxStyle);
+        UITheme.Divider(mx + 10f, my + mpad + headR - 6f, mw - 20f, 0.35f);
 
         for (int i = 0; i < labels.Count; i++)
         {
-            Rect row = new Rect(mx + mpad, my + mpad + i * rowH, mw - mpad * 2f, rowH - 2f);
-            if (row.Contains(mouse)) UITheme.Fill(row, UITheme.A(UITheme.Accent, 0.18f));
-            ctxStyle.normal.textColor = (labels[i] == "버리기") ? UITheme.Danger : UITheme.Text;
-            GUI.Label(new Rect(row.x + 12f, row.y, row.width - 14f, row.height), labels[i], ctxStyle);
+            Rect row = new Rect(mx + mpad, my + mpad + headR + 2f + i * rowH, mw - mpad * 2f, rowH - 2f);
+            bool hv = row.Contains(mouse);
+            if (hv)
+            {
+                UITheme.Fill(row, UITheme.A(UITheme.Accent, 0.14f));
+                UITheme.Fill(new Rect(row.x, row.y + 5f, 3f, row.height - 10f), UITheme.Accent);   // 좌측 금바
+            }
+            ctxStyle.normal.textColor = (labels[i] == "버리기") ? UITheme.Danger : (hv ? Color.white : UITheme.Text);
+            GUI.Label(new Rect(row.x + 14f, row.y, row.width - 16f, row.height), labels[i], ctxStyle);
             if (GUI.Button(row, GUIContent.none, GUIStyle.none)) { acts[i](); ctxEntry = null; }
         }
     }
@@ -642,29 +653,38 @@ public class InventoryUI : MonoBehaviour
         if (count > 1) GUI.Label(new Rect(r.x, r.y, r.width - 4, r.height - 2), count.ToString(), countStyle);
     }
 
+    private GUIStyle tipSubStyle;   // 등급명·크기 등 툴팁 보조 텍스트(다른 스타일 색 오염 방지용 전용)
     private void DrawTooltip(ItemData item, Vector2 mouse)
     {
+        if (tipSubStyle == null) tipSubStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold };
         float tw = Mathf.Max(120f, tooltipWidth);
-        tipNameStyle.normal.textColor = item.RarityColor();   // 희귀도 색으로 이름 표시
+        Color rc = item.RarityColor();
+        tipNameStyle.normal.textColor = rc;
         string name = item.itemName;
         string desc = item.description;
-        string size = item.GridW + "×" + item.GridH;
-        float nameH = tipNameStyle.CalcHeight(new GUIContent(name), tw - 16);
-        float descH = string.IsNullOrEmpty(desc) ? 0f : tipDescStyle.CalcHeight(new GUIContent(desc), tw - 16);
-        float th = nameH + descH + 34;
+        float nameH = tipNameStyle.CalcHeight(new GUIContent(name), tw - 20);
+        float descH = string.IsNullOrEmpty(desc) ? 0f : tipDescStyle.CalcHeight(new GUIContent(desc), tw - 20);
+        float th = 10f + nameH + 9f + (descH > 0 ? descH + 6f : 0f) + 24f;
 
         float tx = mouse.x + 18, ty = mouse.y + 18;
         if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4;
         if (ty + th > UIScale.H) ty = UIScale.H - th - 4;
 
         Rect tr = new Rect(tx, ty, tw, th);
-        UITheme.Shadow(tr, 12f, 0.35f);
-        UITheme.FillV(tr, UITheme.PanelTop, UITheme.PanelBot);
-        UITheme.Border2(tr, 2f, UITheme.A(item.RarityColor(), 0.85f));       // 희귀도 테두리
-        UITheme.Fill(new Rect(tr.x + 2f, tr.y + 2f, tr.width - 4f, 3f), item.RarityColor());   // 상단 희귀도 바
-        GUI.Label(new Rect(tx + 8, ty + 7, tw - 16, nameH), name, tipNameStyle);
-        if (descH > 0) GUI.Label(new Rect(tx + 8, ty + 7 + nameH, tw - 16, descH), desc, tipDescStyle);
-        GUI.Label(new Rect(tx + 8, ty + th - 24, tw - 16, 18), "크기 " + size, tabStyle);
+        UITheme.TipFrame(tr, rc);   // 금테 + 상단 희귀도 라인 + 코너 캡
+
+        float cy = ty + 10f;
+        GUI.Label(new Rect(tx + 10, cy, tw - 20, nameH), name, tipNameStyle);
+        tipSubStyle.alignment = TextAnchor.UpperRight;                       // 등급명(우측, 희귀도 색)
+        tipSubStyle.normal.textColor = UITheme.A(rc, 0.9f);
+        GUI.Label(new Rect(tx + 10, cy + 3f, tw - 22, 18f), UITheme.RarityName(item.rarity), tipSubStyle);
+        cy += nameH + 3f;
+        UITheme.Fill(new Rect(tx + 10, cy, tw - 20, 1f), UITheme.A(UITheme.Border, 0.5f));   // 구분 헤어라인
+        cy += 6f;
+        if (descH > 0) { GUI.Label(new Rect(tx + 10, cy, tw - 20, descH), desc, tipDescStyle); cy += descH + 6f; }
+        tipSubStyle.alignment = TextAnchor.MiddleLeft;
+        tipSubStyle.normal.textColor = UITheme.TextDim;
+        GUI.Label(new Rect(tx + 10, cy, tw - 20, 18f), "크기 " + item.GridW + "×" + item.GridH, tipSubStyle);
     }
 
     // 좌측 세로 탭(후드/배낭)
