@@ -52,7 +52,7 @@ public class Hotbar : MonoBehaviour
         if (Inventory.Instance == null || i < 0 || i >= hotkeySlots) return;
         ItemData item = GetRegistered(i);
         if (item == null) return;
-        if (Inventory.Instance.CountOf(item) <= 0) return;   // 인벤에 없으면 무시
+        if (Inventory.Instance.CountOf(item) <= 0) { Toast.Show(item.itemName + " — 남은 개수가 없다.", 1.2f); return; }   // 빈 스택 피드백
         if (item.kind == ItemData.ItemKind.Consumable && GameManager.Instance != null && !GameManager.Instance.IsPotionReady(item))
         {
             Toast.Show(item.itemName + " 쿨타임 " + Mathf.CeilToInt(GameManager.Instance.PotionCooldownLeft(item)) + "초", 1.5f);
@@ -109,8 +109,8 @@ public class Hotbar : MonoBehaviour
 
                 if (cnt > 1) GUI.Label(new Rect(r.x, r.yMax - 24, r.width - 6, 20), cnt.ToString(), countStyle);
 
-                // 포션 쿨타임 오버레이(남은 초)
-                if (GameManager.Instance != null && item.kind == ItemData.ItemKind.Consumable)
+                // 포션 쿨타임 오버레이(남은 초) — 아이템이 실제로 있을 때만(빈 스택에 유령 쿨타임 방지)
+                if (cnt > 0 && GameManager.Instance != null && item.kind == ItemData.ItemKind.Consumable)
                 {
                     float cl = GameManager.Instance.PotionCooldownLeft(item);
                     if (cl > 0f)

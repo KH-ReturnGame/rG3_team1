@@ -168,22 +168,26 @@ public class DialogueUI : MonoBehaviour
         // 큰 초상화(왼쪽·틀 없이 컷아웃) — 박스보다 먼저 그려 박스가 앞에 오게
         DrawBigPortrait(boxBase, W, H);
 
+        // 대사 박스 — 고급 프레임(먹색 그라데 + 금테 + 안쪽 이중 헤어라인 + 코너 브래킷)
         Fill(new Rect(box.x + 4, box.y + 5, box.width, box.height), new Color(0, 0, 0, 0.35f));   // 그림자
-        Fill(box, UITheme.A(UITheme.BgSolid, 0.97f));
-        Border(box, 2f, UITheme.A(UITheme.Accent, 0.95f));
+        UITheme.FillV(box, UITheme.A(UITheme.PanelTop, 0.97f), UITheme.A(UITheme.PanelBot, 0.985f));
+        Border(box, 1.5f, UITheme.A(UITheme.Accent, 0.9f));
+        Border(new Rect(box.x + 5f, box.y + 5f, box.width - 10f, box.height - 10f), 1f, UITheme.A(UITheme.Accent, 0.20f));
+        UITheme.Corners(box, 16f, 3f);
 
-        // 이름표 — 박스 안 좌상단
+        // 이름표 — 박스 안 좌상단(금테 뱃지 + 먹색 글자)
         Vector2 nsz = nameStyle.CalcSize(new GUIContent(speaker));
         Rect nameTag = new Rect(box.x + 22f, box.y + 14f, nsz.x + 30f, 34f);
         Fill(nameTag, UITheme.A(UITheme.Accent, 0.95f));
-        nameStyle.normal.textColor = new Color(0.04f, 0.10f, 0.14f);
+        nameStyle.normal.textColor = new Color(0.06f, 0.09f, 0.09f);
         GUI.Label(nameTag, speaker, nameStyle);
+        UITheme.Divider(box.x + 22f, box.y + 54f, box.width - 44f, 0.4f);   // 이름 아래 장식 구분선
 
         // 본문(타자기)
         string full = curText;
         int n = Mathf.Clamp(Mathf.FloorToInt(shown), 0, full.Length);
-        textStyle.normal.textColor = new Color(0.90f, 0.96f, 1f);
-        GUI.Label(new Rect(box.x + 28f, box.y + 60f, box.width - 56f, box.height - 74f), full.Substring(0, n), textStyle);
+        textStyle.normal.textColor = UITheme.Text;
+        GUI.Label(new Rect(box.x + 28f, box.y + 64f, box.width - 56f, box.height - 78f), full.Substring(0, n), textStyle);
 
         // 진행 표시 ▼ (줄 다 보이면 깜빡)
         if (n >= full.Length && Mathf.Sin(Time.unscaledTime * 5f) > 0f)

@@ -105,6 +105,7 @@ public class PlayerController : MonoBehaviour
     public float skillRangeMultiplier = 2f;
     public float skillCooldown = 5f;
     private float skillCooldownTimer;
+    public float SkillCooldownLeft => Mathf.Max(0f, skillCooldownTimer);   // HUD용(Q스킬 핍 게이지)
 
     [Header("Air / Plunge (공중 공격 / 낙하 공격)")]
     public string airAttackState = "AirSlash";
@@ -289,7 +290,7 @@ public class PlayerController : MonoBehaviour
         if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.deltaTime;     // 대시/가드 쿨타임은 항상 진행
         if (guardCooldownTimer > 0f) guardCooldownTimer -= Time.deltaTime;
 
-        if (cutsceneActive) { CheckGrounded(); return; }   // 컷씬 중: 입력·자동애니 잠금(중력 낙하만 유지)
+        if (cutsceneActive) { horizontalInput = 0f; CheckGrounded(); return; }   // 컷씬 중: 입력·자동애니 잠금 + 잔여 이동입력 제거(걷기 애니 누수 방지)
 
         if (isDashing)
         {

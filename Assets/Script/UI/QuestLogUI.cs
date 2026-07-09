@@ -39,8 +39,15 @@ public class QuestLogUI : MonoBehaviour
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        string lv = GameManager.Instance != null ? ("   ·   Lv." + GameManager.Instance.level + "  (XP " + GameManager.Instance.xp + "/" + GameManager.Instance.XpToNext + ")") : "";
-        GUI.Label(new Rect(p.x, p.y + 10f, p.width, 34f), "진행 중인 의뢰" + lv, title);
+        UITheme.DrawHeader(p, "진행 중인 의뢰", null, 24f, 44f);
+        if (GameManager.Instance != null)   // 레벨/경험치는 헤더 오른쪽에 작게
+        {
+            var keep = detObj.normal.textColor;
+            detObj.normal.textColor = new Color(0.62f, 0.63f, 0.67f);
+            string lv = "Lv." + GameManager.Instance.level + "   XP " + GameManager.Instance.xp + "/" + GameManager.Instance.XpToNext;
+            GUI.Label(new Rect(p.xMax - 330f, p.y + 18f, 264f, 24f), lv, detObj);
+            detObj.normal.textColor = keep;   // 아래 목표 텍스트 색 오염 방지
+        }
         Rect cb = new Rect(p.xMax - 48f, p.y + 12f, 34f, 34f);
         Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, UITheme.Accent); GUI.Label(cb, "X", closeS);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }

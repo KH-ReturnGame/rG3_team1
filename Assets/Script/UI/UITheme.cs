@@ -5,25 +5,25 @@ using System.Collections.Generic;
 //  · 색은 여기만 바꾸면 전 UI 반영. 그리기 헬퍼(그라데이션/소프트 그림자/패널/슬롯/글로우)로 평면 단색 탈피.
 public static class UITheme
 {
-    // ── 팔레트 (건메탈 그레이 프레임 + 오렌지 강조 — 메이플식 참고) ──
-    public static readonly Color Bg        = new Color(0.10f, 0.10f, 0.115f, 0.96f);  // (구) 단색 배경
-    public static readonly Color BgSolid   = new Color(0.09f, 0.09f, 0.105f, 1f);
-    public static readonly Color Panel     = new Color(0.17f, 0.175f, 0.195f, 0.98f); // (구) 단색 패널 — 하위호환
-    public static readonly Color PanelDim  = new Color(0.12f, 0.125f, 0.14f, 0.98f);
-    public static readonly Color PanelTop  = new Color(0.28f, 0.29f, 0.32f, 1f);      // 패널 그라데 상단(밝은 금속)
-    public static readonly Color PanelBot  = new Color(0.155f, 0.16f, 0.18f, 1f);     // 패널 그라데 하단(어두운 금속)
-    public static readonly Color SlotTop   = new Color(0.155f, 0.16f, 0.175f, 1f);    // 슬롯 그라데 상단(어두운 칸)
-    public static readonly Color SlotBot   = new Color(0.085f, 0.088f, 0.10f, 1f);    // 슬롯 그라데 하단
-    public static readonly Color Accent    = new Color(0.96f, 0.56f, 0.16f);          // 오렌지(주 강조: 선택·강조바·글로우)
-    public static readonly Color AccentDim = new Color(0.46f, 0.27f, 0.09f);
-    public static readonly Color Warm      = new Color(1.00f, 0.74f, 0.28f);          // 골드/앰버(부 강조: 핫키·장비 배지)
-    public static readonly Color WarmDim   = new Color(0.52f, 0.37f, 0.15f);
-    public static readonly Color Border    = new Color(0.42f, 0.43f, 0.47f);          // 금속 테두리(밝은 그레이)
-    public static readonly Color Text      = new Color(0.90f, 0.95f, 1f);
-    public static readonly Color TextDim   = new Color(0.55f, 0.66f, 0.76f);
-    public static readonly Color Gold      = new Color(1f, 0.82f, 0.35f);
-    public static readonly Color Good      = new Color(0.45f, 0.90f, 0.55f);          // 성공/긍정
-    public static readonly Color Danger    = new Color(0.95f, 0.38f, 0.42f);
+    // ── 팔레트 (먹색 청록 + 금테 + 민트 — 나인 솔즈풍, HUD(StatUI)와 동일 톤) ──
+    public static readonly Color Bg        = new Color(0.035f, 0.055f, 0.055f, 0.96f); // (구) 단색 배경
+    public static readonly Color BgSolid   = new Color(0.030f, 0.050f, 0.050f, 1f);
+    public static readonly Color Panel     = new Color(0.075f, 0.110f, 0.105f, 0.98f); // (구) 단색 패널 — 하위호환
+    public static readonly Color PanelDim  = new Color(0.045f, 0.070f, 0.068f, 0.98f);
+    public static readonly Color PanelTop  = new Color(0.105f, 0.150f, 0.145f, 1f);    // 패널 그라데 상단(짙은 청록 먹색)
+    public static readonly Color PanelBot  = new Color(0.048f, 0.078f, 0.075f, 1f);    // 패널 그라데 하단
+    public static readonly Color SlotTop   = new Color(0.070f, 0.100f, 0.096f, 1f);    // 슬롯 그라데 상단(어두운 칸)
+    public static readonly Color SlotBot   = new Color(0.032f, 0.050f, 0.048f, 1f);    // 슬롯 그라데 하단
+    public static readonly Color Accent    = new Color(0.84f, 0.76f, 0.54f);           // 금테(주 강조: 선택·프레임·헤더)
+    public static readonly Color AccentDim = new Color(0.40f, 0.36f, 0.25f);
+    public static readonly Color Warm      = new Color(1.00f, 0.85f, 0.48f);           // 밝은 골드(부 강조: 핫키·배지)
+    public static readonly Color WarmDim   = new Color(0.50f, 0.43f, 0.24f);
+    public static readonly Color Border    = new Color(0.46f, 0.42f, 0.30f);           // 흐린 금테(구분선·기본 테두리)
+    public static readonly Color Text      = new Color(0.91f, 0.89f, 0.80f);           // 크림
+    public static readonly Color TextDim   = new Color(0.56f, 0.54f, 0.45f);
+    public static readonly Color Gold      = new Color(1f, 0.85f, 0.45f);
+    public static readonly Color Good      = new Color(0.34f, 0.93f, 0.72f);           // 민트(성공/긍정/게이지 채움)
+    public static readonly Color Danger    = new Color(0.90f, 0.30f, 0.28f);
 
     // 알파만 바꿔 재사용
     public static Color A(Color c, float a) { c.a = a; return c; }
@@ -100,14 +100,42 @@ public static class UITheme
         GUI.color = o;
     }
 
-    // 창 패널: 그림자 + 세로 그라데 + 상단 하이라이트/강조바 + 테두리
+    // 창 패널(고급 프레임): 그림자 + 먹색 그라데 + 얇은 금테 + 안쪽 이중 헤어라인 + 금색 코너 브래킷
     public static void DrawPanel(Rect r, bool accentBar = true)
     {
-        Shadow(r, 18f, 0.40f);
+        Shadow(r, 18f, 0.45f);
         FillV(r, PanelTop, PanelBot);
-        Fill(new Rect(r.x, r.y, r.width, 1f), A(Color.white, 0.06f));   // 상단 베벨 하이라이트
-        Border2(r, 2f, Border);
-        if (accentBar) Fill(new Rect(r.x + 2f, r.y + 2f, r.width - 4f, 3f), Accent);   // 상단 시안 강조바
+        Fill(new Rect(r.x, r.y, r.width, 1f), A(Color.white, 0.05f));                  // 상단 베벨 하이라이트
+        Border2(r, 1.5f, A(Accent, 0.85f));                                            // 외곽 금테
+        Border2(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 10f), 1f, A(Accent, 0.22f));   // 안쪽 이중 프레임
+        if (accentBar) Corners(r);                                                     // 코너 브래킷
+    }
+
+    // 작은 다이아(◆) — 45도 회전 사각형(장식 공용)
+    public static void Diamond(Vector2 center, float size, Color c)
+    {
+        var m = GUI.matrix;
+        GUIUtility.RotateAroundPivot(45f, center);
+        Fill(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), c);
+        GUI.matrix = m;
+    }
+
+    // 장식 구분선: 금색 헤어라인 + 양끝 다이아(고급 프레임 문법)
+    public static void Divider(float x, float y, float w, float alpha = 0.55f)
+    {
+        Fill(new Rect(x + w * 0.045f, y, w * 0.91f, 1f), A(Accent, alpha * 0.6f));
+        Diamond(new Vector2(x + w * 0.02f, y + 0.5f), 5f, A(Accent, alpha));
+        Diamond(new Vector2(x + w * 0.98f, y + 0.5f), 5f, A(Accent, alpha));
+    }
+
+    // 금색 코너 브래킷(모서리 ㄱ자 캡 — 프레임 장식)
+    public static void Corners(Rect r, float len = 16f, float t = 3f)
+    {
+        Color c = A(Accent, 0.95f);
+        Fill(new Rect(r.x, r.y, len, t), c);              Fill(new Rect(r.x, r.y, t, len), c);              // 좌상
+        Fill(new Rect(r.xMax - len, r.y, len, t), c);     Fill(new Rect(r.xMax - t, r.y, t, len), c);       // 우상
+        Fill(new Rect(r.x, r.yMax - t, len, t), c);       Fill(new Rect(r.x, r.yMax - len, t, len), c);     // 좌하
+        Fill(new Rect(r.xMax - len, r.yMax - t, len, t), c); Fill(new Rect(r.xMax - t, r.yMax - len, t, len), c); // 우하
     }
 
     // 슬롯/칸: 세로 그라데 + 베벨 + 테두리(+ 호버 시 밝게)
@@ -123,5 +151,42 @@ public static class UITheme
     public static void RarityRing(Rect r, Color rarity)
     {
         Border2(new Rect(r.x + 2f, r.y + 2f, r.width - 4f, r.height - 4f), 1.5f, A(rarity, 0.85f));
+    }
+
+    // ── 통일 헤더: ▌◆ 태그 제목 ────(헤어라인) — 전 창(인벤/상점/제작/게시판/핸드북/도움말) 공통 문법 ──
+    //  반환값 = 헤더가 차지한 높이(패널 상단 기준 콘텐츠 시작 오프셋).
+    private static GUIStyle _headTitle, _headTag;
+    public static float DrawHeader(Rect panel, string title, string tag = null, float pad = 20f, float headH = 46f)
+    {
+        if (_headTitle == null)
+        {
+            _headTitle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+            _headTag = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        }
+        _headTitle.fontSize = Mathf.RoundToInt(headH * 0.52f);
+        _headTag.fontSize = Mathf.Max(11, Mathf.RoundToInt(headH * 0.31f));
+
+        float y = panel.y + 6f;
+        Fill(new Rect(panel.x, y + headH * 0.14f, 4f, headH * 0.72f), Accent);        // 왼쪽 오렌지 바
+
+        var mtx = GUI.matrix;                                                          // ◆ 다이아
+        float ds = Mathf.Max(7f, headH * 0.19f);
+        Vector2 dc = new Vector2(panel.x + pad + ds * 0.5f, y + headH * 0.5f - 1f);
+        GUIUtility.RotateAroundPivot(45f, dc);
+        Fill(new Rect(dc.x - ds * 0.5f, dc.y - ds * 0.5f, ds, ds), Accent);
+        GUI.matrix = mtx;
+
+        float tx = panel.x + pad + ds + 12f;
+        if (!string.IsNullOrEmpty(tag))
+        {
+            _headTag.normal.textColor = _headTag.hover.textColor = A(Accent, 0.95f);
+            float tw = _headTag.CalcSize(new GUIContent(tag)).x;
+            GUI.Label(new Rect(tx, y, tw + 4f, headH - 4f), tag, _headTag);
+            tx += tw + 14f;
+        }
+        _headTitle.normal.textColor = _headTitle.hover.textColor = new Color(0.97f, 0.96f, 0.94f);
+        GUI.Label(new Rect(tx, y - 2f, panel.xMax - pad - tx, headH), title, _headTitle);
+        Divider(panel.x + pad, y + headH - 3f, panel.width - pad * 2f);   // 장식 구분선(양끝 다이아)
+        return (y + headH) - panel.y;
     }
 }

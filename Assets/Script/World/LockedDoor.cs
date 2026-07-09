@@ -25,17 +25,15 @@ public class LockedDoor : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (requiredKey != null)
-        {
-            var inv = Inventory.Instance;
-            if (inv == null || inv.CountOf(requiredKey) < requiredCount)
-            {
-                Toast.Show(requiredKey.itemName + " " + requiredCount + "개가 필요합니다.", 2f);
-                return;
-            }
-            if (consumeKey) inv.Remove(requiredKey, requiredCount);
-            Toast.Show(requiredKey.itemName + "(으)로 문을 열었다!", 2f);
-        }
+        // 열쇠가 필요하면 자동 소모 대신 '직접 꽂기' UI를 연다(소지품에서 열쇠를 집어 구멍에 클릭).
+        if (requiredKey != null) { LockedDoorUI.Open(this); return; }
+        Open();
+    }
+
+    // LockedDoorUI가 맞는 열쇠 삽입을 확인한 뒤 호출 — 개방 + 토스트
+    public void Unlock()
+    {
+        Toast.Show(requiredKey != null ? requiredKey.itemName + "(으)로 문을 열었다!" : "문이 열렸다!", 2f);
         Open();
     }
 

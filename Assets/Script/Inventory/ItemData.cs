@@ -29,6 +29,7 @@ public class ItemData : ScriptableObject
     public float tempAttackMult = 0f;        // 전투 포션: 공격력 +배수 (0.5 = +50%)
     public float tempDamageReduction = 0f;   // 방어력 포션: 피해 감량 (0~1, 0.5 = 50%)
     public float buffDuration = 0f;          // 위 버프 지속(초)
+    public float cooldownSeconds = 0f;       // 이 아이템의 사용 쿨타임(초). 0이면 전역 기본값(GameManager.potionCooldown) 사용
 
     [Header("장신구 (Equipment) — 착용 시 보너스 (착용칸은 추후)")]
     public int maxJumpBonus = 0;

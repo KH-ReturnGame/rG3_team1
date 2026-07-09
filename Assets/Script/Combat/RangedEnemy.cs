@@ -9,6 +9,7 @@ public class RangedEnemy : Enemy
     public float projectileSpeed = 9f;
     public float preferredDistance = 4.5f;  // 유지하려는 거리(이보다 가까우면 후퇴) — attackRange보다 작게
     public Transform firePoint;             // 발사 위치(비우면 자기 위치 + 약간 위)
+    [Range(0f, 80f)] public float aimAngleLimit = 12f;   // 수평 기준 조준 각도 제한(도) — 낮을수록 직선탄(예측·패링 쉬움)
 
     public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
 
@@ -32,8 +33,15 @@ public class RangedEnemy : Enemy
         if (projectilePrefab == null || player == null) return;
         Vector3 origin = firePoint != null ? firePoint.position : transform.position + Vector3.up * 0.2f;
         Vector2 toPlayer = (Vector2)(player.position - origin);
+
+        // 조준 각도를 수평 기준 ±aimAngleLimit로 클램프 — 대각선 저격 대신 '직선탄'에 가깝게
+        float ang = Mathf.Atan2(toPlayer.y, Mathf.Abs(toPlayer.x)) * Mathf.Rad2Deg;   // 수평 대비 상하각
+        ang = Mathf.Clamp(ang, -aimAngleLimit, aimAngleLimit);
+        float sign = toPlayer.x >= 0f ? 1f : -1f;
+        Vector2 dir = new Vector2(sign * Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad));
+
         GameObject go = Instantiate(projectilePrefab, origin, Quaternion.identity);
         Projectile proj = go.GetComponent<Projectile>();
-        if (proj != null) proj.Init(toPlayer, projectileSpeed, attackDamage, transform);   // 자신을 넘겨 반사 목표로
+        if (proj != null) proj.Init(dir, projectileSpeed, attackDamage, transform);   // 자신을 넘겨 반사 목표로
     }
 }

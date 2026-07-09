@@ -56,15 +56,17 @@ public class TutorialSequence : MonoBehaviour
         while (DialogueUI.IsOpen) yield return null;
 
         // ★검은 바(레터박스)·컷씬을 끊지 않고 유지: 인트로 꼬리(일어나기)가 바를 내리고 조작을 풀려 해도
-        //   매 프레임 다시 잡는다 — 일어나기 + 적이 걸어오는 '간격'까지 한 호흡으로
+        //   '프레임 끝'에 다시 잡는다(WaitForEndOfFrame — 인트로 코루틴이 false를 쓴 뒤에 덮어써서
+        //   다음 프레임 Update가 항상 잠금 상태를 보게 함. 1프레임 잠금해제 틈 → 걷기 애니 누수 방지)
+        var eof = new WaitForEndOfFrame();
         float hold = wakeWait + lineGap;
         float t = 0f;
         while (t < hold)
         {
+            yield return eof;
             pc.cutsceneActive = true;
             if (Letterbox.Instance != null) Letterbox.Instance.Show(0.15f);
             t += Time.deltaTime;
-            yield return null;
         }
         pc.ZeroVelocity();
 
@@ -73,9 +75,9 @@ public class TutorialSequence : MonoBehaviour
         DialogueUI.Show("???", null, alarmLines, () => done = true);
         while (!done)
         {
+            yield return eof;
             pc.cutsceneActive = true;
             if (Letterbox.Instance != null) Letterbox.Instance.Show(0.15f);
-            yield return null;
         }
 
         // 대사가 끝난 지금에서야 검은 바가 걷히며 발도 → 전투 개시

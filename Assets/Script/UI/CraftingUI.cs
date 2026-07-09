@@ -114,7 +114,7 @@ public class CraftingUI : MonoBehaviour
         // 어둡게 + 패널
         UITheme.Fill(new Rect(0, 0, UIScale.W, UIScale.H), new Color(0f, 0f, 0f, 0.55f));
         UITheme.DrawPanel(win);
-        GUI.Label(new Rect(x + 16f, y + 6f, 300f, titleH - 6f), "제작대", title);
+        UITheme.DrawHeader(win, "제작대", null, 16f, titleH);
 
         // 닫기 ✕
         Rect cb = new Rect(x + w - 34f, y + 9f, 26f, 26f);

@@ -11,8 +11,8 @@ public class Inventory : MonoBehaviour
     public static Inventory Instance { get; private set; }
 
     // 각 UI가 '자기 플래그'만 켜고/끈다(서로 덮어쓰지 않게). 하나라도 열려 있으면 IsUIOpen = true.
-    public static bool InvUIOpen, ShopUIOpen, CraftUIOpen, QuestUIOpen, HandbookUIOpen, DialogueOpen, PauseOpen;
-    public static bool IsUIOpen => InvUIOpen || ShopUIOpen || CraftUIOpen || QuestUIOpen || HandbookUIOpen || DialogueOpen || PauseOpen;
+    public static bool InvUIOpen, ShopUIOpen, CraftUIOpen, QuestUIOpen, HandbookUIOpen, DialogueOpen, PauseOpen, LockUIOpen;
+    public static bool IsUIOpen => InvUIOpen || ShopUIOpen || CraftUIOpen || QuestUIOpen || HandbookUIOpen || DialogueOpen || PauseOpen || LockUIOpen;
 
     [System.Serializable]
     public class Slot

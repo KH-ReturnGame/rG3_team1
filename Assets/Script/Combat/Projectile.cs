@@ -11,8 +11,8 @@ public class Projectile : MonoBehaviour
     public bool faceDirection = true;       // 진행 방향으로 회전
 
     [Header("패링 반사")]
-    public float reflectSpeedMult = 1.4f;   // 반사 시 속도 배율(저스트는 x1.25 추가)
-    public float reflectDamageMult = 2f;    // 반사탄이 적에게 주는 피해 배율(저스트는 x1.5 추가)
+    public float reflectSpeedMult = 1.5f;   // 반사 시 속도 배율(저스트는 x1.25 추가)
+    public float reflectDamageMult = 3f;    // 반사탄이 적에게 주는 피해 배율(저스트는 x1.5 추가 = 4.5배) — 쳐낸 보람이 있게
 
     private float damage = 1f;
     private float timer;

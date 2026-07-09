@@ -38,7 +38,7 @@ public class AcquireBanner : MonoBehaviour
         cur = queue.Dequeue();
         active = true;
         startTime = Time.unscaledTime;
-        Juice.Flash(new Color(0.30f, 0.85f, 1f, 0.28f), 0.18f);   // 시안 번쩍
+        Juice.Flash(new Color(1f, 0.78f, 0.38f, 0.26f), 0.18f);   // 앰버 번쩍(테마 통일)
         Juice.HitStop(0.07f);
     }
 
@@ -74,20 +74,25 @@ public class AcquireBanner : MonoBehaviour
         GUIUtility.ScaleAroundPivot(new Vector2(ds, ds), center);
 
         float glow = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 6f);
-        Tex(card, UITheme.A(UITheme.BgSolid, 0.96f * ca));                 // 카드 배경
-        Border(card, 2f, UITheme.A(UITheme.Accent, ca));                 // 시안 테두리
-        Border(new Rect(card.x - 3f, card.y - 3f, card.width + 6f, card.height + 6f), 1f, UITheme.A(UITheme.Accent, 0.35f * ca * glow));  // 글로우
+        // 카드: 건메탈 그라데 + 상단 하이라이트 + 하단 오렌지 라인 + 은은한 글로우(테마 통일)
+        GUI.color = Color.white;
+        UITheme.Glow(card, UITheme.Accent, 16f, 0.16f * ca * glow);
+        UITheme.FillV(card, UITheme.A(UITheme.PanelTop, 0.97f * ca), UITheme.A(UITheme.PanelBot, 0.97f * ca));
+        Tex(new Rect(card.x, card.y, card.width, 1f), new Color(1f, 1f, 1f, 0.08f * ca));
+        Border(card, 1f, UITheme.A(UITheme.Border, 0.9f * ca));
+        Tex(new Rect(card.x, card.yMax - 2f, card.width, 2f), UITheme.A(UITheme.Accent, 0.9f * ca));
+        Tex(new Rect(card.x, card.y + 10f, 4f, card.height - 20f), UITheme.A(UITheme.Accent, ca));   // 좌측 오렌지 바
 
-        float ic = 92f; Rect iconR = new Rect(card.x + 18f, center.y - ic * 0.5f, ic, ic);
+        float ic = 92f; Rect iconR = new Rect(card.x + 20f, center.y - ic * 0.5f, ic, ic);
         DrawIcon(iconR, cur.icon, ca, glow);
 
         float tx = iconR.xMax + 16f, tw = card.xMax - tx - 18f;
         GUI.color = Color.white;   // 라벨 텍스트는 스타일 색을 그대로(틴트 제거)
-        eyebrowStyle.normal.textColor = new Color(0.45f, 0.9f, 1f, ca);
-        GUI.Label(new Rect(tx, card.y + 20f, tw, 22f), "▶ " + cur.eyebrow, eyebrowStyle);
-        titleStyle.normal.textColor = new Color(0.93f, 0.98f, 1f, ca);
+        eyebrowStyle.normal.textColor = UITheme.A(UITheme.Accent, ca);
+        GUI.Label(new Rect(tx, card.y + 20f, tw, 22f), "◆ " + cur.eyebrow, eyebrowStyle);
+        titleStyle.normal.textColor = new Color(0.97f, 0.96f, 0.93f, ca);
         GUI.Label(new Rect(tx, card.y + 42f, tw, 42f), cur.title, titleStyle);
-        descStyle.normal.textColor = new Color(0.72f, 0.84f, 0.95f, 0.95f * ca);
+        descStyle.normal.textColor = new Color(0.80f, 0.81f, 0.84f, 0.95f * ca);
         GUI.Label(new Rect(tx, card.y + 88f, tw, ch - 100f), cur.desc, descStyle);
 
         GUI.matrix = m;
@@ -97,8 +102,8 @@ public class AcquireBanner : MonoBehaviour
     private void DrawIcon(Rect r, Texture2D tex, float a, float glow)
     {
         if (tex != null) { Tex(r, new Color(1, 1, 1, a)); GUI.color = new Color(1, 1, 1, a); GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit); return; }
-        // 기본 '모듈 칩' 글리프: 시안 테두리 사각 + 내부 십자 격자(지도 느낌)
-        Tex(r, new Color(0.08f, 0.13f, 0.18f, a));
+        // 기본 '모듈 칩' 글리프: 오렌지 테두리 사각 + 내부 십자 격자(지도 느낌)
+        Tex(r, new Color(0.10f, 0.10f, 0.12f, a));
         Border(r, 2f, UITheme.A(UITheme.Accent, a));
         Color line = UITheme.A(UITheme.Accent, a * (0.55f + 0.45f * glow));
         float g = r.width * 0.5f;

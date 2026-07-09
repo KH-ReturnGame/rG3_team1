@@ -157,11 +157,9 @@ public class InventoryUI : MonoBehaviour
             // 후드 탭의 클릭(+ 버튼)은 DrawHoodPanel이 처리하므로 여기서 소비하지 않음
         }
 
-        // --- 패널 + 제목바 ---
+        // --- 패널 + 통일 헤더(▌◆ 제목) ---
         UITheme.DrawPanel(windowRect);
-        Rect titleBar = new Rect(x0 + 2f, y0 + 5f, w - 4f, titleH - 6f);
-        UITheme.FillV(titleBar, UITheme.PanelTop, UITheme.A(UITheme.PanelBot, 0.6f));
-        GUI.Label(new Rect(titleBar.x + 12f, titleBar.y, 200f, titleBar.height), panelTab == 0 ? "소지품" : "후드", titleStyle);
+        UITheme.DrawHeader(windowRect, panelTab == 0 ? "소지품" : "후드", null, 18f, titleH);
 
         // 좌측 세로 탭(후드/배낭)
         DrawSideTab(hoodRect, "후드", panelTab == 1);

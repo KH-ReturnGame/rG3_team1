@@ -70,12 +70,12 @@ public class ShopUI : MonoBehaviour
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
-        GUI.color = UITheme.A(UITheme.BgSolid, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = UITheme.Accent; GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
+        Rect win = new Rect(x, y, w, h);
+        UITheme.DrawPanel(win);   // 그림자+그라데+테두리+상단 오렌지 바(다른 창과 통일)
 
         int g = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
-        GUI.Label(new Rect(x, y + 12f, w, 32f), MerchantName(merchant), title);
-        GUI.Label(new Rect(x, y + 16f, w - 18f, 26f), g + " G", gold);
+        UITheme.DrawHeader(win, MerchantName(merchant), "상점", 20f, 40f);
+        GUI.Label(new Rect(x, y + 16f, w - 22f, 26f), g + " G", gold);
 
         // 탭
         float tw = 96f, th = 32f, ty = y + 48f;

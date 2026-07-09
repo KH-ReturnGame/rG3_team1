@@ -174,3 +174,5 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   faceDirection: 1
+  reflectSpeedMult: 1.5
+  reflectDamageMult: 3

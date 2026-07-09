@@ -51,7 +51,7 @@ public class HandbookUI : MonoBehaviour
 
         UITheme.DrawPanel(panel);   // 그림자+그라데+테두리+상단 오렌지 바
 
-        GUI.Label(new Rect(px + 20f, py + 12f, pw - 40f, 32f), "모험 핸드북", titleStyle);
+        UITheme.DrawHeader(panel, "모험 핸드북", null, 20f, 40f);
         // 닫기
         Rect close = new Rect(px + pw - 40f, py + 12f, 28f, 28f);
         if (Btn(close, "X", false)) { open = false; UseEvent(); }

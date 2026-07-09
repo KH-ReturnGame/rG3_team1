@@ -53,7 +53,7 @@ public class QuestBoardUI : MonoBehaviour
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.Label(new Rect(board.x, board.y + 8f, board.width, 38f), "의뢰 게시판", title);
+        UITheme.DrawHeader(board, "의뢰 게시판", null, 24f, 44f);
         Rect cb = new Rect(board.xMax - 54f, board.y + 12f, 38f, 38f);
         Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, UITheme.Accent); GUI.Label(cb, "X", closeS);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }

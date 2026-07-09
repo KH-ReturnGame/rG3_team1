@@ -18,10 +18,12 @@ public class Toast : MonoBehaviour
 
     public static void Show(string message, float duration = 4f)
     {
-        if (Instance != null) { Instance.msg = message; Instance.timer = Mathf.Max(0.6f, duration); }
+        if (Instance != null) { Instance.msg = message; Instance.timer = Mathf.Max(0.6f, duration); Instance.shownAt = Time.unscaledTime; }
     }
 
     void Update() { if (timer > 0f) timer -= Time.unscaledDeltaTime; }
+
+    private float shownAt;   // 등장 슬라이드용
 
     void OnGUI()
     {
@@ -30,17 +32,27 @@ public class Toast : MonoBehaviour
         EnsureStyles();
         UIScale.Apply();     // 해상도 독립 스케일
         GUI.depth = -1000;   // 다른 모든 UI 위에
+
         float alpha = Mathf.Clamp01(timer < 0.6f ? timer / 0.6f : 1f);
-        float w = Mathf.Min(UIScale.W * 0.8f, 640f), h = 56f;
-        float x = (UIScale.W - w) * 0.5f, y = UIScale.H * 0.14f;
-        var prev = GUI.color;
-        GUI.color = UITheme.A(UITheme.BgSolid, 0.94f * alpha); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = UITheme.A(UITheme.Accent, alpha);
-        GUI.DrawTexture(new Rect(x, y, w, 3f), white); GUI.DrawTexture(new Rect(x, y + h - 3f, w, 3f), white);
-        style.normal.textColor = new Color(0.85f, 0.95f, 1f, alpha);
-        GUI.color = new Color(1f, 1f, 1f, alpha);
-        GUI.Label(new Rect(x, y, w, h), msg, style);
-        GUI.color = prev;
+        float inK = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.22f);
+        float ease = 1f - (1f - inK) * (1f - inK);
+        alpha *= ease;
+
+        // 내용 크기에 맞는 컴팩트한 알약(고정 대형 바 탈피)
+        float maxW = Mathf.Min(UIScale.W * 0.8f, 640f);
+        Vector2 sz = style.CalcSize(new GUIContent(msg));
+        float w = Mathf.Min(maxW, sz.x + 64f), h = 50f;
+        float x = (UIScale.W - w) * 0.5f, y = UIScale.H * 0.13f - 10f * (1f - ease);   // 살짝 위에서 슬라이드 인
+
+        Rect r = new Rect(x, y, w, h);
+        UITheme.Shadow(r, 10f, 0.32f * alpha);
+        UITheme.FillV(r, UITheme.A(UITheme.PanelTop, 0.96f * alpha), UITheme.A(UITheme.PanelBot, 0.96f * alpha));
+        UITheme.Fill(new Rect(x, y, w, 1f), new Color(1f, 1f, 1f, 0.07f * alpha));    // 상단 하이라이트
+        UITheme.Fill(new Rect(x, y + 6f, 4f, h - 12f), UITheme.A(UITheme.Accent, alpha));   // 좌측 오렌지 바
+        UITheme.Fill(new Rect(x, y + h - 2f, w, 2f), UITheme.A(UITheme.Accent, 0.75f * alpha));   // 하단 액센트 라인
+
+        style.normal.textColor = new Color(0.95f, 0.93f, 0.90f, alpha);
+        GUI.Label(new Rect(x + 12f, y, w - 24f, h), msg, style);
     }
 
     private void EnsureStyles()

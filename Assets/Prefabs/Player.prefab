@@ -181,7 +181,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractor
   interactKey: 102
   interactRadius: 1.2
-  highlightColor: {r: 0.96, g: 0.56, b: 0.16, a: 1}
+  highlightColor: {r: 0.88, g: 0.8, b: 0.55, a: 1}
   borderThickness: 4
 --- !u!114 &5994272772996261918
 MonoBehaviour:
@@ -220,6 +220,8 @@ MonoBehaviour:
   dashDuration: 0.3
   maxDashes: 1
   parryWindow: 0.5
+  justParryWindow: 0.18
+  parryChainWindow: 0.35
   dashCooldown: 0.7
   guardCooldown: 0.6
   hitState: HitDamage
@@ -276,7 +278,6 @@ MonoBehaviour:
   fallMargin: 6
   fallDamage: 1
   dropThroughTime: 0.35
-  dropDoubleTapTime: 0.3
 --- !u!50 &6778775217546913723
 Rigidbody2D:
   serializedVersion: 5
