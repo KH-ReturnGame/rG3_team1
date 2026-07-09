@@ -81,7 +81,7 @@ public class DialogueUI : MonoBehaviour
     }
 
     private Texture2D white;
-    private GUIStyle nameStyle, textStyle, hintStyle;
+    private GUIStyle nameStyle, textStyle, hintStyle, skipStyle;
 
     void Awake() { if (Instance != null && Instance != this) { Destroy(gameObject); return; } Instance = this; DontDestroyOnLoad(gameObject); }
 
@@ -192,9 +192,14 @@ public class DialogueUI : MonoBehaviour
             GUI.Label(new Rect(box.xMax - 42f, box.yMax - 34f, 24f, 24f), "▼", hintStyle);
         }
 
-        // 스킵 힌트(우상단) + 홀드 진행 게이지
-        nameStyle.normal.textColor = new Color(0.55f, 0.56f, 0.60f);
-        GUI.Label(new Rect(box.xMax - 190f, box.y + 10f, 175f, 20f), "[Ctrl] 길게 — 건너뛰기", nameStyle);
+        // 스킵 힌트(우상단) + 홀드 진행 게이지 — 전용 작은 스타일(이름표 스타일 재사용 금지: 21px 글자가 20px 상자에 깨졌음)
+        if (skipStyle == null)
+        {
+            skipStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
+            skipStyle.hover.textColor = skipStyle.normal.textColor;   // 호버 색 반응 차단
+        }
+        skipStyle.normal.textColor = skipStyle.hover.textColor = new Color(0.60f, 0.61f, 0.65f);
+        GUI.Label(new Rect(box.xMax - 240f, box.y + 8f, 220f, 22f), "[Ctrl] 꾹 눌러 건너뛰기", skipStyle);
         if (skipTimer > 0.02f)
         {
             Rect sg = new Rect(box.xMax - 190f, box.y + 32f, 170f, 4f);

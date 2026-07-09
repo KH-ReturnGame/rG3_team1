@@ -16,7 +16,8 @@ public class IntroCutscene : MonoBehaviour
     public float letterboxHideTime = 2.0f; // 레터박스 '풀리는' 속도 — 독백 후 천천히 걷힘
 
     [Header("애니 클립명")]
-    public string sprawlState = "GroundSlam";   // 쓰러진 자세
+    public string sprawlState = "GroundSlam";   // 쓰러진 자세(클립)
+    [Range(0f, 1f)] public float sprawlFrame = 0.62f;   // 클립의 이 지점에서 정지 = GroundSlam07 스프라이트 한 장 고정
     public string wakeState = "Crouch";         // 일어나는 모션
 
     [Header("독백")]
@@ -56,7 +57,7 @@ public class IntroCutscene : MonoBehaviour
 
         pc.cutsceneActive = true;
         pc.ZeroVelocity();
-        pc.PlayAnim(sprawlState);                 // 이미 쓰러져 있음
+        pc.PlayAnimFrozen(sprawlState, sprawlFrame);   // 쓰러진 자세 — GroundSlam07 한 장으로 고정(애니 재생 X)
         GameManager.Instance?.SetHalves(1);       // 딸피(체력 반칸) — LowHealthFx가 붉은 비네트로 표시
         if (Letterbox.Instance != null) Letterbox.Instance.Show(letterboxTime);
 

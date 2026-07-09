@@ -23,7 +23,8 @@ public class HubEntryCutscene : MonoBehaviour
 
     [Header("첫 도착 각성 (걷기→기절→암전→깨어남→모션→대사)")]
     public float staggerDistance = 3f;      // 비틀거리며 들어오는 거리(짧게)
-    public string sprawlState = "GroundSlam";   // 쓰러진 자세
+    public string sprawlState = "GroundSlam";   // 쓰러진 자세(클립)
+    [Range(0f, 1f)] public float sprawlFrame = 0.62f;   // 클립의 이 지점에서 정지 = GroundSlam07 스프라이트 한 장 고정
     public string wakeState = "Crouch";         // 깨어나는(일어나는) 모션
     public float faintHold = 0.7f;          // 쓰러진 채 유지
     public float fadeTime = 0.8f;           // 암전/밝아짐 시간
@@ -68,15 +69,15 @@ public class HubEntryCutscene : MonoBehaviour
 
         // 1) 비틀비틀 걸어 들어옴
         yield return WalkIn(pc, staggerDistance, walkSpeed * 0.75f);
-        // 2) 입구서 쓰러짐
+        // 2) 입구서 쓰러짐 — GroundSlam07 한 장으로 고정(애니 재생 X)
         pc.CutsceneStop();
-        pc.PlayAnim(sprawlState);
+        pc.PlayAnimFrozen(sprawlState, sprawlFrame);
         yield return new WaitForSeconds(faintHold);
         // 3) 암전 (감지 NPC가 여울 집으로 데려가는 시간)
         yield return Fade(0f, 1f, fadeTime);
         yield return new WaitForSeconds(blackHold);
-        // 4) 여울 집에서 밝아짐(아직 누운 채)
-        pc.PlayAnim(sprawlState);
+        // 4) 여울 집에서 밝아짐(아직 누운 채 — 같은 프레임 고정)
+        pc.PlayAnimFrozen(sprawlState, sprawlFrame);
         yield return Fade(1f, 0f, fadeTime);
         yield return new WaitForSeconds(0.4f);
         // 5) 깨어나는 모션

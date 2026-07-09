@@ -47,8 +47,11 @@ public class HelpPopupUI : MonoBehaviour
         Seen.Add(new HelpEntry { title = t, body = b });
     }
 
-    // [ESC]·[X]로 닫을 때까지 유지.
-    public void ShowManual(string t, string b) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = true, timedUntil = 0f }); Record(t, b); }
+    [Header("표시 시간")]
+    public float manualSeconds = 12f;   // (구)ShowManual 도움말의 자동 소멸 시간 — 이제 전부 시간 지나면 사라짐
+
+    // (구) ESC/X 수동 닫기 — 이제 전부 자동 소멸(요청). 호출부 호환을 위해 시그니처 유지.
+    public void ShowManual(string t, string b) => ShowTimed(t, b, manualSeconds);
     // duration초 뒤 자동 종료.
     public void ShowTimed(string t, string b, float duration) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = Time.unscaledTime + Mathf.Max(0.1f, duration) }); Record(t, b); }
     // 코드(ForceHide)로만 닫힘. 일시적 입력 유도(패링 큐)라 기록하지 않음.

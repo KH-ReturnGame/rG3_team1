@@ -313,6 +313,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
         currentHealth -= damage;
         hitFlashTimer = 0.08f;
+        DamagePopup.Damage(transform.position + Vector3.up * 0.9f, damage);   // 빨간 데미지 숫자
 
         if (currentHealth <= 0) Die();
     }

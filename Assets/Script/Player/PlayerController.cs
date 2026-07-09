@@ -157,7 +157,14 @@ public class PlayerController : MonoBehaviour
     // ── 컷씬 제어(IntroCutscene 등이 사용) ──
     [System.NonSerialized] public bool cutsceneActive;   // true면 입력·자동애니 잠금(중력 낙하는 유지)
     public bool Grounded => isGrounded;                  // 외부에서 착지 판정 읽기
-    public void PlayAnim(string state) => PlayStateForced(state);   // 특정 애니 강제 재생
+    public void PlayAnim(string state) { if (anim != null) anim.speed = 1f; PlayStateForced(state); }   // 특정 애니 강제 재생(프레임 고정 해제 포함)
+    // 컷씬용: 애니를 특정 지점에서 정지시켜 스프라이트 한 장으로 고정(쓰러진 자세 등). PlayAnim이 다시 풀어준다.
+    public void PlayAnimFrozen(string state, float normalizedTime)
+    {
+        if (anim == null) return;
+        anim.Play(state, 0, Mathf.Clamp01(normalizedTime));
+        anim.speed = 0f;
+    }
     public void ZeroVelocity() { if (rb != null) rb.linearVelocity = Vector2.zero; }
 
     // 점프대(트램펄린) 등이 호출 — 위로 발사 + 공중 점프 리필.

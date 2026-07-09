@@ -182,16 +182,18 @@ public class GameManager : MonoBehaviour
         if (isDead || halves <= 0) return;
         halves = Mathf.RoundToInt(halves * (1f - DamageReduction));   // 방어 포션: 피해 감량
         if (halves <= 0) return;
-        // 튜토리얼에선 하트 반 칸 밑으로 안 내려감(죽지 않는 안전 훈련장)
-        int floor = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "TutorialScene" ? 1 : 0;
-        currentHalf = Mathf.Max(floor, currentHalf - halves);
+        currentHalf = Mathf.Max(0, currentHalf - halves);   // 튜토리얼 포함 어디서든 사망 가능(튜토 사망=GameOverUI)
         OnStatsChanged?.Invoke();
         if (currentHalf == 0) Die();
     }
 
     public void Heal(int hearts)
     {
+        int before = currentHalf;
         currentHalf = Mathf.Min(MaxHalf, currentHalf + Mathf.Max(0, hearts) * 2);
+        // 실제로 회복됐으면 플레이어 위에 초록 숫자(칸 단위)
+        if (currentHalf > before && PlayerController.Instance != null)
+            DamagePopup.Heal(PlayerController.Instance.transform.position + Vector3.up * 1.1f, (currentHalf - before) * 0.5f);
         OnStatsChanged?.Invoke();
     }
 

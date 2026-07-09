@@ -80,6 +80,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
 
         currentHealth -= damage;
         hitFlashTimer = flashDuration;  // 번쩍 → "맞았다!"가 눈에 보임
+        DamagePopup.Damage(transform.position + Vector3.up * 1.1f, damage);   // 빨간 데미지 숫자
 
         Debug.Log($"[허수아비] {damage:0.#} 피격! 남은 HP {Mathf.Max(0, currentHealth):0}/{maxHealth:0}" +
                   (isGroggy ? " (그로기 치명타)" : ""));

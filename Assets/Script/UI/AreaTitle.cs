@@ -82,16 +82,16 @@ public class AreaTitle : MonoBehaviour
         subStyle.fontSize = Mathf.RoundToInt(sh * 0.018f);
         float cy = sh * 0.16f;
 
-        // 서브(영문, 자간)
+        // 서브(영문, 자간) — SetCol로 hover/active도 고정(마우스 호버에 색 안 변함)
         string spacedSub = string.Join("  ", subText.ToCharArray());
-        subStyle.normal.textColor = new Color(0.80f, 0.62f, 0.34f, 0.85f * alpha);
+        SetCol(subStyle, new Color(0.80f, 0.62f, 0.34f, 0.85f * alpha));
         GUI.Label(new Rect(0, cy - sh * 0.032f, sw, sh * 0.03f), spacedSub, subStyle);
 
         // 메인(그림자 → 본문)
         Vector2 sz = mainStyle.CalcSize(new GUIContent(mainText));
-        mainStyle.normal.textColor = new Color(0f, 0f, 0f, 0.55f * alpha);
+        SetCol(mainStyle, new Color(0f, 0f, 0f, 0.55f * alpha));
         GUI.Label(new Rect(0 + 2f, cy + 3f, sw, sz.y), mainText, mainStyle);
-        mainStyle.normal.textColor = new Color(0.94f, 0.92f, 0.88f, alpha);
+        SetCol(mainStyle, new Color(0.94f, 0.92f, 0.88f, alpha));
         GUI.Label(new Rect(0, cy, sw, sz.y), mainText, mainStyle);
 
         // 양옆 장식선 + 다이아
@@ -111,4 +111,7 @@ public class AreaTitle : MonoBehaviour
         mainStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold };
         subStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold };
     }
+
+    // IMGUI 기본 스킨의 hover 색 반응 차단 — normal/hover/active를 같은 색으로
+    private static void SetCol(GUIStyle st, Color c) { st.normal.textColor = c; st.hover.textColor = c; st.active.textColor = c; }
 }
