@@ -34,6 +34,6 @@ public class RangedEnemy : Enemy
         Vector2 toPlayer = (Vector2)(player.position - origin);
         GameObject go = Instantiate(projectilePrefab, origin, Quaternion.identity);
         Projectile proj = go.GetComponent<Projectile>();
-        if (proj != null) proj.Init(toPlayer, projectileSpeed, attackDamage);
+        if (proj != null) proj.Init(toPlayer, projectileSpeed, attackDamage, transform);   // 자신을 넘겨 반사 목표로
     }
 }

@@ -19,6 +19,9 @@ public class CameraZone : MonoBehaviour
     [Tooltip("겹치는 구역이 있을 때 우선순위(클수록 우선). 같은 자리에 작은 특수 구역(보스방 등)을 둘 때 사용")]
     public int priority = 0;
 
+    [Tooltip("이 구역의 줌 배율(0=전역 zoomMul 사용). 전투방을 더 줌인(예: 0.7)하는 등 방별 연출용")]
+    public float zoomMul = 0f;
+
     private BoxCollider2D box;
 
     void Awake() { box = GetComponent<BoxCollider2D>(); if (box != null) box.isTrigger = true; }

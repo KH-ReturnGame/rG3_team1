@@ -844,6 +844,26 @@ public class PlayerController : MonoBehaviour
         ParryFx.Spark(SparkPos(source), false);
     }
 
+    // 투사체 패링(Projectile이 호출): 패링 윈도우 또는 체인 윈도우 중이면 튕겨냄(true → 투사체가 반사됨).
+    //  저스트 구간이면 강연출+Q쿨 초기화, 반사탄도 더 빠르고 아프게(Projectile 쪽 처리).
+    public bool TryDeflectProjectile(Vector2 pos, out bool just)
+    {
+        just = false;
+        if (!isParrying && parryChainTimer <= 0f) return false;
+        just = isParrying && (parryWindow - parryTimer <= justParryWindow);
+
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState) * (just ? 1f : 0.5f);
+        if (just) skillCooldownTimer = 0f;
+        isParrying = false;
+        guardParried = true;
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;
+        if (just) Juice.JustParry(); else Juice.Deflect();
+        ParryFx.Spark(pos, just);
+        return true;
+    }
+
     // 스파크 위치: 플레이어 가슴 높이에서 공격자 쪽으로 약간
     private Vector2 SparkPos(Vector2 source)
     {

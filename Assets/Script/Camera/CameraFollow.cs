@@ -17,8 +17,12 @@ public class CameraFollow : MonoBehaviour
     public float smoothTime = 0.18f;         // 클수록 느긋하게(부드럽게) 따라옴
     public Vector2 offset = new Vector2(0f, 1f);   // 살짝 위를 보도록
 
-    [Header("룩어헤드(진행 방향 미리 보기 — 답답함 완화)")]
-    public float lookAheadX = 2.2f;          // 좌우로 미리 당겨 보는 거리
+    [Header("줌 (기본 시야 축소 — 캐릭터를 크게, 타격감↑)")]
+    [Range(0.4f, 1.2f)] public float zoomMul = 0.78f;   // 1=원래 크기. 0.78 = 약 22% 줌인. CameraZone.zoomMul(>0)이 구역별로 덮어씀
+
+    [Header("룩어헤드(진행 방향 미리 보기 — 좁아진 시야 보완)")]
+    public float lookAheadX = 2.2f;          // (구) 고정 거리 — lookAheadFrac=0일 때만 사용
+    [Range(0f, 0.45f)] public float lookAheadFrac = 0.22f;   // 화면 반폭 대비 비율(줌이 바뀌어도 체감 일정). 0이면 lookAheadX 고정거리
     public float lookAheadSmooth = 0.4f;
 
     [Header("세로 프레이밍 (바닥 밑 빈 타일이 화면에 안 차게)")]
@@ -46,6 +50,7 @@ public class CameraFollow : MonoBehaviour
     private float shakeAmt, shakeTimer, shakeDur;
     private Vector3 vel;
     private float lookDir = 1f, curAhead, aheadVel, lastX;
+    private float curMul, mulVel;                         // 부드럽게 보간되는 현재 줌 배율(구역 전환 시 스냅 방지)
     private bool hasBounds;
     private Vector2 bMin, bMax;                           // 현재(부드럽게 보간된) 경계 — 클램프/줌에 사용
     private Vector2 tMin, tMax;                           // 목표 경계(구역 전환 대상)
@@ -58,6 +63,7 @@ public class CameraFollow : MonoBehaviour
         Instance = this;
         cam = GetComponent<Camera>();
         if (maxOrthoSize <= 0f && cam != null) maxOrthoSize = cam.orthographicSize;
+        curMul = zoomMul;
     }
 
     void Start()
@@ -87,17 +93,22 @@ public class CameraFollow : MonoBehaviour
         else hasBounds = false;
 
         bMin = tMin; bMax = tMax;
-        ApplyZoomFit();
+        ApplyZoom(true);
     }
 
-    // 화면 세로가 (현재)Bounds 높이보다 크면 그만큼 줌인 → 위/아래 빈(죽은) 공간 제거
-    private void ApplyZoomFit()
+    // 줌 계산: 기본 시야(maxOrthoSize) × 배율(전역 zoomMul, 구역 zoomMul>0이면 구역 우선)
+    //  → Bounds 높이보다 크면 맞춰 줌인(위/아래 빈 공간 제거). 구역 전환 시 배율은 부드럽게 보간.
+    private void ApplyZoom(bool snap)
     {
-        if (hasBounds && fitZoomToBounds && cam != null && cam.orthographic)
-        {
-            if (maxOrthoSize <= 0f) maxOrthoSize = cam.orthographicSize;
-            cam.orthographicSize = Mathf.Min(maxOrthoSize, (bMax.y - bMin.y) * 0.5f);
-        }
+        if (cam == null || !cam.orthographic) return;
+        if (maxOrthoSize <= 0f) maxOrthoSize = cam.orthographicSize;
+
+        float tgt = Mathf.Clamp((activeZone != null && activeZone.zoomMul > 0f) ? activeZone.zoomMul : zoomMul, 0.4f, 1.2f);
+        curMul = snap ? tgt : Mathf.SmoothDamp(curMul, tgt, ref mulVel, zoneTransition);
+
+        float size = maxOrthoSize * curMul;
+        if (hasBounds && fitZoomToBounds) size = Mathf.Min(size, (bMax.y - bMin.y) * 0.5f);
+        cam.orthographicSize = size;
     }
 
     // 매 프레임: 목표 경계 결정(구역 우선 → 레거시) 후 현재 경계를 부드럽게 보간 + 줌 갱신
@@ -116,15 +127,13 @@ public class CameraFollow : MonoBehaviour
             else hasBounds = false;
         }
 
-        if (!hasBounds) return;
-
-        if (snapBounds) { bMin = tMin; bMax = tMax; minVel = Vector2.zero; maxVel = Vector2.zero; snapBounds = false; }
-        else
+        if (hasBounds)
         {
+            if (snapBounds) { bMin = tMin; bMax = tMax; minVel = Vector2.zero; maxVel = Vector2.zero; ApplyZoom(true); snapBounds = false; return; }
             bMin = Vector2.SmoothDamp(bMin, tMin, ref minVel, zoneTransition);
             bMax = Vector2.SmoothDamp(bMax, tMax, ref maxVel, zoneTransition);
         }
-        ApplyZoomFit();
+        ApplyZoom(false);   // 경계가 없어도 줌 배율은 항상 적용
     }
 
     // 플레이어를 포함하는 구역 선택. 현재 구역에 아직 있으면 유지(겹침 경계 깜빡임 방지),
@@ -165,13 +174,15 @@ public class CameraFollow : MonoBehaviour
 
         UpdateBounds();   // 구역 결정 + 경계 보간 + 줌 갱신(클램프/halfH 계산 전에)
 
-        // 룩어헤드: 이동 방향으로 카메라를 미리 당김(부드럽게)
-        float dx = target.position.x - lastX;
-        if (Mathf.Abs(dx) > 0.0005f) lookDir = Mathf.Sign(dx);
-        lastX = target.position.x;
-        curAhead = Mathf.SmoothDamp(curAhead, lookAheadX * lookDir, ref aheadVel, lookAheadSmooth);
-
         float halfH = (cam != null && cam.orthographic) ? cam.orthographicSize : 5f;
+
+        // 룩어헤드: 이동 방향으로 카메라를 미리 당김(부드럽게).
+        //  거리=화면 반폭 × lookAheadFrac(줌이 바뀌어도 체감 일정), 실제로 걷는 속도(>1.5u/s)일 때만 방향 갱신(넉백·미세 밀림 무시)
+        float dx = target.position.x - lastX;
+        if (Time.deltaTime > 0f && Mathf.Abs(dx) / Time.deltaTime > 1.5f) lookDir = Mathf.Sign(dx);
+        lastX = target.position.x;
+        float aheadDist = lookAheadFrac > 0f ? halfH * (cam != null ? cam.aspect : 1.78f) * lookAheadFrac : lookAheadX;
+        curAhead = Mathf.SmoothDamp(curAhead, aheadDist * lookDir, ref aheadVel, lookAheadSmooth);
 
         // 가로: 진행 방향 룩어헤드
         float desiredX = target.position.x + offset.x + curAhead;

@@ -13,6 +13,7 @@ public class TutorialSequence : MonoBehaviour
     public float spawnOffsetX = -12f;      // 플레이어 기준 왼쪽 스폰 거리
     public float approachSpeed = 1.1f;     // 천천히 걸어오는 속도
     public float lineGap = 1.6f;           // 첫 독백 끝 ~ 경고 대사 사이 간격(적이 다가오는 그림을 보는 시간)
+    public float wakeWait = 1.3f;          // 인트로 '일어나기' 모션을 기다리는 시간(검은 바는 유지)
 
     [Header("아레나 클리어 안내(보상 상자 달린 아레나)")]
     public BattleArena arena;
@@ -46,23 +47,39 @@ public class TutorialSequence : MonoBehaviour
                 approacher.detectRange = 40f;     // 스폰 즉시 플레이어에게 걸어옴
                 approacher.detectHeight = 8f;
                 approacher.firstAttackDelay = 0f;
+                approacher.attackDamage = Mathf.Min(approacher.attackDamage, 0.5f);   // 튜토 공격력 상한(런타임 스폰이라 직접)
                 approacher.ArmAttack(999f);        // 발도 전엔 절대 공격 안 함
             }
         }
 
-        // 인트로 독백 종료 + 인트로 꼬리(일어나기·레터박스)까지 대기 — cutsceneActive 덮어쓰기 레이스 방지
+        // 인트로 독백 종료 대기
         while (DialogueUI.IsOpen) yield return null;
-        float tail = 6f;
-        while (pc.cutsceneActive && tail > 0f) { tail -= Time.deltaTime; yield return null; }
 
-        // ★대사는 한 흐름으로: 조작을 풀지 않고 잠깐의 '간격'(적이 걸어오는 그림) 후 바로 경고 독백
-        pc.cutsceneActive = true; pc.ZeroVelocity();
-        yield return new WaitForSeconds(lineGap);
+        // ★검은 바(레터박스)·컷씬을 끊지 않고 유지: 인트로 꼬리(일어나기)가 바를 내리고 조작을 풀려 해도
+        //   매 프레임 다시 잡는다 — 일어나기 + 적이 걸어오는 '간격'까지 한 호흡으로
+        float hold = wakeWait + lineGap;
+        float t = 0f;
+        while (t < hold)
+        {
+            pc.cutsceneActive = true;
+            if (Letterbox.Instance != null) Letterbox.Instance.Show(0.15f);
+            t += Time.deltaTime;
+            yield return null;
+        }
+        pc.ZeroVelocity();
 
-        // 경고 독백 → 발도(아픔을 참고)
+        // 경고 독백(검은 바 유지 상태에서) → "싸울 수밖에 없어"까지
         bool done = false;
         DialogueUI.Show("???", null, alarmLines, () => done = true);
-        while (!done) yield return null;
+        while (!done)
+        {
+            pc.cutsceneActive = true;
+            if (Letterbox.Instance != null) Letterbox.Instance.Show(0.15f);
+            yield return null;
+        }
+
+        // 대사가 끝난 지금에서야 검은 바가 걷히며 발도 → 전투 개시
+        if (Letterbox.Instance != null) Letterbox.Instance.Hide(1.2f);
         pc.CutsceneDrawSword();
         yield return new WaitForSeconds(0.4f);
         pc.cutsceneActive = false;

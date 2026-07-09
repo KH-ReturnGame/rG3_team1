@@ -19,6 +19,10 @@ public class CombatTutorial : MonoBehaviour
     [Header("적 첫 공격 유예")]
     public float enemyFirstAttackDelay = 3f;   // 튜토리얼 적이 플레이어를 발견한 뒤 첫 공격까지 더 기다림(읽을 시간)
 
+    [Header("튜토리얼 밸런스")]
+    public float enemyDamageCap = 0.5f;   // 튜토 적 공격력 상한(하트) — 반칸씩만 깎여 체력 곡선이 완만
+    public int awakeningHealHearts = 1;   // 각성 시 회복량(칸) — '반칸 무적 구간'을 첫 전투로 한정(하한 위장)
+
     [Header("패링 레슨")]
     [Range(0.02f, 0.5f)] public float slowScale = 0.12f;  // 슬로우모션 배율
     public float reactSeconds = 3.2f;                     // 우클릭 대기(실시간) — 넘기면 그대로 피격
@@ -71,14 +75,20 @@ public class CombatTutorial : MonoBehaviour
         player = null;
         combatHelpShown = false;
         parryLessonDone = false;
+        awakeningHealed = false;
         if (inScene) ApplyEnemyAttackGrace();   // 튜토리얼 적들의 첫 공격을 늦춤
     }
 
-    // 튜토리얼 씬의 모든 적에게 '첫 공격 유예'를 적용(발견 후 첫 스윙까지 시간 확보).
+    // 튜토리얼 씬의 모든 적에게 '첫 공격 유예' + '공격력 상한(반칸)' 적용.
+    //  상한 덕에 체력이 반칸 단위로 완만하게 깎여, 하한(0.5칸)에 닿기 전에 전투가 끝나는 그림을 만든다.
     private void ApplyEnemyAttackGrace()
     {
         foreach (var e in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
-            if (e != null) e.firstAttackDelay = Mathf.Max(e.firstAttackDelay, enemyFirstAttackDelay);
+            if (e != null)
+            {
+                e.firstAttackDelay = Mathf.Max(e.firstAttackDelay, enemyFirstAttackDelay);
+                e.attackDamage = Mathf.Min(e.attackDamage, enemyDamageCap);
+            }
     }
 
     private PlayerController Player()
@@ -132,17 +142,16 @@ public class CombatTutorial : MonoBehaviour
         return best;
     }
 
-    // 적이 예비동작에 진입 → 예지 판정(★튜토리얼 씬 한정).
-    //  규칙: 체력이 반 칸(위기)일 때 피격 '직전'이면 항상 예지(잠재 기프트)가 발동한다.
-    //   · 근접·원거리·돌진 전부 대상(원거리는 발사 직전에 느려져 피할 시간을 준다)
-    //   · 예비동작이 windupLateFraction만큼 지난 '막판'에 발동 — 진짜 맞기 직전의 긴박함
-    //   · 첫 발동 = 각성 연출 + 패링 레슨(근접만, 우클릭 어시스트) / 이후 = 슬로우모션+눈빛만
+    // 적이 예비동작에 진입 → '첫 각성 레슨' 판정(★튜토리얼 씬 한정, 스토리 연출이라 난이도 무관).
+    //  체력이 반 칸(위기)일 때 근접 공격 '직전'에 1회 — 각성 연출 + 패링 레슨(우클릭 어시스트).
+    //  이후의 반복 자동 예지는 난이도 시스템(AutoPrecog, 쉬움 전용)이 전 씬에서 담당한다.
     private Coroutine pendingPrecog;
 
     private void OnEnemyWindup(Enemy e)
     {
         if (!inScene || lessonActive || SlowMoFx.Active || pendingPrecog != null) return;
-        if (e == null) return;                                     // 원거리 포함 — 종류 안 가림
+        if (parryLessonDone) return;                               // 레슨은 1회 — 이후는 AutoPrecog 몫
+        if (e == null || !e.IsParryableMelee) return;              // 레슨은 근접 공격에서만
         var p = Player();
         if (p == null || e.TargetPlayer != p.transform) return;    // 플레이어를 노리는 공격만
         if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만
@@ -162,39 +171,20 @@ public class CombatTutorial : MonoBehaviour
             yield return null;
         }
         pendingPrecog = null;
-        if (e == null || !e.IsAttacking || SlowMoFx.Active || lessonActive) yield break;
+        if (e == null || !e.IsAttacking || SlowMoFx.Active || lessonActive || parryLessonDone) yield break;
         if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) yield break;   // 재확인(그새 회복했으면 취소)
 
         PrecogCharm.PlayEyeFlash(p);   // 붉은 눈빛 — 잠재 기프트
 
-        if (!parryLessonDone && e.IsParryableMelee)
-        {
-            // 첫 각성: 레슨(우클릭 어시스트) — 근접 공격에서만
-            lessonActive = true;
-            lessonEnemy = e;
-            lessonStartReal = Time.unscaledTime;
-            SlowMoFx.BeginHeld(slowScale);   // 시간감속 + 줌인 + 집중 연출
-            Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 느려진다", 3f);
-            if (HelpPopupUI.Instance != null)
-                HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
-                    "죽음의 위기에 잠재된 기프트가 깨어났습니다. 적의 공격이 느리게 보입니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
-        }
-        else
-        {
-            // 이후(또는 원거리): 예지만 발동 — 피하거나 스스로 패링
-            SlowMoFx.BeginTimed(slowScale + 0.08f, 1.6f);
-            StartCoroutine(EndPrecogWhenOver(e));   // 패링 성공/공격 종료 시 즉시 해제
-        }
-    }
-
-    // 예지 슬로우 조기 해제: 적이 더는 공격 중이 아니면(패링당해 그로기 포함) 바로 시간 복구
-    private System.Collections.IEnumerator EndPrecogWhenOver(Enemy e)
-    {
-        while (SlowMoFx.Active)
-        {
-            if (e == null || !e.IsAttacking) { SlowMoFx.End(); yield break; }
-            yield return null;
-        }
+        // 첫 각성: 레슨(우클릭 어시스트)
+        lessonActive = true;
+        lessonEnemy = e;
+        lessonStartReal = Time.unscaledTime;
+        SlowMoFx.BeginHeld(slowScale);   // 시간감속 + 줌인 + 집중 연출
+        Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 느려진다", 3f);
+        if (HelpPopupUI.Instance != null)
+            HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
+                "죽음의 위기에 잠재된 기프트가 깨어났습니다. 적의 공격이 느리게 보입니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
     }
 
     private void ResolveParrySuccess()
@@ -206,6 +196,21 @@ public class CombatTutorial : MonoBehaviour
         lessonActive = false;
         lessonEnemy = null;
         parryLessonDone = true;
+        AwakeningHeal();
+    }
+
+    // 각성 회복: 기프트가 깨어나며 상처가 일부 아묾(+N칸).
+    //  반칸(하한) 상태로 도는 전투를 첫 각성 전투 하나로 한정 — 이후 전투에선 체력이 실제로 닳아 하한이 안 들킨다.
+    private bool awakeningHealed;
+    private void AwakeningHeal()
+    {
+        if (awakeningHealed || !inScene) return;
+        awakeningHealed = true;
+        if (GameManager.Instance != null && awakeningHealHearts > 0)
+        {
+            GameManager.Instance.Heal(awakeningHealHearts);
+            Toast.Show("깨어난 기프트가 상처를 아물게 한다", 3f);
+        }
     }
 
     // 시간초과 / 공격종료 / 씬전환 → 시간만 복구하고 도움말 닫음(공격은 그대로 진행).
@@ -217,6 +222,7 @@ public class CombatTutorial : MonoBehaviour
             SlowMoFx.End();
             if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
             parryLessonDone = true;   // 한 번 발동했으면(성공/실패 무관) 소진
+            AwakeningHeal();          // 패링 실패여도 각성 자체는 일어남 — 회복은 동일
         }
         lessonActive = false;
         lessonEnemy = null;

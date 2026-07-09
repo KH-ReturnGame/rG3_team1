@@ -225,6 +225,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FakeWall
   enteredAlpha: 0.3
   fadeSpeed: 4
+  forceSortingOrder: 1
+  sortingOrder: 30
 --- !u!61 &293917818
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -22303,7 +22305,8 @@ GameObject:
   - component: {fileID: 773299859}
   - component: {fileID: 773299861}
   - component: {fileID: 773299860}
-  m_Layer: 0
+  - component: {fileID: 773299862}
+  m_Layer: 3
   m_Name: Battle_Arena_wall_A
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22607,6 +22610,44 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+--- !u!19719996 &773299862
+TilemapCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 773299858}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_MaximumTileChangeCount: 1000
+  m_ExtrusionFactor: 0
+  m_UseDelaunayMesh: 0
 --- !u!1 &839130293
 GameObject:
   m_ObjectHideFlags: 0
@@ -22702,8 +22743,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialSequence
   meleePrefab: {fileID: 6103463829659848265, guid: bbbaec114f535aa4f94df0d4a587490c, type: 3}
   spawnOffsetX: -8
-  alarmDistance: 4.5
   approachSpeed: 1.1
+  lineGap: 1.6
+  wakeWait: 1.3
   arena: {fileID: 1533742093}
   alarmLines:
   - "[\uB180\uB78C]\u2026\u2026 \uC774\uCABD\uC73C\uB85C, \uC628\uB2E4."
@@ -23803,7 +23845,8 @@ GameObject:
   - component: {fileID: 1866680437}
   - component: {fileID: 1866680436}
   - component: {fileID: 1866680435}
-  m_Layer: 0
+  - component: {fileID: 1866680438}
+  m_Layer: 3
   m_Name: Battle_Arena_wall_B
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24267,6 +24310,44 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2104015407}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!19719996 &1866680438
+TilemapCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1866680434}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_MaximumTileChangeCount: 1000
+  m_ExtrusionFactor: 0
+  m_UseDelaunayMesh: 0
 --- !u!1 &1866856719
 GameObject:
   m_ObjectHideFlags: 0

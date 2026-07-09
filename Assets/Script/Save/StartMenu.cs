@@ -123,6 +123,40 @@ public class StartMenu : MonoBehaviour
                 Event.current.Use();
             }
         }
+
+        // ── 난이도(클릭으로 전환) — "난이도 ‹ 쉬움 ›" 세 조각을 이어 그려 값만 색 강조 ──
+        bool easy = Difficulty.Current == Difficulty.Mode.Easy;
+        float dy = y + items.Length * (rowH + gap) + gap * 1.2f;
+        Rect dr = new Rect(sw * 0.5f - 180f, dy, 360f, rowH * 0.6f);
+        bool dhv = dr.Contains(m);
+
+        smallStyle.fontSize = Mathf.RoundToInt(sh * 0.023f);
+        var align0 = smallStyle.alignment; smallStyle.alignment = TextAnchor.MiddleLeft;
+        Color dim = dhv ? Color.white : new Color(0.60f, 0.61f, 0.65f);
+        Color val = easy ? new Color(0.85f, 0.88f, 0.80f) : new Color(0.90f, 0.32f, 0.28f);
+        string s1 = "난이도   ‹ ", s2 = Difficulty.Label, s3 = " ›";
+        float w1 = smallStyle.CalcSize(new GUIContent(s1)).x;
+        float w2 = smallStyle.CalcSize(new GUIContent(s2)).x;
+        float w3 = smallStyle.CalcSize(new GUIContent(s3)).x;
+        float x0 = sw * 0.5f - (w1 + w2 + w3) * 0.5f;
+        SetCol(smallStyle, dim);  GUI.Label(new Rect(x0, dr.y, w1 + 4f, dr.height), s1, smallStyle);
+        SetCol(smallStyle, val);  GUI.Label(new Rect(x0 + w1, dr.y, w2 + 4f, dr.height), s2, smallStyle);
+        SetCol(smallStyle, dim);  GUI.Label(new Rect(x0 + w1 + w2, dr.y, w3 + 4f, dr.height), s3, smallStyle);
+        smallStyle.alignment = align0;
+
+        // 설명 한 줄
+        verStyle.fontSize = Mathf.RoundToInt(sh * 0.016f);
+        var prevAlign = verStyle.alignment; verStyle.alignment = TextAnchor.MiddleCenter;
+        GUI.Label(new Rect(sw * 0.5f - 300f, dr.yMax - 4f, 600f, sh * 0.03f),
+            easy ? "위기의 순간, 예지(시간 감속)가 자동으로 발동합니다"
+                 : "자동 예지 없음 — 모든 공격을 스스로 받아내야 합니다", verStyle);
+        verStyle.alignment = prevAlign;
+
+        if (dhv && click)
+        {
+            Difficulty.Current = easy ? Difficulty.Mode.Hard : Difficulty.Mode.Easy;
+            Event.current.Use();
+        }
     }
 
     // ── 슬롯 페이지(새 게임/불러오기 공용) — 타이틀과 같은 투명 톤, 구분은 헤어라인만 ──

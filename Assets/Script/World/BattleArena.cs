@@ -120,8 +120,9 @@ public class BattleArena : MonoBehaviour
                     }
             Toast.Show("구역 클리어!", 2f);
 
-            // 보상 상자가 처음 등장하면 보물상자 도움말도 함께(세션당 1회)
-            if (chestAppeared && !chestHelpShown && HelpPopupUI.Instance != null)
+            // 보물상자 도움말: ★튜토리얼의 첫 보상 상자(포션)에서만 딱 1회
+            if (chestAppeared && !chestHelpShown && HelpPopupUI.Instance != null
+                && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == CombatTutorial.TutorialSceneName)
             {
                 chestHelpShown = true;
                 HelpPopupUI.Instance.ShowTimed("보물상자",

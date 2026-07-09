@@ -87,6 +87,9 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     public Transform TargetPlayer => player;                          // 이 적이 노리는 대상
     public bool IsAttacking => state == State.Windup || state == State.Strike;
     public bool IsAggro => state != State.Patrol && state != State.Dead;   // 플레이어를 인식해 교전(추격/공격) 중인지
+    // 대사창·컷씬(독백/발도 연출 등) 중엔 모든 적의 '공격 개시'를 봉인 — 무방비 플레이어를 때리지 않게(이동·추격은 허용)
+    protected static bool AttackHold =>
+        DialogueUI.IsOpen || (PlayerController.Instance != null && PlayerController.Instance.cutsceneActive);
     public virtual bool IsParryableMelee => true;                     // 원거리는 false로 오버라이드(투사체는 패링 레슨 제외)
 
     void Awake()
@@ -237,6 +240,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
 
     protected virtual void BeginAttack()
     {
+        if (AttackHold) return;   // 독백·대사·컷씬 중엔 공격 안 함(모든 적 공통 — 서브클래스도 이 진입점 사용)
         // 방향 재조정 안 함 — 사거리에 들어올 때 향한 방향 그대로 공격(공격 직전 방향 전환 X)
         SetMove(0);
         struck = false;

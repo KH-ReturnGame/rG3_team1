@@ -15,6 +15,7 @@ public class HelpPopupUI : MonoBehaviour
     private class Entry
     {
         public string title, body;
+        public string rich;        // 표시용: [키]·*강조*가 오렌지 볼드로 변환된 본문(Seen 기록은 원문 유지)
         public float shownAt;
         public bool manual;        // ESC/X로 닫기
         public float timedUntil;   // >0이면 그 시각에 자동 종료(Timed). 0 && !manual = Sticky(코드로만).
@@ -55,7 +56,17 @@ public class HelpPopupUI : MonoBehaviour
     // Sticky(패링 큐 등)만 제거.
     public void ForceHide() { stack.RemoveAll(e => !e.manual && e.timedUntil <= 0f); }
     // 중첩 옵션 처리: stackPopups가 false면 새 도움말이 뜰 때 기존 것을 모두 비움(교체).
-    private void Push(Entry e) { if (!stackPopups) stack.Clear(); stack.Add(e); }
+    private void Push(Entry e) { if (!stackPopups) stack.Clear(); e.rich = Rich(e.body); stack.Add(e); }
+
+    // [키]와 *강조*를 오렌지 볼드로(richText). 핸드북(Seen)엔 원문이 남는다.
+    private static string Rich(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        string hex = "#" + ColorUtility.ToHtmlStringRGB(UITheme.Accent);
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\[[^\]\n]+\]", m => "<b><color=" + hex + ">" + m.Value + "</color></b>");
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"\*([^*\n]+)\*", m => "<b><color=" + hex + ">" + m.Groups[1].Value + "</color></b>");
+        return s;
+    }
     public bool IsManualOpen { get { return stack.Count > 0 && stack[0].manual; } }
     // ESC로 닫는 도움말이 떠 있는가 — MenuUI가 이걸 보고 같은 ESC에 일시정지를 안 연다.
     public static bool ManualOpen => Instance != null && Instance.IsManualOpen;
@@ -97,63 +108,88 @@ public class HelpPopupUI : MonoBehaviour
         if (closeFront >= 0) stack.RemoveAt(closeFront);
     }
 
-    // 한 개 그리기. 맨 앞이고 수동이면 [X] 버튼·닫기 힌트 표시(X 클릭 시 true). 뒤 항목은 흐리게.
+    // 한 개 그리기. 맨 앞이고 수동이면 [✕] 버튼·닫기 힌트 표시(✕ 클릭 시 true). 뒤 항목은 흐리게.
     private bool DrawPopup(Entry e, float x, float y, float w, bool isFront)
     {
-        float a = Mathf.Clamp01((Time.unscaledTime - e.shownAt) / 0.2f);                          // 페이드 인
-        if (e.timedUntil > 0f) a *= Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / 0.5f);     // Timed 끝 페이드아웃
-        if (!isFront) a *= 0.62f;                                                                  // 뒤 항목은 흐리게(앞에 집중)
+        float k = Mathf.Clamp01((Time.unscaledTime - e.shownAt) / 0.25f);                          // 등장 진행도
+        float ease = 1f - (1f - k) * (1f - k);                                                     // ease-out
+        float a = ease;
+        if (e.timedUntil > 0f) a *= Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / 0.5f);      // Timed 끝 페이드아웃
+        if (!isFront) a *= 0.62f;                                                                   // 뒤 항목은 흐리게(앞에 집중)
+        y -= 14f * (1f - ease);                                                                     // 살짝 위에서 슬라이드 인
 
-        Color cyan = UITheme.Accent;
-        float pad = 24f, headH = 40f, gap = 12f, hintH = (isFront && e.manual) ? 22f : 0f;
+        Color ac = UITheme.Accent;
+        float pad = 26f, headH = 42f, gap = 12f, hintH = (isFront && e.manual) ? 22f : 0f;
         float bodyW = w - pad * 2f;
-        float bodyH = bodyStyle.CalcHeight(new GUIContent(e.body), bodyW);
-        float h = pad + headH + gap + bodyH + ((isFront && e.manual) ? gap + hintH : 0f) + pad;
+        float bodyH = bodyStyle.CalcHeight(new GUIContent(e.rich ?? e.body), bodyW);
+        float h = pad * 0.7f + headH + gap + bodyH + ((isFront && e.manual) ? gap + hintH : 0f) + pad;
+        Rect panel = new Rect(x, y, w, h);
 
+        // 패널: 그림자 + 건메탈 그라데(거의 불투명 → 뒤 항목 가림) + 상단 하이라이트 + 얇은 테두리
         Color prev = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.35f * a);                 // 그림자
-        GUI.DrawTexture(new Rect(x + 4f, y + 5f, w, h), Tex());
-        GUI.color = UITheme.A(UITheme.BgSolid, 0.97f * a);       // 배경(슬레이트, 거의 불투명 → 뒤 항목 본문을 가림)
-        GUI.DrawTexture(new Rect(x, y, w, h), Tex());
-        GUI.color = new Color(cyan.r, cyan.g, cyan.b, 0.16f * a);    // 헤더 강조 띠
-        GUI.DrawTexture(new Rect(x, y, w, headH + pad), Tex());
-        GUI.color = prev;
-        Border(new Rect(x, y, w, h), 2f, new Color(cyan.r, cyan.g, cyan.b, a));
+        UITheme.Shadow(panel, 12f, 0.38f * a);
+        UITheme.FillV(panel, UITheme.A(UITheme.PanelTop, 0.97f * a), UITheme.A(UITheme.PanelBot, 0.97f * a));
+        UITheme.Fill(new Rect(x, y, w, 1f), new Color(1f, 1f, 1f, 0.07f * a));
+        Border(panel, 1f, UITheme.A(UITheme.Border, 0.9f * a));
 
-        tagStyle.normal.textColor = new Color(0.6f, 0.85f, 1f, a);
-        GUI.Label(new Rect(x + pad, y + pad - 2f, 70f, headH), "도움말", tagStyle);
-        titleStyle.normal.textColor = new Color(1f, 1f, 1f, a);
-        GUI.Label(new Rect(x + pad + 70f, y + pad - 4f, w - pad * 2f - 70f - 36f, headH), e.title, titleStyle);
+        // 헤더: 왼쪽 오렌지 바 + ◆ + '도움말' 태그 + 제목, 아래 헤어라인
+        float hy = y + pad * 0.7f;
+        UITheme.Fill(new Rect(x, hy + 4f, 4f, headH - 8f), UITheme.A(ac, a));
+        DrawDiamond(new Vector2(x + pad + 5f, hy + headH * 0.5f), 9f, UITheme.A(ac, a));
+        tagStyle.normal.textColor = UITheme.A(ac, 0.95f * a);
+        GUI.Label(new Rect(x + pad + 16f, hy, 76f, headH), "도움말", tagStyle);
+        titleStyle.normal.textColor = new Color(0.97f, 0.96f, 0.94f, a);
+        GUI.Label(new Rect(x + pad + 92f, hy - 2f, w - pad * 2f - 92f - 36f, headH), e.title, titleStyle);
+        UITheme.Fill(new Rect(x + pad, hy + headH, w - pad * 2f, 1f), UITheme.A(UITheme.Border, 0.5f * a));
 
-        bodyStyle.normal.textColor = new Color(0.92f, 0.94f, 0.98f, a);
-        GUI.Label(new Rect(x + pad, y + pad + headH + gap - 6f, bodyW, bodyH + 4f), e.body, bodyStyle);
+        // 본문([키]·*강조*는 오렌지 볼드)
+        bodyStyle.normal.textColor = new Color(0.90f, 0.91f, 0.94f, a);
+        GUI.Label(new Rect(x + pad, hy + headH + gap, bodyW, bodyH + 4f), e.rich ?? e.body, bodyStyle);
+
+        // 하단 라인: Timed = 남은 시간 게이지 / 그 외 = 고정 액센트 라인
+        float frac = 1f;
+        if (e.timedUntil > 0f)
+        {
+            float total = Mathf.Max(0.1f, e.timedUntil - e.shownAt);
+            frac = Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / total);
+        }
+        UITheme.Fill(new Rect(x, panel.yMax - 2f, w, 2f), UITheme.A(UITheme.Border, 0.6f * a));       // 트랙
+        UITheme.Fill(new Rect(x, panel.yMax - 2f, w * frac, 2f), UITheme.A(ac, 0.9f * a));            // 게이지
 
         bool clickedClose = false;
         if (isFront && e.manual)
         {
-            hintStyle.normal.textColor = new Color(0.6f, 0.72f, 0.82f, a);
-            GUI.Label(new Rect(x, y + h - pad - hintH + 2f, w, hintH), "[ESC] 또는 [X] 를 눌러 닫기", hintStyle);
+            hintStyle.normal.textColor = new Color(0.62f, 0.63f, 0.67f, a);
+            GUI.Label(new Rect(x, panel.yMax - pad - hintH + 4f, w, hintH), "<b>[ESC]</b> 또는 <b>[✕]</b> 를 눌러 닫기", hintStyle);
 
-            Rect close = new Rect(x + w - 38f, y + 10f, 26f, 26f);
+            Rect close = new Rect(x + w - 40f, y + 10f, 28f, 28f);
             bool hover = close.Contains(Event.current.mousePosition);
-            GUI.color = new Color(hover ? 0.85f : 0.5f, hover ? 0.32f : 0.24f, hover ? 0.32f : 0.24f, a);
-            GUI.DrawTexture(close, Tex());
-            GUI.color = prev;
-            closeStyle.normal.textColor = new Color(1f, 1f, 1f, a);
-            GUI.Label(close, "X", closeStyle);
+            if (hover) UITheme.Fill(close, UITheme.A(ac, 0.18f * a));
+            closeStyle.normal.textColor = hover ? UITheme.A(ac, a) : new Color(0.62f, 0.63f, 0.67f, a);
+            GUI.Label(close, "✕", closeStyle);
             if (Event.current.type == EventType.MouseDown && hover) { Event.current.Use(); clickedClose = true; }
         }
+        GUI.color = prev;
         return clickedClose;
+    }
+
+    // 작은 다이아(◆) — 45도 회전한 사각형
+    private static void DrawDiamond(Vector2 center, float size, Color c)
+    {
+        Matrix4x4 m = GUI.matrix;
+        GUIUtility.RotateAroundPivot(45f, center);
+        UITheme.Fill(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), c);
+        GUI.matrix = m;
     }
 
     private void EnsureStyles()
     {
         if (bodyStyle != null) return;
-        titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true, alignment = TextAnchor.UpperLeft };
+        titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 25, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
         tagStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        closeStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
+        closeStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter, richText = true };
     }
 
     private static Texture2D Tex()

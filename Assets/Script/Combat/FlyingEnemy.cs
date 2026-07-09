@@ -18,6 +18,10 @@ public class FlyingEnemy : Enemy
     public float flapHz = 9f;           // 날개 파닥임 주파수(빠른 잔진동)
     public float flutterAmp = 1.0f;     // 파닥임 세기(수직 속도)
 
+    [Header("돌진 사이클 — 위에서 맴돌다 급강하, 짧게 휘청이고 다시 떠오름")]
+    public float hoverHeight = 2.5f;    // 추격 시 플레이어 위로 유지하는 고도
+    public float diveRecover = 0.35f;   // 돌진 후 경직(짧게) — attackRecover 대신 사용, 끝나면 떠올라 재추격
+
     [Header("활동 범위(맵 밖 이탈 방지)")]
     public float leashRange = 14f;      // 스폰 기준 최대 거리 — 경계에서 멈추고 돌진도 중단
 
@@ -86,10 +90,18 @@ public class FlyingEnemy : Enemy
         if (player == null || Dist2D() > detectRange * 1.3f) { state = State.Patrol; return; }
         // 플레이어가 활동 범위 밖으로 벗어나면 포기하고 복귀(경계에 매달려 있지 않게)
         if (((Vector2)player.position - spawnPos).magnitude > leashRange + 2f) { state = State.Patrol; return; }
-        Vector2 to = (Vector2)(player.position - transform.position);
-        FaceMoveDir(to.x);
-        if (to.magnitude <= attackRange) { SetVelocity(Vector2.zero); if (attackCdTimer <= 0) BeginAttack(); }
-        else { Vector2 v = to.normalized * flySpeed; v.y += Flap(0.5f); SetVelocity(BlockWalls(v)); }   // 쫓을 때도 살짝 파닥임
+
+        // 플레이어 '위' 일정 고도를 향해 비행(박쥐가 머리 위를 맴도는 그림) → 수평으로 붙으면 급강하
+        Vector2 hoverPt = (Vector2)player.position + Vector2.up * hoverHeight;
+        Vector2 to = hoverPt - (Vector2)transform.position;
+        FaceMoveDir(player.position.x - transform.position.x);
+
+        float dx = Mathf.Abs(player.position.x - transform.position.x);
+        if (dx <= attackRange && attackCdTimer <= 0) { SetVelocity(Vector2.zero); BeginAttack(); return; }
+
+        Vector2 v = Vector2.ClampMagnitude(to * 2.5f, flySpeed);
+        v.y += Flap(0.5f);                                      // 쫓을 때도 살짝 파닥임
+        SetVelocity(BlockWalls(v));
     }
 
     protected override void TickWindup()   // 정지 후 돌진 방향 조준(텔레그래프 — 패링 노릴 구간)
@@ -112,7 +124,7 @@ public class FlyingEnemy : Enemy
         if (Physics2D.Raycast(transform.position, chargeDir, chargeSpeed * Time.deltaTime + 0.5f, wallMask).collider != null)
         {
             SetVelocity(Vector2.zero);
-            state = State.Recover; stateTimer = attackRecover;
+            state = State.Recover; stateTimer = diveRecover;
             return;
         }
         SetVelocity(chargeDir * chargeSpeed);
@@ -124,13 +136,14 @@ public class FlyingEnemy : Enemy
         }
         if (state != State.Strike) return;   // 패링당해 그로기로 바뀌면 중단
         stateTimer -= Time.deltaTime;
-        if (stateTimer <= 0) { state = State.Recover; stateTimer = attackRecover; }
+        if (stateTimer <= 0) { state = State.Recover; stateTimer = diveRecover; }
     }
 
-    protected override void TickRecover()  // 돌진 후 감속
+    protected override void TickRecover()  // 돌진 후: 짧게 휘청이며 위로 떠오름 → 바로 재추격(고도 복귀)
     {
         Vector2 v = rb != null ? rb.linearVelocity : Vector2.zero;
-        SetVelocity(Vector2.Lerp(v, Vector2.zero, 10f * Time.deltaTime));
+        Vector2 rise = Vector2.up * (flySpeed * 0.8f);   // 땅에 머물지 않고 곧장 날아오름
+        SetVelocity(BlockWalls(Vector2.Lerp(v, rise, 8f * Time.deltaTime)));
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0) { attackCdTimer = attackCooldown; state = State.Chase; }
     }
@@ -148,7 +161,7 @@ public class FlyingEnemy : Enemy
         if (off.magnitude > leashRange)
         {
             transform.position = spawnPos + off.normalized * leashRange;   // 경계에 딱 멈춤
-            if (state == State.Strike) { state = State.Recover; stateTimer = attackRecover; SetVelocity(Vector2.zero); }   // 돌진 중단
+            if (state == State.Strike) { state = State.Recover; stateTimer = diveRecover; SetVelocity(Vector2.zero); }   // 돌진 중단
         }
     }
 }
