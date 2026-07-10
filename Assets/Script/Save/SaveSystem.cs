@@ -119,6 +119,12 @@ public static class SaveSystem
         }
         if (Equipment.Instance != null) data.equipped = Equipment.Instance.SaveIds();
         if (QuestManager.Instance != null) { data.acceptedQuests = QuestManager.Instance.SaveAccepted(); data.completedQuests = new List<string>(QuestManager.Instance.completed); }
+
+        // 도감 발견 / 본 도움말 / 열린 보물상자 — 세션 static들을 슬롯에 보존
+        data.dexSeen = HandbookUI.SaveSeenItems();
+        data.helpSeen = new List<SavedHelp>();
+        foreach (var h in HelpPopupUI.Seen) data.helpSeen.Add(new SavedHelp { title = h.title, body = h.body });
+        data.openedChests = TreasureChest.SaveOpened();
     }
 
     private static void Apply(SaveSlotData data)
@@ -151,6 +157,14 @@ public static class SaveSystem
             QuestManager.Instance.LoadCompleted(data.completedQuests);   // 완료 퀘스트(연계 해금) 복원
             QuestManager.Instance.LoadAccepted(data.acceptedQuests);     // 수주 퀘스트 복원
         }
+
+        // 도감 발견 / 본 도움말 / 열린 보물상자 복원
+        HandbookUI.LoadSeenItems(data.dexSeen);
+        HelpPopupUI.Seen.Clear();
+        if (data.helpSeen != null)
+            foreach (var h in data.helpSeen)
+                if (!string.IsNullOrEmpty(h.title)) HelpPopupUI.Seen.Add(new HelpPopupUI.HelpEntry { title = h.title, body = h.body });
+        TreasureChest.LoadOpened(data.openedChests);   // 씬 상자 비주얼(열림)도 함께 갱신
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록

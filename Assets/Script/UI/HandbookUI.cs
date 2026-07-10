@@ -20,9 +20,15 @@ public class HandbookUI : MonoBehaviour
     private GUIStyle areaTitleSt, areaSubSt, tabSt, rowSt, rowNumSt, detailNameSt, detailSubSt, bodySt, dimSt, hintSt, chipSt;
     private static Texture2D _tex;
 
-    // ── 도감 '발견' 기록(획득 시 AcquireFeed가 호출, 세션 유지 — 저장 연동은 추후) ──
+    // ── 도감 '발견' 기록(획득 시 AcquireFeed가 호출, SaveSystem이 저장/복원) ──
     private static readonly HashSet<string> seenItems = new HashSet<string>();
     public static void MarkItemSeen(ItemData item) { if (item != null) seenItems.Add(ItemDatabase.Key(item)); }
+    public static List<string> SaveSeenItems() => new List<string>(seenItems);
+    public static void LoadSeenItems(List<string> ids)
+    {
+        seenItems.Clear();
+        if (ids != null) foreach (var s in ids) if (!string.IsNullOrEmpty(s)) seenItems.Add(s);
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()

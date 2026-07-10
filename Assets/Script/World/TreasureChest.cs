@@ -41,6 +41,15 @@ public class TreasureChest : MonoBehaviour, IInteractable
         ? gameObject.scene.name + ":" + transform.position.x.ToString("0.0") + "," + transform.position.y.ToString("0.0")
         : chestId;
 
+    // ── 세이브 연동(SaveSystem이 호출): 연 상자 키 내보내기/복원(복원 시 씬 상자 비주얼 갱신) ──
+    public static List<string> SaveOpened() => new List<string>(openedKeys);
+    public static void LoadOpened(List<string> keys)
+    {
+        openedKeys.Clear();
+        if (keys != null) foreach (var k in keys) if (!string.IsNullOrEmpty(k)) openedKeys.Add(k);
+        foreach (var c in All) if (c != null && openedKeys.Contains(c.Key)) c.ApplyOpenedVisual();
+    }
+
     public string Prompt => isOpen ? "" : prompt;
     public bool IsOpened => isOpen;
     public Vector3 Position => transform.position;

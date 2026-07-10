@@ -18,6 +18,13 @@ public class SavedQuest
 }
 
 [System.Serializable]
+public class SavedHelp   // 본 도움말(핸드북 다시보기 기록)
+{
+    public string title;
+    public string body;
+}
+
+[System.Serializable]
 public class SaveSlotData
 {
     public string saveName = "새 게임";
@@ -39,4 +46,7 @@ public class SaveSlotData
     public int moduleMinimap, moduleScan;                    // 후드 모듈 해금(0/1)
     public int moduleQuickdraw;                              // (구) 빨리 뽑기 — 핫바 폐지로 미사용(하위호환 유지)
     public int invCols;                                      // 배낭 확장(그리드 가로 열 수, 0=기본)
+    public List<string> dexSeen = new List<string>();        // 도감에서 '발견'된 아이템 id
+    public List<SavedHelp> helpSeen = new List<SavedHelp>(); // 본 도움말(핸드북 다시보기)
+    public List<string> openedChests = new List<string>();   // 열린 보물상자 키(씬:좌표 or chestId)
 }
