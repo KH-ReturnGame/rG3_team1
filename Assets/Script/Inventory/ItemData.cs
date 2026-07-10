@@ -13,6 +13,12 @@ public class ItemData : ScriptableObject
     public int maxStack = 99;
     [TextArea] public string description;
 
+    [Header("인벤토리 칸 크기 (타르코프식)")]
+    public int gridW = 1;           // 가로 칸 수
+    public int gridH = 1;           // 세로 칸 수
+    public int GridW => Mathf.Max(1, gridW);
+    public int GridH => Mathf.Max(1, gridH);
+
     [Header("종류")]
     public ItemKind kind = ItemKind.Material;
 
@@ -23,6 +29,7 @@ public class ItemData : ScriptableObject
     public float tempAttackMult = 0f;        // 전투 포션: 공격력 +배수 (0.5 = +50%)
     public float tempDamageReduction = 0f;   // 방어력 포션: 피해 감량 (0~1, 0.5 = 50%)
     public float buffDuration = 0f;          // 위 버프 지속(초)
+    public float cooldownSeconds = 0f;       // 이 아이템의 사용 쿨타임(초). 0이면 전역 기본값(GameManager.potionCooldown) 사용
 
     [Header("장신구 (Equipment) — 착용 시 보너스 (착용칸은 추후)")]
     public int maxJumpBonus = 0;
@@ -31,9 +38,14 @@ public class ItemData : ScriptableObject
     public float staminaRegenBonus = 0f;
     public float attackBonus = 0f;
 
+    [Header("장신구 효과")]
+    public bool precogSlow = false;        // 예지안: 적 공격 직전 시간 감속(쿨다운, PrecogCharm이 처리)
+    public float precogCooldown = 20f;     // 발동 쿨다운(초)
+
     [Header("판매 / 가치")]
     public int sellValue = 0;                // (구) 골동품 판매가
     public int baseValue = 0;                // 상점 가치. 판매 = 80% / 되사기 = 100%
+    public bool sellAtFullValue = false;     // true면 판매 시 100% (동화/은화/금화 같은 화폐)
 
     [Header("희귀도")]
     public Rarity rarity = Rarity.Common;
@@ -60,9 +72,9 @@ public class ItemData : ScriptableObject
         var gm = GameManager.Instance;
         bool did = false;
         if (healHearts > 0 && gm.CurrentHearts < gm.MaxHearts) { gm.Heal(healHearts); did = true; }
-        if (restoreStamina > 0f && gm.CurrentStamina < gm.MaxStamina) { gm.ChangeStamina(restoreStamina); did = true; }
         if (tempAttackMult > 0f && buffDuration > 0f) { gm.ApplyAttackBuff(tempAttackMult, buffDuration); did = true; }
         if (tempDamageReduction > 0f && buffDuration > 0f) { gm.ApplyDefenseBuff(tempDamageReduction, buffDuration); did = true; }
+        if (did) AudioManager.Sfx("potion");
         return did;
     }
 }

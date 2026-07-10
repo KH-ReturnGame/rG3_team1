@@ -14,13 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: flame_flower
   itemName: "\uD654\uC5FC\uAF43"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6b035415f6397f949ae7348f07639a1c, type: 3}
   maxStack: 99
   description: "\uC9C0\uC5F4\uB85C \uD53C\uC5B4\uB09C \uBD89\uC740 \uAF43. \uC804\uD22C
     \uD3EC\uC158\uC758 \uC7AC\uB8CC."
   kind: 0
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -31,4 +32,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 0
   baseValue: 60
+  sellAtFullValue: 0
   rarity: 1

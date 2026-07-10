@@ -1,20 +1,21 @@
 using UnityEngine;
 
-// 플레이어 스탯(체력=하트, 기력) 표시 UI. 데이터는 GameManager에서 읽음.
-// 이 컴포넌트는 '표시'만 담당 — 나중에 Canvas/에셋 UI로 교체할 땐 이걸 빼고
-// 같은 GameManager 게터/OnStatsChanged 이벤트를 쓰는 에셋 UI를 넣으면 됨(데이터-표시 분리).
+// 플레이어 HUD — 나인 솔즈(九日) 레이아웃 오마주.
+//  좌상단: 팔각 메달리온(초상화 자리 — 지금은 붉은 후드 실루엣) + 아래 매달린 골드 배지
+//  그 오른쪽: 세그먼트 HP(칸=하트, 반칸 지원, 피격 잔상) → 아래 눈금 있는 얇은 XP 게이지 → 소용돌이 포션 차지(1번 슬롯)
+//  좌하단: Q스킬 아이콘 + 기울어진 핍(쿨타임 진행) / 우하단: 예지 눈(착용 시 — 준비/쿨다운)
+//  색·크기는 아래 팔레트/치수 상수만 만지면 됨(게임 톤에 맞춘 2차 수정용).
 public class StatUI : MonoBehaviour
 {
     public static StatUI Instance { get; private set; }
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(this); return; }   // 중복 컴포넌트 제거(한 개만)
+        if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
 
-    // 어느 씬에서 시작하든 HUD(체력·기력 + 단축키)가 항상 뜨도록 자동 생성(1회, 씬 넘어가도 유지)
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
     {
@@ -25,67 +26,382 @@ public class StatUI : MonoBehaviour
         go.AddComponent<StatUI>();
     }
 
-    [Header("하트(체력)")]
-    public Vector2 origin = new Vector2(0.02f, 0.06f);   // 좌상단 시작(화면 비율) — 메뉴 버튼 아래
-    public float heartSize = 34f;
-    public float heartPad = 6f;
+    // ── 팔레트(나인 솔즈 카피 — 2차에서 게임 톤으로 조정) ──
+    private static readonly Color Ink      = new Color(0.05f, 0.085f, 0.085f, 0.94f);   // 요소 바탕(어두운 청록 먹색)
+    private static readonly Color Gold     = new Color(0.84f, 0.76f, 0.54f);            // 금테
+    private static readonly Color GoldDim  = new Color(0.45f, 0.41f, 0.30f);
+    private static readonly Color Teal     = new Color(0.34f, 0.93f, 0.72f);            // 체력/게이지 채움(민트)
+    private static readonly Color TealDark = new Color(0.13f, 0.42f, 0.35f);
+    private static readonly Color PipBlue  = new Color(0.38f, 0.66f, 0.96f);            // Q스킬 핍
+    private static readonly Color HoodRed  = new Color(0.66f, 0.17f, 0.15f);            // 메달리온 후드 실루엣
 
-    [Header("기력 바")]
-    public float barWidth = 220f;
-    public float barHeight = 16f;
+    [Header("피격 잔상")]
+    public float chipDelay = 0.30f;
+    public float chipSpeed = 6f;
 
-    private static Texture2D _heart, _white;
+    private float displayHalf = -1f, chipHalf, chipWait;
+    private GUIStyle goldStyle, cdStyle, glyphStyle;
 
-    void OnGUI()
+    void Update()
     {
         var gm = GameManager.Instance;
         if (gm == null) return;
+        int cur = Mathf.Clamp(gm.CurrentHalf, 0, gm.MaxHalf);
+        if (displayHalf < 0f) { displayHalf = cur; chipHalf = cur; return; }
 
-        float x = Screen.width * origin.x;
-        float y = Screen.height * origin.y;
+        float dt = Time.unscaledDeltaTime;
+        if (cur < displayHalf - 0.001f) { chipHalf = Mathf.Max(chipHalf, displayHalf); displayHalf = cur; chipWait = chipDelay; }
+        else if (cur > displayHalf + 0.001f) { displayHalf = cur; chipHalf = Mathf.Max(displayHalf, chipHalf); }
 
-        // 하트(현재=빨강 / 빈 칸=회색)
-        for (int i = 0; i < gm.MaxHearts; i++)
+        if (chipWait > 0f) chipWait -= dt;
+        else if (chipHalf > displayHalf) chipHalf = Mathf.Max(displayHalf, chipHalf - chipSpeed * dt);
+    }
+
+    void OnGUI()
+    {
+        if (Letterbox.Covering) return;
+        var gm = GameManager.Instance;
+        if (gm == null) return;
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
+        UIScale.Apply();
+        EnsureStyles();
+
+        float sw = UIScale.W, sh = UIScale.H;
+        float x0 = sw * 0.018f, y0 = sh * 0.028f;
+
+        // ── 1) 팔각 메달리온(초상화 자리) ──
+        float mSize = Mathf.Clamp(sh * 0.088f, 64f, 118f);
+        Rect medal = new Rect(x0, y0, mSize, mSize);
+        GUI.DrawTexture(medal, MedallionTex());
+
+        // ── 2) 매달린 골드 배지 ──
+        float bx = medal.center.x - mSize * 0.18f;
+        UITheme.Fill(new Rect(bx - 1f, medal.yMax - 4f, 2f, 12f), UITheme.A(Gold, 0.8f));   // 매다는 줄
+        float bs = mSize * 0.30f;
+        Rect badge = new Rect(bx - bs * 0.5f, medal.yMax + 7f, bs, bs);
+        GUI.DrawTexture(badge, BadgeTex());
+        goldStyle.fontSize = Mathf.RoundToInt(bs * 0.62f);
+        goldStyle.normal.textColor = Gold;
+        GUI.Label(new Rect(badge.xMax + 6f, badge.y - 2f, 160f, bs + 4f), gm.Gold.ToString("n0"), goldStyle);
+
+        // ── 3) 세그먼트 HP(칸=하트) ──
+        int maxHearts = Mathf.Max(1, gm.MaxHearts);
+        int curHalves = Mathf.Clamp(gm.CurrentHalf, 0, gm.MaxHalf);
+        if (displayHalf < 0f) { displayHalf = curHalves; chipHalf = curHalves; }
+        int ghostTop = Mathf.CeilToInt(chipHalf - 0.001f);
+
+        float segW = Mathf.Clamp(sh * 0.033f, 26f, 44f), segH = segW * 0.62f, segGap = 5f;
+        float hx = medal.xMax + 14f, hy = y0 + 2f;
+        for (int i = 0; i < maxHearts; i++)
         {
-            Rect r = new Rect(x + i * (heartSize + heartPad), y, heartSize, heartSize);
-            GUI.color = i < gm.CurrentHearts ? new Color(0.9f, 0.15f, 0.2f) : new Color(0.25f, 0.25f, 0.28f);
-            GUI.DrawTexture(r, HeartTex());
-        }
-        GUI.color = Color.white;
+            Rect r = new Rect(hx + i * (segW + segGap), hy, segW, segH);
+            int fill = Mathf.Clamp(curHalves - i * 2, 0, 2);
+            int ghost = Mathf.Clamp(ghostTop - i * 2, 0, 2) - fill;
 
-        // 기력 바
-        float by = y + heartSize + heartPad + 4f;
-        Rect bg = new Rect(x, by, barWidth, barHeight);
-        GUI.color = new Color(0f, 0f, 0f, 0.5f);
-        GUI.DrawTexture(bg, WhiteTex());
-        float frac = gm.MaxStamina > 0f ? Mathf.Clamp01(gm.CurrentStamina / gm.MaxStamina) : 0f;
-        GUI.color = new Color(0.3f, 0.8f, 1f);
-        GUI.DrawTexture(new Rect(bg.x + 2, bg.y + 2, (bg.width - 4) * frac, bg.height - 4), WhiteTex());
-        GUI.color = Color.white;
-    }
-
-    private static Texture2D WhiteTex()
-    {
-        if (_white == null) { _white = new Texture2D(1, 1); _white.SetPixel(0, 0, Color.white); _white.Apply(); }
-        return _white;
-    }
-
-    // 하트 모양 텍스처(흰색, 알파). 그릴 때 GUI.color로 색칠. 음함수 (x²+y²-1)³ - x²y³ ≤ 0.
-    private static Texture2D HeartTex()
-    {
-        if (_heart != null) return _heart;
-        const int S = 32;
-        _heart = new Texture2D(S, S, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
-        for (int py = 0; py < S; py++)
-            for (int px = 0; px < S; px++)
+            UITheme.Fill(r, Ink);
+            // 채움(반칸=왼쪽 절반) + 위기 고동
+            if (fill > 0)
             {
-                float x = (px / (float)(S - 1)) * 2.6f - 1.3f;
-                float y = (py / (float)(S - 1)) * 2.6f - 1.4f;        // 텍스처 좌표(아래=0) 보정: 봉우리 위·꼭지점 아래
-                float a = x * x + y * y - 1f;
-                float f = a * a * a - x * x * y * y * y;
-                _heart.SetPixel(px, py, f <= 0f ? Color.white : Color.clear);
+                Color fc = Teal;
+                if (curHalves <= 1) fc = Color.Lerp(Teal, Color.white, 0.30f + 0.30f * Mathf.Sin(Time.unscaledTime * 8f));
+                Rect fr = new Rect(r.x + 2f, r.y + 2f, (r.width - 4f) * (fill == 2 ? 1f : 0.5f), r.height - 4f);
+                UITheme.FillV(fr, fc, TealDark);
+                UITheme.Fill(new Rect(fr.x, fr.y, fr.width, 2f), UITheme.A(Color.white, 0.35f));   // 윗광
             }
-        _heart.Apply();
-        return _heart;
+            // 피격 잔상(방금 깎인 반칸 — 크림색)
+            if (ghost > 0)
+            {
+                float gx = r.x + 2f + (fill == 1 ? (r.width - 4f) * 0.5f : 0f);
+                float gw2 = (r.width - 4f) * (ghost == 2 ? 1f : 0.5f);
+                UITheme.Fill(new Rect(gx, r.y + 2f, gw2, r.height - 4f), new Color(0.95f, 0.90f, 0.70f, 0.9f));
+            }
+            UITheme.Border2(r, 1.5f, UITheme.A(Gold, 0.85f));
+        }
+
+        // ── 4) 얇은 XP 게이지(눈금 + 브래킷 프레임) ──
+        float gaugeW = Mathf.Max(maxHearts * (segW + segGap) + segW * 2.5f, sh * 0.26f);
+        Rect gauge = new Rect(hx, hy + segH + 10f, gaugeW, 8f);
+        UITheme.Fill(gauge, Ink);
+        float xpFrac = gm.XpToNext > 0 ? Mathf.Clamp01(gm.xp / (float)gm.XpToNext) : 0f;
+        if (xpFrac > 0f) UITheme.FillV(new Rect(gauge.x + 1f, gauge.y + 1f, (gauge.width - 2f) * xpFrac, gauge.height - 2f), Teal, TealDark);
+        for (int t = 1; t < 10; t++)   // 눈금
+            UITheme.Fill(new Rect(gauge.x + gauge.width * t / 10f, gauge.y + 1f, 1f, gauge.height - 2f), UITheme.A(Color.black, 0.45f));
+        UITheme.Border2(gauge, 1f, UITheme.A(Gold, 0.7f));
+        UITheme.Fill(new Rect(gauge.x - 3f, gauge.y - 3f, 2f, gauge.height + 6f), Gold);           // 브래킷 좌
+        UITheme.Fill(new Rect(gauge.xMax + 1f, gauge.y - 3f, 2f, gauge.height + 6f), Gold);        // 브래킷 우
+
+        // ── 5) 소용돌이 포션 차지(핫바 1번 슬롯 소비 아이템) ──
+        ItemData pot = Hotbar.Instance != null ? Hotbar.Instance.GetRegistered(0) : null;
+        if (pot != null && pot.kind == ItemData.ItemKind.Consumable && Inventory.Instance != null)
+        {
+            int cnt = Inventory.Instance.CountOf(pot);
+            float cool = gm.PotionCooldownLeft(pot);
+            int shown = 5;
+            float cd = segW * 0.72f, cGap = 6f;
+            float cy = gauge.yMax + 9f;
+
+            // 장식: 배지 쪽에서 차지 행으로 이어지는 꺾인 금선(╱─)
+            Color oc = UITheme.A(Gold, 0.55f);
+            Line45(new Vector2(hx - 22f, cy + cd * 0.5f + 8f), 11f, oc);
+            UITheme.Fill(new Rect(hx - 14f, cy + cd * 0.5f - 1f, 10f, 2f), oc);
+            for (int i = 0; i < shown; i++)
+            {
+                Rect cr = new Rect(hx + i * (cd + cGap), cy, cd, cd);
+                bool full = i < cnt;
+                var prev = GUI.color;
+                GUI.color = full ? (cool > 0f ? new Color(1f, 1f, 1f, 0.38f) : Color.white) : new Color(1f, 1f, 1f, 0.9f);
+                GUI.DrawTexture(cr, full ? SwirlTex() : RingTex());
+                GUI.color = prev;
+            }
+            if (cool > 0f)
+            {
+                cdStyle.normal.textColor = UITheme.A(Gold, 0.9f);
+                GUI.Label(new Rect(hx + shown * (cd + cGap) + 4f, cy - 2f, 60f, cd + 4f), Mathf.CeilToInt(cool) + "s", cdStyle);
+            }
+        }
+
+        // ── 6) 좌하단: Q스킬 + 기울어진 핍 ──
+        var pc = PlayerController.Instance;
+        if (pc != null)
+        {
+            float qs = Mathf.Clamp(sh * 0.052f, 40f, 70f);
+            Rect q = new Rect(sw * 0.018f, sh - qs - sh * 0.035f, qs, qs);
+            GUI.DrawTexture(q, BadgeTex());
+            glyphStyle.fontSize = Mathf.RoundToInt(qs * 0.46f);
+            glyphStyle.normal.textColor = Gold;
+            GUI.Label(q, "Q", glyphStyle);
+
+            float frac = pc.skillCooldown > 0f ? 1f - Mathf.Clamp01(pc.SkillCooldownLeft / pc.skillCooldown) : 1f;
+            int pips = 5, lit = Mathf.FloorToInt(frac * pips + 0.0001f);
+            float pw = qs * 0.42f, ph = qs * 0.30f, pGap = 5f;
+            float px = q.xMax + 12f, py = q.center.y - ph * 0.5f;
+            for (int i = 0; i < pips; i++)
+            {
+                var prev = GUI.color;
+                bool on = i < lit;
+                GUI.color = on ? PipBlue : new Color(PipBlue.r, PipBlue.g, PipBlue.b, 0.18f);
+                GUI.DrawTexture(new Rect(px + i * (pw + pGap), py, pw, ph), PipTex());
+                GUI.color = prev;
+            }
+
+            // 장식: 핍 아래 꺾인 금선(── ╱ ──) — 레퍼런스 하단 장식 모티프
+            Color qc = UITheme.A(Gold, 0.5f);
+            float oy2 = py + ph + 9f;
+            UITheme.Fill(new Rect(px - 2f, oy2, pw * 2.4f, 2f), qc);
+            Line45(new Vector2(px - 2f + pw * 2.4f, oy2 + 1f), 11f, qc);
+            UITheme.Fill(new Rect(px - 2f + pw * 2.4f + 8f, oy2 - 8f, pw * 1.4f, 2f), qc);
+            UITheme.Diamond(new Vector2(px - 2f + pw * 2.4f + 8f + pw * 1.4f + 4f, oy2 - 7f), 5f, qc);
+        }
+
+        // ── 7) 우하단: 예지 눈(착용 시) ──
+        if (PrecogCharm.Equipped)
+        {
+            bool ready = PrecogCharm.CooldownLeft <= 0f;
+            float es = Mathf.Clamp(sh * 0.048f, 36f, 64f);
+            Rect eye = new Rect(sw - es * 1.9f - sw * 0.012f, sh - es - sh * 0.035f, es * 1.9f, es);
+            var prev = GUI.color;
+            GUI.color = ready ? Color.white : new Color(1f, 1f, 1f, 0.35f);
+            GUI.DrawTexture(eye, EyeTex());
+            GUI.color = prev;
+            if (!ready)
+            {
+                cdStyle.normal.textColor = UITheme.A(Gold, 0.85f);
+                GUI.Label(new Rect(eye.x - 52f, eye.y, 48f, es), Mathf.CeilToInt(PrecogCharm.CooldownLeft) + "s", cdStyle);
+            }
+        }
+
+        // ── 8) 우하단 구석 장식(세로 금선 + 꺾임 — 레퍼런스 모티프, 항상 표시) ──
+        {
+            Color rc = UITheme.A(Gold, 0.45f);
+            float rx = sw - sw * 0.010f;
+            float ry = sh - sh * 0.035f;
+            UITheme.Fill(new Rect(rx - 2f, ry - sh * 0.085f, 2f, sh * 0.062f), rc);          // 세로선
+            Line45(new Vector2(rx - 2f, ry - sh * 0.023f), 10f, rc, true);                    // ╲ 꺾임
+            UITheme.Fill(new Rect(rx - 2f - 8f - 26f, ry - sh * 0.023f + 8f, 26f, 2f), rc);   // 아랫단 가로선
+            UITheme.Diamond(new Vector2(rx - 2f - 8f - 30f, ry - sh * 0.023f + 9f), 4f, rc);
+        }
+    }
+
+    // 45도 사선(2px). down=false면 오른쪽 위로(╱), true면 오른쪽 아래로(╲)
+    private static void Line45(Vector2 from, float len, Color c, bool down = false)
+    {
+        var m = GUI.matrix;
+        GUIUtility.RotateAroundPivot(down ? 45f : -45f, from);
+        UITheme.Fill(new Rect(from.x, from.y - 1f, len, 2f), c);
+        GUI.matrix = m;
+    }
+
+    private void EnsureStyles()
+    {
+        if (goldStyle != null) return;
+        goldStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        cdStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
+        glyphStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+    }
+
+    // ══════════ 절차 생성 텍스처 ══════════
+    // 팔각형 거리함수: max(사각, 45도 사각/1.3) ≤ 1 이 내부
+    private static float OctDist(float x, float y)
+        => Mathf.Max(Mathf.Max(Mathf.Abs(x), Mathf.Abs(y)), (Mathf.Abs(x) + Mathf.Abs(y)) / 1.30f);
+
+    private static Texture2D _medal;
+    private static Texture2D MedallionTex()   // 금테 팔각 + 먹색 바탕 + 붉은 후드 실루엣(초상화 placeholder)
+    {
+        if (_medal != null) return _medal;
+        const int N = 128;
+        _medal = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[N * N];
+        for (int yy = 0; yy < N; yy++)
+            for (int xx = 0; xx < N; xx++)
+            {
+                float u = (xx + 0.5f) / N * 2f - 1f, v = (yy + 0.5f) / N * 2f - 1f;
+                float d = OctDist(u, v);
+                Color c = Color.clear;
+                if (d <= 1f)
+                {
+                    if (d > 0.90f) c = Gold;                                     // 외곽 금테
+                    else if (d > 0.84f) c = new Color(0.02f, 0.04f, 0.04f, 1f);  // 테 안쪽 어두운 골
+                    else if (d > 0.80f) c = UITheme.A(Gold, 0.55f);              // 얇은 안쪽 테
+                    else
+                    {
+                        c = Ink; c.a = 0.96f;
+                        // 후드 실루엣: 위로 뾰족, 아래로 퍼지는 두건(placeholder — 초상화 에셋 오면 교체)
+                        float hy2 = v * -1f;   // 위가 +
+                        if (hy2 > -0.55f && hy2 < 0.42f)
+                        {
+                            float t = (0.42f - hy2) / 0.97f;                     // 꼭대기 0 → 아래 1
+                            float half = 0.50f * Mathf.Pow(t, 0.85f);
+                            if (Mathf.Abs(u) < half) c = HoodRed;
+                            // 얼굴 구멍(어둡게)
+                            float fx = u / 0.22f, fy = (hy2 + 0.08f) / 0.20f;
+                            if (fx * fx + fy * fy < 1f && hy2 < 0.18f) c = new Color(0.03f, 0.05f, 0.05f, 1f);
+                        }
+                    }
+                    // 가장자리 안티앨리어스
+                    c.a *= Mathf.Clamp01((1f - d) * N * 0.5f);
+                }
+                px[yy * N + xx] = c;
+            }
+        _medal.SetPixels(px); _medal.Apply();
+        return _medal;
+    }
+
+    private static Texture2D _badge;
+    private static Texture2D BadgeTex()   // 작은 팔각 배지(금테 + 먹색)
+    {
+        if (_badge != null) return _badge;
+        const int N = 64;
+        _badge = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[N * N];
+        for (int yy = 0; yy < N; yy++)
+            for (int xx = 0; xx < N; xx++)
+            {
+                float u = (xx + 0.5f) / N * 2f - 1f, v = (yy + 0.5f) / N * 2f - 1f;
+                float d = OctDist(u, v);
+                Color c = Color.clear;
+                if (d <= 1f)
+                {
+                    c = d > 0.86f ? Gold : Ink;
+                    c.a *= Mathf.Clamp01((1f - d) * N * 0.5f);
+                }
+                px[yy * N + xx] = c;
+            }
+        _badge.SetPixels(px); _badge.Apply();
+        return _badge;
+    }
+
+    private static Texture2D _swirl, _ring;
+    private static Texture2D SwirlTex()   // 채워진 차지: 금테 원 + 민트 소용돌이
+    {
+        if (_swirl != null) return _swirl;
+        _swirl = BuildCircle(true);
+        return _swirl;
+    }
+    private static Texture2D RingTex()    // 빈 차지: 어두운 원 + 흐린 테
+    {
+        if (_ring != null) return _ring;
+        _ring = BuildCircle(false);
+        return _ring;
+    }
+    private static Texture2D BuildCircle(bool filled)
+    {
+        const int N = 64;
+        var tex = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[N * N];
+        for (int yy = 0; yy < N; yy++)
+            for (int xx = 0; xx < N; xx++)
+            {
+                float u = (xx + 0.5f) / N * 2f - 1f, v = (yy + 0.5f) / N * 2f - 1f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                Color c = Color.clear;
+                if (r <= 1f)
+                {
+                    if (r > 0.86f) c = filled ? Gold : GoldDim;                  // 테
+                    else
+                    {
+                        c = Ink;
+                        if (filled)
+                        {
+                            // 소용돌이: 나선 팔 2개(각도 + 반지름 위상)
+                            float th = Mathf.Atan2(v, u);
+                            float arm = Mathf.Sin(th * 2f + r * 7.5f);
+                            if (arm > 0.25f && r < 0.78f) c = Color.Lerp(TealDark, Teal, 1f - r);
+                            if (r < 0.16f) c = Teal;                             // 중심점
+                        }
+                    }
+                    c.a *= Mathf.Clamp01((1f - r) * N * 0.5f);
+                }
+                px[yy * N + xx] = c;
+            }
+        tex.SetPixels(px); tex.Apply();
+        return tex;
+    }
+
+    private static Texture2D _pip;
+    private static Texture2D PipTex()   // 기울어진 평행사변형(색은 GUI.color 틴트)
+    {
+        if (_pip != null) return _pip;
+        const int W = 40, H = 24; const float skew = 0.45f;
+        _pip = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[W * H];
+        for (int yy = 0; yy < H; yy++)
+            for (int xx = 0; xx < W; xx++)
+            {
+                float fy = yy / (float)(H - 1);                       // 0(위)~1(아래) — GUI에선 뒤집혀도 대칭 무관
+                float off = (1f - fy) * skew * H;                     // 위쪽이 오른쪽으로 밀림
+                float lx = xx - off;
+                float maxW = W - skew * H;
+                px[yy * W + xx] = (lx >= 0f && lx <= maxW) ? Color.white : Color.clear;
+            }
+        _pip.SetPixels(px); _pip.Apply();
+        return _pip;
+    }
+
+    private static Texture2D _eye;
+    private static Texture2D EyeTex()   // 예지 눈: 금테 아몬드 + 민트 동공
+    {
+        if (_eye != null) return _eye;
+        const int W = 96, H = 48;
+        _eye = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+        var px = new Color[W * H];
+        for (int yy = 0; yy < H; yy++)
+            for (int xx = 0; xx < W; xx++)
+            {
+                float u = (xx + 0.5f) / W * 2f - 1f, v = (yy + 0.5f) / H * 2f - 1f;
+                // 아몬드(렌즈) 모양: 두 원호의 교집합 근사 — |v| <= (1-u^2)*0.85
+                float lens = (1f - u * u) * 0.85f;
+                Color c = Color.clear;
+                if (Mathf.Abs(v) <= lens)
+                {
+                    float edge = lens - Mathf.Abs(v);
+                    c = edge < 0.13f ? Gold : Ink;
+                    float pr = Mathf.Sqrt(u * u * 3.2f + v * v * 1.4f);
+                    if (edge >= 0.13f && pr < 0.42f) c = pr < 0.20f ? Teal : TealDark;   // 동공
+                    c.a *= Mathf.Clamp01(edge * H * 0.5f + 0.35f);
+                }
+                px[yy * W + xx] = c;
+            }
+        _eye.SetPixels(px); _eye.Apply();
+        return _eye;
     }
 }

@@ -18,7 +18,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Jump")]
     public float jumpForce = 10f;
-    public int maxJumps = 1;   // 기본 1단. 장신구 +1, 상점(영구) +1 → 최대 3단       // 2 = 2단 점프 (아이템으로 더 늘릴 수 있음)
+    public float maxFallSpeed = 22f;   // 종단 낙하 속도 제한(고속 낙하로 땅에 박히는 것 방지)
+    public int maxJumps = 2;   // 기본 더블 점프. 장신구 +1, 상점(영구) +1 로 더 늘릴 수 있음
     public string doubleJumpState = "FrontFlip";   // 첫 점프 제외, 공중 점프 시 재생할 애니
     private int currentJumps;
 
@@ -34,6 +35,21 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
     private bool isGrounded;
 
+    [Header("Wall (벽 슬라이드 / 벽 점프)")]
+    public bool wallMoveEnabled = false;       // 벽 슬라이드/점프 기능 on/off (기본 OFF — 필요하면 인스펙터에서 체크)
+    public LayerMask wallLayer;                // 비우면 groundLayer 사용(보통 지형=벽)
+    // 튜닝값은 const로 — 인스턴스 직렬화에 안 휘둘리고 무조건 적용됨(바꾸려면 여기 숫자만 수정)
+    private const float wallSlideSpeed = 2.5f; // 벽에 붙어 미끄러질 때 최대 낙하 속도
+    private const float wallJumpForceX = 11.5f; // 벽 차고 나가는 수평 힘
+    private const float wallJumpForceY = 11f;   // 벽 점프 수직 힘
+    private const float wallJumpLockTime = 0.24f; // 벽점프 직후 수평 입력 무시(길수록 더 멀리 날아감)
+    public string wallSlideState = "WallSlide";
+    public string wallJumpState = "WallJump";
+    private bool isTouchingWall, isWallSliding;
+    private int wallDir;                        // +1 = 오른쪽 벽 / -1 = 왼쪽 벽
+    private float wallJumpLockTimer;
+    private float wallJumpVelX;                 // 벽점프 수평 속도(잠금 동안 매 물리프레임 재적용)
+
     [Header("Dash")]
     public float dashSpeed = 15f;
     public float dashDuration = 0.2f;
@@ -45,16 +61,19 @@ public class PlayerController : MonoBehaviour
 
     [Header("Guard & Parry")]
     public float parryWindow = 0.5f;
+    public float justParryWindow = 0.18f;   // 가드 시작 후 이 시간 안에 맞으면 '저스트 패링'(그로기+강연출). 이후는 '쳐내기'(무효+약연출)
+    public float parryChainWindow = 0.35f;  // 패링 직후 이 시간 안의 연속 근접 공격은 자동으로 쳐냄(다단기 대응)
     private float parryTimer;
+    private float parryChainTimer;
     private bool isGuarding;
     private bool isParrying;
 
-    [Header("기력 소모/회복 (GameManager 스탯 사용)")]
-    public float dashStaminaCost = 20f;
-    public float guardStaminaCost = 15f;    // 가드/패링 시도(클릭 순간) 즉시 소모 — 남발 방지 패널티
-    public float guardStaminaDrain = 30f;   // 가드 중 초당 소모
-    public float staminaRegen = 15f;        // 가드/대시 중이 아닐 때 초당 회복
-    public float parryStaminaRecover = 30f; // 패링 성공 시 회복
+    [Header("쿨타임 (스태미나 대신 — 꼼수 방지)")]
+    public float dashCooldown = 0.7f;        // 대시 후 재대시까지(무한 대시 방지)
+    public float guardCooldown = 0.6f;       // 가드 해제 후 재가드까지(가드 연타 패링 방지)
+    private float dashCooldownTimer;
+    private float guardCooldownTimer;
+    private bool guardParried;                // 이번 가드에서 패링 성공? → 해제해도 쿨타임 안 걸림(즉시 재가드 가능)
 
     [Header("Hit Reaction (피격 넉백/경직)")]
     public string hitState = "HitDamage";
@@ -86,6 +105,7 @@ public class PlayerController : MonoBehaviour
     public float skillRangeMultiplier = 2f;
     public float skillCooldown = 5f;
     private float skillCooldownTimer;
+    public float SkillCooldownLeft => Mathf.Max(0f, skillCooldownTimer);   // HUD용(Q스킬 핍 게이지)
 
     [Header("Air / Plunge (공중 공격 / 낙하 공격)")]
     public string airAttackState = "AirSlash";
@@ -134,17 +154,64 @@ public class PlayerController : MonoBehaviour
 
     public static PlayerController Instance;          // 현재 씬의 플레이어(장비 적용용)
     private int baseMaxJumps;                         // 장신구 보너스 전 기본값
-    private float baseStaminaRegen;
+
+    // ── 컷씬 제어(IntroCutscene 등이 사용) ──
+    [System.NonSerialized] public bool cutsceneActive;   // true면 입력·자동애니 잠금(중력 낙하는 유지)
+    public bool Grounded => isGrounded;                  // 외부에서 착지 판정 읽기
+    public void PlayAnim(string state) { if (anim != null) anim.speed = 1f; PlayStateForced(state); }   // 특정 애니 강제 재생(프레임 고정 해제 포함)
+    // 컷씬용: 애니를 특정 지점에서 정지시켜 스프라이트 한 장으로 고정(쓰러진 자세 등). PlayAnim이 다시 풀어준다.
+    public void PlayAnimFrozen(string state, float normalizedTime)
+    {
+        if (anim == null) return;
+        anim.Play(state, 0, Mathf.Clamp01(normalizedTime));
+        anim.speed = 0f;
+    }
+    public void ZeroVelocity() { if (rb != null) rb.linearVelocity = Vector2.zero; }
+
+    // 점프대(트램펄린) 등이 호출 — 위로 발사 + 공중 점프 리필.
+    public void Launch(float upSpeed)
+    {
+        if (rb == null) return;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, upSpeed);
+        currentJumps = maxJumps;
+        isGrounded = false;
+        hoverTimer = 0; isPlunging = false; animBusyTimer = 0;
+    }
+
+    // 컷씬용 걷기: 지정 방향으로 이동 + 방향 전환 + 걷기 애니(매 프레임 호출). cutsceneActive 중 외부 컷씬이 구동.
+    public void CutsceneWalk(int dir)
+    {
+        facingDir = dir < 0 ? -1 : 1;
+        if (sr != null) sr.flipX = facingDir < 0;
+        if (rb != null) rb.linearVelocity = new Vector2(facingDir * moveSpeed, rb.linearVelocity.y);
+        string ws = isSwordDrawn ? swordMoveState : moveState;
+        if (ws != currentAnimState) PlayStateForced(ws);   // 매 프레임 재시작 방지(루트모션 고정 회피)
+    }
+    // 컷씬용 이동(속도·애니 지정): 마을 진입처럼 천천히 'Walk'로 걷게 할 때.
+    public void CutsceneMove(int dir, float speed, string animState)
+    {
+        if (anim != null) anim.applyRootMotion = false;   // 루트모션이 위치를 고정해 속도 이동을 막으므로 컷씬 걷기 동안 끔
+        facingDir = dir < 0 ? -1 : 1;
+        if (sr != null) sr.flipX = facingDir < 0;
+        if (rb != null) rb.linearVelocity = new Vector2(facingDir * speed, rb.linearVelocity.y);
+        if (!string.IsNullOrEmpty(animState) && animState != currentAnimState) PlayStateForced(animState);
+    }
+
+    // 컷씬용 정지: 수평 정지 + 대기 자세. 루트모션 원복.
+    public void CutsceneStop()
+    {
+        if (rb != null) rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+        PlayStateForced(isSwordDrawn ? swordIdleState : idleState);
+        if (anim != null) anim.applyRootMotion = true;
+    }
 
     [Header("낙사")]
     public float fallMargin = 6f;                     // 카메라 경계 바닥보다 이만큼 더 아래로 떨어지면 낙사
     public int fallDamage = 1;                        // 낙사 패널티(하트). HP 0되면 정상 사망 처리
     private Vector3 lastSafePos;
 
-    [Header("원웨이 플랫폼 (아래키 더블탭으로 통과)")]
+    [Header("원웨이 플랫폼 (S+Space로 하강)")]
     public float dropThroughTime = 0.35f;            // 통과하는 동안 발판과 충돌을 끄는 시간
-    public float dropDoubleTapTime = 0.3f;           // 이 시간 안에 아래키를 두 번 누르면 통과
-    private float lastDownTapTime = -1f;              // 마지막 아래키 탭 시각(더블탭 판정)
     private Collider2D bodyCollider;                  // 플레이어 몸 콜라이더(통과 처리용)
 
     void Awake()
@@ -155,7 +222,6 @@ public class PlayerController : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
         defaultGravityScale = rb.gravityScale;
         baseMaxJumps = maxJumps;
-        baseStaminaRegen = staminaRegen;
         foreach (Collider2D c in GetComponentsInChildren<Collider2D>())   // 트리거 아닌 첫 몸 콜라이더(통과 처리용)
             if (c != null && !c.isTrigger) { bodyCollider = c; break; }
         BuildClipLengthTable();
@@ -192,10 +258,8 @@ public class PlayerController : MonoBehaviour
     public void ApplyEquipment()
     {
         int jb = Equipment.Instance != null ? Equipment.Instance.MaxJumpBonus : 0;
-        float rgb = Equipment.Instance != null ? Equipment.Instance.StaminaRegenBonus : 0f;
         int sb = GameManager.Instance != null ? GameManager.Instance.bonusJumps : 0;   // 상점 영구 점프 업그레이드
         maxJumps = baseMaxJumps + sb + jb;
-        staminaRegen = baseStaminaRegen + rgb + (GameManager.Instance != null ? GameManager.Instance.StaminaRegenBonus : 0f);   // 재생력 스탯 반영
         if (currentJumps > maxJumps) currentJumps = maxJumps;
     }
 
@@ -223,6 +287,11 @@ public class PlayerController : MonoBehaviour
             if (hitInvincibleTimer <= 0) SetAlpha(1f);          // 무적 끝 → 완전 불투명
         }
 
+        if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.deltaTime;     // 대시/가드 쿨타임은 항상 진행
+        if (guardCooldownTimer > 0f) guardCooldownTimer -= Time.deltaTime;
+
+        if (cutsceneActive) { horizontalInput = 0f; CheckGrounded(); return; }   // 컷씬 중: 입력·자동애니 잠금 + 잔여 이동입력 제거(걷기 애니 누수 방지)
+
         if (isDashing)
         {
             dashTimer -= Time.deltaTime;
@@ -236,8 +305,12 @@ public class PlayerController : MonoBehaviour
             return;   // 경직: 입력/행동 무시 (피격 모션·넉백 유지)
         }
 
-        CheckInput();
         CheckGrounded();
+        CheckWall();          // 입력(점프)보다 먼저 벽 상태 갱신 → 누른 즉시 벽 점프 반응
+        CheckInput();
+        isWallSliding = isTouchingWall && rb.linearVelocity.y < 0.2f
+            && Mathf.Abs(horizontalInput) > 0.1f && (int)Mathf.Sign(horizontalInput) == wallDir;
+        if (wallJumpLockTimer > 0f) wallJumpLockTimer -= Time.deltaTime;
 
         if (isPlunging && isGrounded) PlungeLand();   // 낙하 공격 착지
 
@@ -248,6 +321,7 @@ public class PlayerController : MonoBehaviour
             parryTimer -= Time.deltaTime;
             if (parryTimer <= 0) isParrying = false;
         }
+        if (parryChainTimer > 0f) parryChainTimer -= Time.deltaTime;
 
         if (skillCooldownTimer > 0) skillCooldownTimer -= Time.deltaTime;
         if (animBusyTimer > 0) animBusyTimer -= Time.deltaTime;
@@ -261,20 +335,6 @@ public class PlayerController : MonoBehaviour
         }
         if (plungeArmTimer > 0) plungeArmTimer -= Time.deltaTime;
         if (isGrounded) plungeArmTimer = 0;            // 착지하면 낙하공격 입력창 닫힘
-
-        // 기력: 가드 중 소모 / 그 외 회복 (대시 중에는 이 블록에 도달 안 함 — 위에서 return)
-        if (GameManager.Instance != null)
-        {
-            if (isGuarding)
-            {
-                GameManager.Instance.ChangeStamina(-guardStaminaDrain * Time.deltaTime);
-                if (GameManager.Instance.CurrentStamina <= 0f) EndGuard();   // 기력 고갈 시 가드 해제
-            }
-            else
-            {
-                GameManager.Instance.ChangeStamina(staminaRegen * Time.deltaTime);
-            }
-        }
 
         // 스윙 중 미리 눌러둔 공격: 스윙이 끝나는 즉시 다음 콤보로 연결
         if (attackBufferTimer > 0 && animBusyTimer <= 0 && isSwordDrawn && !isGuarding && !isDashing && isGrounded)
@@ -304,13 +364,34 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, 0f);   // 아래 베기 중 잠깐 체공
             return;
         }
-        Move();
+        if (!cutsceneActive)
+        {
+            if (wallJumpLockTimer > 0f)   // 벽점프 잠금 동안: 충돌/디페네트레이션이 지워도 수평 속도 재적용 → 확실히 밀려남
+                rb.linearVelocity = new Vector2(wallJumpVelX, rb.linearVelocity.y);
+            else
+                Move();
+        }
+
+        if (isWallSliding && !cutsceneActive && rb.linearVelocity.y < -wallSlideSpeed)   // 벽 슬라이드: 천천히 미끄러짐
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -wallSlideSpeed);
+
+        // 종단 속도 제한 — 너무 빠르게 낙하해 지형을 뚫고 박히는 것 방지
+        if (rb.linearVelocity.y < -maxFallSpeed)
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
     }
+
+    // UI(일시정지/인벤/대사창 등)를 '닫는 클릭'이 같은 프레임에 공격으로 새는 것 방지 —
+    // UI가 닫힌 뒤 짧은 유예 동안 마우스 공격/가드 입력만 무시(이동·키보드는 즉시 허용).
+    private float uiCloseGraceTimer;
+    private const float UiCloseGrace = 0.15f;
 
     private void CheckInput()
     {
         if (isPlunging) return;   // 낙하 공격 중엔 입력 무시(착지까지 커밋)
-        if (Inventory.IsUIOpen) { horizontalInput = 0f; return; }   // 인벤토리/메뉴 열려있으면 조작 잠금
+        if (Inventory.IsUIOpen) { horizontalInput = 0f; uiCloseGraceTimer = UiCloseGrace; return; }   // 인벤토리/메뉴 열려있으면 조작 잠금
+
+        if (uiCloseGraceTimer > 0f) uiCloseGraceTimer -= Time.unscaledDeltaTime;
+        bool mouseOk = uiCloseGraceTimer <= 0f;   // UI 닫은 직후엔 마우스 입력 무효
 
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
@@ -319,13 +400,12 @@ public class PlayerController : MonoBehaviour
             ToggleSheathe();
 
         // 가드/패링 (검을 들었을 때만)
-        if (Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump
-            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= guardStaminaCost))
+        if (mouseOk && Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump && guardCooldownTimer <= 0f)
             StartGuard();
         if (Input.GetMouseButtonUp(1)) EndGuard();
 
         // 좌클릭: 지상=콤보 / 공중=공중 공격 (아래키 같이 누르면 낙하 공격)
-        if (Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && !isChargingJump)
+        if (mouseOk && Input.GetMouseButtonDown(0) && isSwordDrawn && !isGuarding && !isDashing && !isChargingJump)
         {
             if (isGrounded)
             {
@@ -351,30 +431,33 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0 && !isChargingJump)
             UseSkill();
 
-        // 점프: 스페이스 탭=누르는 즉시 일반 점프(반응 즉각) / 아래(S)+스페이스=차지 높은 점프 / 공중=즉시 2단 점프
-        // 아래키 더블탭 → 발밑 원웨이 플랫폼 아래로 통과
-        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+        // 점프: 스페이스 탭=누르는 즉시 일반 점프 / 공중=즉시 2단 점프
+        // 아래(S)+스페이스: '원웨이 플랫폼 위'면 아래로 하강, 일반 지형이면 차지 높은 점프 (더블탭 하강은 폐지)
+        if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isChargingJump)
         {
-            if (isGrounded && Time.time - lastDownTapTime <= dropDoubleTapTime && TryDropThroughPlatform())
-                lastDownTapTime = -1f;            // 통과 성공 → 더블탭 리셋
-            else
-                lastDownTapTime = Time.time;      // 첫 탭(또는 통과 대상 없음) → 다음 탭 대기
-        }
+            bool holdDown = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f;
 
-        if (Input.GetKeyDown(KeyCode.Space) && currentJumps > 0 && !isGuarding && !isChargingJump)
-        {
-            bool wantCharge = isGrounded &&
-                (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f);
-            if (wantCharge)
+            if (isGrounded && holdDown && TryDropThroughPlatform())
             {
-                isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
-                jumpHoldTimer = 0f;
-                animBusyTimer = 0;       // 공격 캔슬하고 웅크림
-                comboStep = 0;
+                // 플랫폼 아래로 하강 — 점프 소모 없음(DropThroughRoutine이 처리)
             }
-            else
+            else if (!isGrounded && isTouchingWall)
             {
-                Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
+                WallJump();              // 벽에 붙어 있으면 벽 점프(공중 점프 횟수 소모 X)
+            }
+            else if (currentJumps > 0)
+            {
+                if (isGrounded && holdDown)
+                {
+                    isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
+                    jumpHoldTimer = 0f;
+                    animBusyTimer = 0;       // 공격 캔슬하고 웅크림
+                    comboStep = 0;
+                }
+                else
+                {
+                    Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
+                }
             }
         }
 
@@ -396,14 +479,14 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && !isGuarding && animBusyTimer <= 0 && !isChargingJump
-            && (GameManager.Instance == null || GameManager.Instance.CurrentStamina >= dashStaminaCost))
+        if (Input.GetKeyDown(KeyCode.LeftShift) && currentDashes > 0 && dashCooldownTimer <= 0f && !isGuarding && animBusyTimer <= 0 && !isChargingJump)
             StartDash();
     }
 
     private void Move()
     {
         if (isChargingJump && jumpHoldTimer >= tapJumpTime) { rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); return; }  // 차지 중 제자리 고정
+        if (wallJumpLockTimer > 0f) return;   // 벽점프 직후엔 수평 입력 무시(벽에서 밀려나는 속도 유지)
 
         float speed = isGuarding ? moveSpeed * guardSpeedMultiplier : moveSpeed;
         rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
@@ -423,6 +506,7 @@ public class PlayerController : MonoBehaviour
         if (animBusyTimer > 0 || animHoldTimer > 0) return;   // 1회성/플립 모션 보호
         if (isGuarding) { PlayState(guardState); return; }
         if (isChargingJump && jumpHoldTimer >= tapJumpTime) { PlayState(chargeState); return; }   // 준비자세는 0.1초 이상 홀드 때만
+        if (isWallSliding) { PlayState(wallSlideState); return; }   // 벽 슬라이드 자세
 
         string state;
         if (!isGrounded)
@@ -477,6 +561,13 @@ public class PlayerController : MonoBehaviour
         // 흉내 클립 칸을 비워두면: 연출 없이 즉시 전환(UpdateAnimations가 바로 idle/run 재생)
     }
 
+    // 컷씬/튜토리얼용 강제 발도 — 이미 뽑았으면 무시. (아픔을 참고 검을 드는 연출 등)
+    public void CutsceneDrawSword()
+    {
+        if (isSwordDrawn) return;
+        ToggleSheathe();
+    }
+
     // ───────────────────────── 전투 ─────────────────────────
 
     private void DoComboAttack()
@@ -509,6 +600,7 @@ public class PlayerController : MonoBehaviour
 
     private void PerformAttack(float damage, float rangeMultiplier)
     {
+        AudioManager.Sfx("swing", 0.9f, 0.08f);   // 휘두르는 소리(에셋 없으면 무음)
         GetAttackBox(rangeMultiplier, out Vector2 center, out Vector2 size);
         PerformAreaDamage(center, size, damage);
     }
@@ -610,9 +702,37 @@ public class PlayerController : MonoBehaviour
         // 첫 점프는 UpdateAnimations가 JumpRise로 자동 처리
     }
 
+    // 공중에서 양옆에 벽이 있는지 검사(지면에선 검사 안 함 → 바닥 모서리 오탐 방지)
+    private void CheckWall()
+    {
+        isTouchingWall = false; wallDir = 0;
+        if (!wallMoveEnabled || bodyCollider == null || isGrounded) return;   // 기능 OFF면 벽 미감지 → 슬라이드/점프 모두 비활성
+        LayerMask lm = wallLayer.value != 0 ? wallLayer : groundLayer;
+        Bounds b = bodyCollider.bounds;
+        float d = 0.22f;   // 감지 여유(벽에 딱 안 붙어도 잡히도록)
+        Vector2 size = new Vector2(d, b.size.y * 0.7f);
+        if (Physics2D.OverlapBox(new Vector2(b.max.x + d * 0.5f, b.center.y), size, 0f, lm)) { isTouchingWall = true; wallDir = 1; }
+        else if (Physics2D.OverlapBox(new Vector2(b.min.x - d * 0.5f, b.center.y), size, 0f, lm)) { isTouchingWall = true; wallDir = -1; }
+    }
+
+    // 벽 점프: 벽 반대 방향으로 차고 나간다. 공중 점프 횟수는 리필.
+    private void WallJump()
+    {
+        wallJumpVelX = -wallDir * wallJumpForceX;
+        rb.linearVelocity = new Vector2(wallJumpVelX, wallJumpForceY);
+        facingDir = -wallDir;
+        if (sr != null) sr.flipX = facingDir < 0;
+        wallJumpLockTimer = wallJumpLockTime;
+        currentJumps = maxJumps;   // 벽점프 후 공중 점프 다시 가능
+        isWallSliding = false; isTouchingWall = false;
+        comboStep = 0; hoverTimer = 0; animBusyTimer = 0; attackBufferTimer = 0;
+        PlayStateForced(wallJumpState);
+    }
+
     private void StartDash()
     {
-        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(dashStaminaCost);
+        AudioManager.Sfx("dash", 0.9f, 0.05f);
+        dashCooldownTimer = dashCooldown;   // 무한 대시 방지
         isDashing = true;
         currentDashes--;
         dashTimer = dashDuration;
@@ -645,7 +765,7 @@ public class PlayerController : MonoBehaviour
     private bool TryDropThroughPlatform()
     {
         if (groundCheck == null || bodyCollider == null) return false;
-        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.05f, groundLayer);
+        Collider2D[] unders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius + 0.15f, groundLayer);   // 판정 여유(가장자리에서도 안정적으로)
         bool dropped = false;
         foreach (Collider2D c in unders)
         {
@@ -673,9 +793,9 @@ public class PlayerController : MonoBehaviour
 
     private void StartGuard()
     {
-        if (GameManager.Instance != null) GameManager.Instance.TrySpendStamina(guardStaminaCost);  // 패링 시도 비용
         isGuarding = true;
         isParrying = true;
+        guardParried = false;
         parryTimer = parryWindow;
         comboStep = 0;   // 가드하면 콤보 끊김
         // 가드 자세(SwordGuard)는 UpdateAnimations가 유지
@@ -683,32 +803,120 @@ public class PlayerController : MonoBehaviour
 
     private void EndGuard()
     {
+        if (isGuarding && !guardParried) guardCooldownTimer = guardCooldown;   // 가드 해제 후 쿨타임(연타 패링 방지). 단, 패링 성공한 가드는 쿨타임 없음
         isGuarding = false;
         isParrying = false;
     }
 
-    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default)
+    // 튜토리얼 패링 레슨: 슬로우모션 중 우클릭이 감지되면 CombatTutorial이 호출.
+    // 실제 TakeDamage 패링 분기와 동일한 보상(그로기·반격 모션·Q쿨 초기화·타격감)을 강제 발동한다.
+    // ※ 호출 전 Time.timeScale=1 복구 필요(Juice 히트스톱은 timeScale<0.9면 무시됨).
+    public void TutorialParrySuccess(IParryable attacker)
+    {
+        if (attacker != null) attacker.ApplyGroggy();
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState);
+        skillCooldownTimer = 0f;          // 패링 성공 → Q스킬 즉시 초기화
+        isGuarding = false;
+        isParrying = false;
+        guardCooldownTimer = guardCooldown;   // 같은 프레임의 우클릭이 일반 가드로 중복 처리되는 것 방지
+        parryChainTimer = parryChainWindow;   // 연속 패링 개시
+        var ac = attacker as Component;
+        Juice.JustParry();                // "팅" — 히트스톱 + 셰이크 + 금빛 플래시
+        ParryFx.Spark(SparkPos(ac != null ? (Vector2)ac.transform.position : default(Vector2)), true);
+    }
+
+    // 저스트 패링 — 완벽 타이밍: 적 그로기 + 반격 모션 + Q쿨 초기화 + 강한 연출
+    private void JustParry(bool isMeleeAttacker, IParryable attacker, Vector2 source)
+    {
+        if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
+        PlayStateForced(parrySuccessState);     // 반격 모션(인스펙터에서 교체 가능)
+        animBusyTimer = ClipLength(parrySuccessState);
+        skillCooldownTimer = 0f;                // Q스킬 즉시 초기화
+        isParrying = false;                     // 이번 윈도우 소진 — 후속타는 체인이 받는다
+        guardParried = true;                    // 가드 쿨타임 면제(즉시 재가드 가능)
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;     // 연속 패링 개시
+        Juice.JustParry();
+        ParryFx.Spark(SparkPos(source), true);
+    }
+
+    // 쳐내기(디플렉트) — 늦은 패링·연속 추가타: 피해 무효 + 가벼운 연출(그로기·Q쿨 보상 없음)
+    private void Deflect(Vector2 source)
+    {
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState) * 0.5f;   // 짧게 끊어 바로 다음 행동 가능
+        isParrying = false;
+        guardParried = true;
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;     // 체인 갱신 — 다단기를 끝까지 쳐냄
+        Juice.Deflect();
+        ParryFx.Spark(SparkPos(source), false);
+    }
+
+    // 투사체 패링(Projectile이 호출): 패링 윈도우 또는 체인 윈도우 중이면 튕겨냄(true → 투사체가 반사됨).
+    //  저스트 구간이면 강연출+Q쿨 초기화, 반사탄도 더 빠르고 아프게(Projectile 쪽 처리).
+    public bool TryDeflectProjectile(Vector2 pos, out bool just)
+    {
+        just = false;
+        if (!isParrying && parryChainTimer <= 0f) return false;
+        just = isParrying && (parryWindow - parryTimer <= justParryWindow);
+
+        PlayStateForced(parrySuccessState);
+        animBusyTimer = ClipLength(parrySuccessState) * (just ? 1f : 0.5f);
+        if (just) skillCooldownTimer = 0f;
+        isParrying = false;
+        guardParried = true;
+        guardCooldownTimer = 0f;
+        parryChainTimer = parryChainWindow;
+        if (just) Juice.JustParry(); else Juice.Deflect();
+        ParryFx.Spark(pos, just);
+        return true;
+    }
+
+    // 스파크 위치: 플레이어 가슴 높이에서 공격자 쪽으로 약간
+    private Vector2 SparkPos(Vector2 source)
+    {
+        Vector2 me = (Vector2)transform.position + Vector2.up * 0.7f;
+        if (source == default(Vector2)) return me;
+        return me + new Vector2(Mathf.Sign(source.x - transform.position.x) * 0.55f, 0f);
+    }
+
+    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default, bool nonLethal = false)
     {
         if (isDashing || hitInvincibleTimer > 0) return;   // 대시 무적 / 피격 후 무적
 
         if (isParrying)
         {
-            if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
-            PlayStateForced(parrySuccessState);     // 패링 성공 → 반격 모션(인스펙터에서 교체 가능)
-            animBusyTimer = ClipLength(parrySuccessState);
-            if (GameManager.Instance != null) GameManager.Instance.ChangeStamina(parryStaminaRecover);  // 패링 성공 → 기력 회복
-            skillCooldownTimer = 0f;   // 패링 성공 → Q스킬 즉시 초기화
-            Juice.ParryHit();          // 강한 타격감(히트스톱 + 셰이크 + 플래시)
+            // 판정 세분화: 윈도우 앞부분 = 저스트 패링(그로기+강연출) / 뒷부분 = 쳐내기(무효+약연출)
+            if (parryWindow - parryTimer <= justParryWindow) JustParry(isMeleeAttacker, attacker, source);
+            else Deflect(source);
             return;
         }
 
-        // damage는 "하트" 단위. 가드 중이면 절반(반올림).
-        int hearts = isGuarding ? Mathf.RoundToInt(damage * 0.5f) : Mathf.RoundToInt(damage);
-        if (hearts <= 0) return;   // 가드로 완전히 막힘 → 피해/반응 없음
+        // 연속 패링: 패링 직후 짧은 시간 안의 근접 추가타는 자동으로 쳐냄(다단 공격 대응)
+        if (parryChainTimer > 0f && isMeleeAttacker)
+        {
+            Deflect(source);
+            return;
+        }
 
-        if (GameManager.Instance != null) GameManager.Instance.TakeDamage(hearts);
+        // damage는 "하트" 단위. 가드(패링 X) 중이면 50% 경감하되 반칸 단위로 반영.
+        // 가드는 '경감'만 — 피해가 있으면 최소 반칸은 들어간다(완전 무효화는 패링만). 0데미지 버그 방지.
+        float eff = isGuarding ? damage * 0.5f : damage;
+        int halves = Mathf.Max(1, Mathf.RoundToInt(eff * 2f));   // 반칸 단위(예: 가드로 1칸→0.5칸→반칸)
 
-        Hurt(source);   // 넉백 + 경직 + 피격 모션
+        if (GameManager.Instance != null)
+        {
+            if (nonLethal)   // 훈련용(허수아비 등): 최소 반칸은 남겨 죽지 않게 — 딸피 튜토리얼용
+            {
+                int survivable = Mathf.Max(0, GameManager.Instance.CurrentHalf - 1);
+                halves = Mathf.Min(halves, survivable);
+            }
+            if (halves > 0) GameManager.Instance.TakeDamageHalves(halves);
+        }
+
+        Hurt(source);   // 넉백 + 경직 + 피격 모션(피해가 0이어도 맞은 반응은 준다)
     }
 
     // 피격 반응: 진행 중 행동 취소 + 넉백 + 경직 + 피격 모션
@@ -722,6 +930,7 @@ public class PlayerController : MonoBehaviour
 
         hitstunTimer = hitstunDuration;
         hitInvincibleTimer = hitInvincibleTime;   // 피격 후 무적 시작
+        AudioManager.Sfx("player_hit", 1f, 0.05f);
 
         float kbDir = (source.x <= transform.position.x) ? 1f : -1f;   // 공격자 반대 방향으로 조금
         rb.linearVelocity = new Vector2(kbDir * knockbackForce, rb.linearVelocity.y);   // 수평만(공중으로 안 띄움)

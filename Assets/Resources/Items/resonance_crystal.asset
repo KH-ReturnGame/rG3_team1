@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
+  m_Name: resonance_crystal
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  id: resonance_crystal
+  itemName: "\uACF5\uBA85 \uC218\uC815"
+  icon: {fileID: 21300000, guid: 85793793a1be5ac4b855742fea38da82, type: 3}
+  maxStack: 99
+  description: "\uACF5\uC911 \uBAB9 \uCCB4\uB0B4\uC758 \uACF5\uBA85\uD558\uB294 \uC218\uC815.
+    \uD76C\uADC0 \uC18C\uC7AC."
+  kind: 0
+  healHearts: 0
+  restoreStamina: 0
+  escapeToHub: 0
+  tempAttackMult: 0
+  tempDamageReduction: 0
+  buffDuration: 0
+  maxJumpBonus: 0
+  maxHeartBonus: 0
+  maxStaminaBonus: 0
+  staminaRegenBonus: 0
+  attackBonus: 0
+  sellValue: 0
+  baseValue: 90
+  sellAtFullValue: 0
+  rarity: 2

@@ -14,13 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: antique_record
   itemName: "\uC9C0\uC6CC\uC9C4 \uAE30\uB85D\uC758 \uD30C\uD3B8"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 33ee5a0a16fe5ba41b0c56abd0e2f1e2, type: 3}
   maxStack: 99
   description: "\uC9C0\uC0C1\uC778\uB4E4\uC774 \uB0A8\uAE34 \uC11D\uD310 \uC870\uAC01,
     \uC624\uB798\uB418\uC5C8\uB294\uC9C0 \uB300\uBD80\uBD84\uC774\n \uC9C0\uC6CC\uC838\uC788\uB2E4."
   kind: 3
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
@@ -31,4 +32,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 800
   baseValue: 800
+  sellAtFullValue: 0
   rarity: 2

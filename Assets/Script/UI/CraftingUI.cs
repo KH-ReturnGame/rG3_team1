@@ -1,9 +1,9 @@
 using UnityEngine;
 
-// 제작대 UI(자동부팅·영구). CraftStation에 F로 열림.
-//  왼쪽: 플레이어 인벤토리 / 오른쪽: 제작대(일반·포션 탭)
-//  포션 탭: 재료 2칸에 재료를 넣으면 결과칸에 포션 미리보기 → 결과칸 클릭 시 제작(손에 집힘).
-//  일반 탭: 포션이 아닌 제작(현재 레시피 없음 — 추후 추가).
+// 제작대 UI(자동부팅·영구). CraftStation에 F로 열림 — 코어키퍼식.
+//  왼쪽: 레시피 그리드(결과 아이콘, 제작 가능=밝음+초록점 / 재료 부족=흐림)
+//  오른쪽: 선택 레시피 상세 — 큰 아이콘·설명 + 재료 보유/필요(색) + [제작]/[×5]
+//  재료는 인벤토리에서 자동 소모(드래그 없음). 결과물이 안 들어가면 재료 환불.
 public class CraftingUI : MonoBehaviour
 {
     public static CraftingUI Instance { get; private set; }
@@ -12,14 +12,11 @@ public class CraftingUI : MonoBehaviour
     private Recipe[] recipes;
 
     private bool open;
-    private int tab;                                    // 0=일반, 1=포션
-    private ItemData held; private int heldCount;       // 마우스에 집은 것
-    private readonly ItemData[] inItem = new ItemData[2];   // 재료 2칸
-    private readonly int[] inCount = new int[2];
+    private int tab;                 // 0=전체, 1=포션, 2=장신구
+    private Recipe selected;
 
-    private GUIStyle title, sec, tipName, body, count, slotName, tabOn, tabOff, heldNum, arrow;
+    private GUIStyle title, name_, body, sec, count, slotName, tabOn, tabOff, btnStyle, closeStyle, haveStyle;
     private Texture2D white;
-    private const int Cols = 6, Rows = 4, Cap = 24;
 
     void Awake()
     {
@@ -29,7 +26,9 @@ public class CraftingUI : MonoBehaviour
             new Recipe { inIds = new[]{"lizard","underground_flower"},     inCounts = new[]{1,1}, outId = "heal_potion",    potion = true },
             new Recipe { inIds = new[]{"lizard","slime_condensate"},       inCounts = new[]{1,1}, outId = "defense_potion", potion = true },
             new Recipe { inIds = new[]{"slime_condensate","flame_flower"}, inCounts = new[]{1,1}, outId = "combat_potion",  potion = true },
-            // 일반 탭(비포션) — 재료 3종·다량으로 장신구 제작(상점 재료만으로 싸게 못 만들게)
+            // 장비/도구 — 탐험가 상인 폐지: 로프는 제작으로
+            new Recipe { inIds = new[]{"underground_flower","slime_condensate"},           inCounts = new[]{2,2},   outId = "escape_rope",      potion = false },
+            // 장신구 — 재료 3종·다량(상점 재료만으로 싸게 못 만들게)
             new Recipe { inIds = new[]{"lizard","flame_flower","slime_condensate"},        inCounts = new[]{3,3,2}, outId = "warriors_ring",    potion = false },
             new Recipe { inIds = new[]{"underground_flower","slime_condensate","lizard"},  inCounts = new[]{4,3,2}, outId = "rune_of_vitality", potion = false },
             new Recipe { inIds = new[]{"underground_flower","flame_flower","lizard"},      inCounts = new[]{3,2,3}, outId = "charm_of_leaping", potion = false },
@@ -39,275 +38,279 @@ public class CraftingUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap() { if (Instance == null) new GameObject("CraftingUI").AddComponent<CraftingUI>(); }
 
-    public void Open() { open = true; Inventory.CraftUIOpen = true; }
-    public void Close() { ReturnHeld(); ReturnInputs(); open = false; Inventory.CraftUIOpen = false; }
+    public void Open() { open = true; selected = null; Inventory.CraftUIOpen = true; }
+    public void Close() { open = false; Inventory.CraftUIOpen = false; }
     void Update() { if (open && Input.GetKeyDown(KeyCode.Escape)) Close(); }
 
-    private void ReturnHeld() { if (held != null && Inventory.Instance != null) Inventory.Instance.Add(held, heldCount); held = null; heldCount = 0; }
-    private void ReturnInputs()
+    // ── 제작 판정/실행 ──
+    private bool CanCraft(Recipe rc)
     {
-        for (int k = 0; k < 2; k++)
+        var inv = Inventory.Instance;
+        if (inv == null || rc == null) return false;
+        for (int i = 0; i < rc.inIds.Length; i++)
         {
-            if (inItem[k] != null && Inventory.Instance != null) Inventory.Instance.Add(inItem[k], inCount[k]);
-            inItem[k] = null; inCount[k] = 0;
+            var it = ItemDatabase.Get(rc.inIds[i]);
+            if (it == null || inv.CountOf(it) < rc.inCounts[i]) return false;
+        }
+        return true;
+    }
+
+    private bool CraftOnce(Recipe rc)
+    {
+        var inv = Inventory.Instance;
+        if (!CanCraft(rc)) return false;
+        var outIt = ItemDatabase.Get(rc.outId);
+        if (outIt == null) return false;
+
+        for (int i = 0; i < rc.inIds.Length; i++)
+            inv.Remove(ItemDatabase.Get(rc.inIds[i]), rc.inCounts[i]);
+
+        int left = inv.Add(outIt, 1);
+        if (left > 0)   // 결과물 놓을 자리가 없음 → 재료 환불(방금 뺐으니 자리 보장)
+        {
+            for (int i = 0; i < rc.inIds.Length; i++)
+                inv.Add(ItemDatabase.Get(rc.inIds[i]), rc.inCounts[i]);
+            Toast.Show("소지품에 자리가 없다", 1.6f);
+            return false;
+        }
+        return true;
+    }
+
+    private void Craft(Recipe rc, int times)
+    {
+        int made = 0;
+        for (int n = 0; n < times; n++) { if (!CraftOnce(rc)) break; made++; }
+        if (made > 0)
+        {
+            var outIt = ItemDatabase.Get(rc.outId);
+            Toast.Show(outIt.itemName + (made > 1 ? " ×" + made : "") + " 제작 완료", 1.8f);
         }
     }
+
+    private bool InTab(Recipe rc) => tab == 0 || (tab == 1 && rc.potion) || (tab == 2 && !rc.potion);
 
     void OnGUI()
     {
         if (!open || Inventory.Instance == null) return;
         EnsureStyles();
-        float ss = Mathf.Clamp(Screen.height * 0.072f, 44f, 70f);
-        float pad = 6f, gap = 36f, headH = 104f;
-        float panelW = Cols * (ss + pad) + pad;
-        float gridH = Rows * (ss + pad) + pad;
-        float w = panelW * 2f + gap + 40f;
-        float h = headH + gridH + 64f;
-        float x = (Screen.width - w) * 0.5f, y = (Screen.height - h) * 0.5f;
+        UIScale.Apply();
+
+        float ss = Mathf.Clamp(UIScale.H * 0.062f, 48f, 68f);   // 레시피 칸
+        float pad = 8f;
+        int cols = 4, rowsMin = 4;
+        float titleH = 40f, tabH = 32f;
+        float gridW = cols * (ss + pad) + pad;
+        float gridH = rowsMin * (ss + pad) + pad;
+        float detailW = 380f;
+        float w = pad + gridW + pad + 2f + detailW + pad;
+        float bodyH = Mathf.Max(gridH, 330f);
+        float h = titleH + tabH + 8f + bodyH + pad * 2f;
+        float x = (UIScale.W - w) * 0.5f, y = (UIScale.H - h) * 0.5f;
+        Rect win = new Rect(x, y, w, h);
+
         Vector2 m = Event.current.mousePosition;
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
-        GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), white);
-        GUI.color = new Color(0.13f, 0.10f, 0.08f, 0.99f); GUI.DrawTexture(new Rect(x, y, w, h), white);
-        GUI.color = new Color(0.86f, 0.63f, 0.30f); GUI.DrawTexture(new Rect(x, y, w, 4f), white); GUI.color = Color.white;
-        GUI.Label(new Rect(x, y + 12f, w, 32f), "제작대", title);
+        // 어둡게 + 패널
+        UITheme.Fill(new Rect(0, 0, UIScale.W, UIScale.H), new Color(0f, 0f, 0f, 0.55f));
+        UITheme.DrawPanel(win);
+        UITheme.DrawHeader(win, "제작대", null, 16f, titleH);
+
+        // 닫기 ✕
+        Rect cb = new Rect(x + w - 34f, y + 9f, 26f, 26f);
+        bool cbh = cb.Contains(m);
+        UITheme.FillV(cb, cbh ? UITheme.Lighten(new Color(0.82f, 0.30f, 0.30f), 0.12f) : new Color(0.82f, 0.30f, 0.30f), new Color(0.40f, 0.12f, 0.14f));
+        UITheme.Border2(cb, 1.5f, UITheme.A(new Color(0.82f, 0.30f, 0.30f), 0.75f));
+        GUI.Label(cb, "✕", closeStyle);
+        if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }
 
         // 탭
-        float tw = 96f, tabh = 32f, ty = y + 48f;
-        Rect t0 = new Rect(x + 20f, ty, tw, tabh), t1 = new Rect(x + 20f + tw + 6f, ty, tw, tabh);
-        DrawTabBtn(t0, "일반", tab == 0); DrawTabBtn(t1, "포션", tab == 1);
-        if (click && t0.Contains(m)) { tab = 0; Event.current.Use(); }
-        if (click && t1.Contains(m)) { tab = 1; Event.current.Use(); }
+        string[] tabs = { "전체", "포션", "장비" };
+        float tw = 92f, ty = y + titleH + 2f;
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            Rect tr = new Rect(x + pad + i * (tw + 6f), ty, tw, tabH - 4f);
+            bool on = tab == i;
+            if (on)
+            {
+                UITheme.FillV(tr, UITheme.Lighten(UITheme.Accent, 0.05f), UITheme.AccentDim);
+                UITheme.Border2(tr, 1.5f, UITheme.Lighten(UITheme.Accent, 0.2f));
+            }
+            else
+            {
+                UITheme.FillV(tr, tr.Contains(m) ? UITheme.Lighten(UITheme.SlotTop, 0.05f) : UITheme.SlotTop, UITheme.SlotBot);
+                UITheme.Border2(tr, 1f, UITheme.Border);
+            }
+            GUI.Label(tr, tabs[i], on ? tabOn : tabOff);
+            if (click && tr.Contains(m)) { tab = i; selected = null; Event.current.Use(); }
+        }
+        UITheme.Divider(x + pad, ty + tabH + 1f, w - pad * 2f, 0.35f);   // 탭 아래 장식 구분선
 
-        float gy = y + headH;
-        float lx = x + 20f, rx = x + 20f + panelW + gap;
-        GUI.Label(new Rect(lx, gy - 22f, panelW, 20f), "인벤토리", sec);
-        GUI.Label(new Rect(rx, gy - 22f, panelW + 40f, 20f), tab == 1 ? "포션 제작" : "일반 제작", sec);
+        float bodyY = ty + tabH + 6f;
+
+        // ══ 왼쪽: 레시피 그리드 ══
+        Rect gridArea = new Rect(x + pad, bodyY, gridW, bodyH);
+        UITheme.FillV(gridArea, UITheme.A(UITheme.SlotBot, 0.55f), UITheme.A(UITheme.SlotBot, 0.85f));
+        UITheme.Border2(gridArea, 1f, UITheme.A(UITheme.Border, 0.5f));
 
         ItemData hover = null;
-
-        // 왼쪽 인벤토리
-        var inv = Inventory.Instance.slots;
-        for (int i = 0; i < Cap; i++)
+        int idx = 0;
+        foreach (var rc in recipes)
         {
-            Rect r = SlotRect(lx, gy, i, ss, pad);
-            DrawSlotBg(r, false);
-            ItemData it = (i < inv.Count && inv[i] != null && !inv[i].IsEmpty) ? inv[i].item : null;
-            int c = it != null ? inv[i].count : 0;
-            if (it != null) { DrawItem(r, it, c, ss); if (held == null && r.Contains(m)) hover = it; }
-            if (click && r.Contains(m)) { ClickInv(i); Event.current.Use(); }
+            if (!InTab(rc)) continue;
+            var outIt = ItemDatabase.Get(rc.outId);
+            if (outIt == null) continue;
+            int r = idx / cols, c = idx % cols;
+            Rect slot = new Rect(gridArea.x + pad + c * (ss + pad), gridArea.y + pad + r * (ss + pad), ss, ss);
+            bool can = CanCraft(rc);
+            bool sel = selected == rc;
+            bool hv = slot.Contains(m);
+
+            if (sel) UITheme.Glow(slot, UITheme.Accent, 5f, 0.30f);
+            UITheme.DrawSlot(slot, sel ? UITheme.Accent : UITheme.Border, hv, sel ? 2.5f : 1.5f);
+            UITheme.RarityRing(slot, outIt);
+
+            var prev = GUI.color;
+            if (!can) GUI.color = new Color(1f, 1f, 1f, 0.32f);   // 재료 부족 = 흐림
+            if (outIt.icon != null) GUI.DrawTexture(new Rect(slot.x + 6, slot.y + 6, slot.width - 12, slot.height - 12), outIt.icon.texture, ScaleMode.ScaleToFit);
+            else GUI.Label(slot, outIt.itemName, slotName);
+            GUI.color = prev;
+
+            if (can) UITheme.Fill(new Rect(slot.xMax - 10f, slot.y + 4f, 6f, 6f), UITheme.Good);   // 제작 가능 = 초록점
+
+            if (hv) hover = outIt;
+            if (click && slot.Contains(m)) { selected = rc; Event.current.Use(); }
+            idx++;
         }
+        if (idx == 0) GUI.Label(new Rect(gridArea.x + 12f, gridArea.y + 12f, gridW - 24f, 40f), "이 분류의 레시피가 없다.", body);
 
-        // 오른쪽: 포션 탭 = 2재료 제작 / 일반 탭 = 레시피 목록(원래 방식)
-        if (tab == 1) DrawPotionCraft(rx, panelW, gy, ss, m, click, ref hover);
-        else DrawGeneralList(rx, panelW, gy, m, click);
+        // 세로 구분선
+        UITheme.Fill(new Rect(gridArea.xMax + pad, bodyY, 2f, bodyH), UITheme.A(UITheme.Border, 0.55f));
 
-        if (GUI.Button(new Rect(x + w - 130f, y + h - 46f, 110f, 34f), "닫기")) { Close(); return; }
+        // ══ 오른쪽: 선택 레시피 상세 ══
+        Rect det = new Rect(gridArea.xMax + pad + 2f + pad, bodyY, detailW - pad, bodyH);
+        if (selected == null)
+        {
+            GUI.Label(new Rect(det.x, det.y + bodyH * 0.42f, det.width, 30f), "왼쪽에서 레시피를 선택하세요", sec);
+        }
+        else
+        {
+            var outIt = ItemDatabase.Get(selected.outId);
+            if (outIt != null)
+            {
+                // 결과: 큰 아이콘 + 이름 + 설명
+                float bigS = 76f;
+                Rect big = new Rect(det.x, det.y + 4f, bigS, bigS);
+                UITheme.DrawSlot(big, UITheme.Border, false, 1.5f);
+                UITheme.RarityRing(big, outIt);
+                if (outIt.icon != null) GUI.DrawTexture(new Rect(big.x + 7, big.y + 7, bigS - 14, bigS - 14), outIt.icon.texture, ScaleMode.ScaleToFit);
+
+                name_.normal.textColor = outIt.RarityColor();
+                GUI.Label(new Rect(big.xMax + 12f, det.y + 8f, det.width - bigS - 14f, 28f), outIt.itemName, name_);
+                GUI.Label(new Rect(big.xMax + 12f, det.y + 38f, det.width - bigS - 14f, bigS - 34f), outIt.description ?? "", body);
+
+                // 구분선 + 재료 목록
+                float ry = det.y + bigS + 18f;
+                UITheme.Fill(new Rect(det.x, ry - 8f, det.width - 8f, 1f), UITheme.A(UITheme.Border, 0.5f));
+                GUI.Label(new Rect(det.x, ry, 100f, 22f), "필요 재료", sec);
+                ry += 26f;
+
+                var inv = Inventory.Instance;
+                for (int i = 0; i < selected.inIds.Length; i++)
+                {
+                    var it = ItemDatabase.Get(selected.inIds[i]);
+                    int need = selected.inCounts[i];
+                    int have = it != null ? inv.CountOf(it) : 0;
+                    bool ok = have >= need;
+
+                    Rect row = new Rect(det.x, ry, det.width - 8f, 34f);
+                    UITheme.FillV(row, row.Contains(m) ? UITheme.Lighten(UITheme.SlotTop, 0.04f) : UITheme.SlotTop, UITheme.SlotBot);
+                    UITheme.Border2(row, 1f, UITheme.A(UITheme.Border, 0.6f));
+
+                    Rect ic = new Rect(row.x + 4f, row.y + 4f, 26f, 26f);
+                    if (it != null && it.icon != null) GUI.DrawTexture(ic, it.icon.texture, ScaleMode.ScaleToFit);
+                    GUI.Label(new Rect(ic.xMax + 8f, row.y, row.width * 0.5f, row.height), it != null ? it.itemName : selected.inIds[i], body);
+
+                    haveStyle.normal.textColor = ok ? UITheme.Good : UITheme.Danger;
+                    GUI.Label(new Rect(row.xMax - 96f, row.y, 88f, row.height), have + " / " + need, haveStyle);
+
+                    if (row.Contains(m) && it != null) hover = it;
+                    ry += 38f;
+                }
+
+                // 제작 버튼
+                bool canCraft = CanCraft(selected);
+                Rect b1 = new Rect(det.x, det.yMax - 46f, 150f, 40f);
+                Rect b5 = new Rect(det.x + 158f, det.yMax - 46f, 90f, 40f);
+                if (DrawButton(b1, "제  작", canCraft, m, click)) { Craft(selected, 1); Event.current.Use(); }
+                if (DrawButton(b5, "× 5", canCraft, m, click)) { Craft(selected, 5); Event.current.Use(); }
+            }
+        }
 
         if (hover != null) DrawTip(hover, m);
-        DrawHeld(m, ss);
     }
 
-    // ── 클릭 처리 ──
-    private void ClickInv(int i)   // 클릭한 '그 칸'에 집기/놓기/스택/교체
+    // 버튼(활성=오렌지, 비활성=회색). 클릭되면 true.
+    private bool DrawButton(Rect r, string label, bool enabled, Vector2 m, bool click)
     {
-        var inv = Inventory.Instance;
-        if (inv == null || i < 0 || i >= inv.slots.Count) return;
-        var s = inv.slots[i];
-        if (held == null) { if (!s.IsEmpty) { held = s.item; heldCount = s.count; s.Clear(); inv.RaiseChanged(); } }
-        else if (s.IsEmpty) { s.item = held; s.count = heldCount; held = null; heldCount = 0; inv.RaiseChanged(); }
-        else if (s.item == held) { int sp = Mathf.Max(1, held.maxStack) - s.count; int mv = Mathf.Min(sp, heldCount); s.count += mv; heldCount -= mv; if (heldCount <= 0) { held = null; heldCount = 0; } inv.RaiseChanged(); }
-        else { var ti = s.item; int tc = s.count; s.item = held; s.count = heldCount; held = ti; heldCount = tc; inv.RaiseChanged(); }
-    }
-
-    private void ClickInput(int k)
-    {
-        if (held == null) { if (inItem[k] != null) { held = inItem[k]; heldCount = inCount[k]; inItem[k] = null; inCount[k] = 0; } }
-        else if (inItem[k] == null) { inItem[k] = held; inCount[k] = heldCount; held = null; heldCount = 0; }
-        else if (inItem[k] == held) { int sp = Mathf.Max(1, held.maxStack) - inCount[k]; int mv = Mathf.Min(sp, heldCount); inCount[k] += mv; heldCount -= mv; if (heldCount <= 0) { held = null; heldCount = 0; } }
-        else { var ti = inItem[k]; int tc = inCount[k]; inItem[k] = held; inCount[k] = heldCount; held = ti; heldCount = tc; }
-    }
-
-    private void CraftOutput(ItemData outItem)
-    {
-        if (outItem == null || inCount[0] < 1 || inCount[1] < 1) return;
-        if (held != null && held != outItem) return;
-        if (held == outItem && heldCount >= Mathf.Max(1, outItem.maxStack)) return;
-        inCount[0]--; if (inCount[0] <= 0) inItem[0] = null;
-        inCount[1]--; if (inCount[1] <= 0) inItem[1] = null;
-        if (held == null) { held = outItem; heldCount = 1; } else heldCount++;
-    }
-
-    private Recipe MatchRecipe()
-    {
-        if (inItem[0] == null || inItem[1] == null) return null;
-        foreach (var rc in recipes)
+        bool hv = enabled && r.Contains(m);
+        if (enabled)
         {
-            if (rc.potion != (tab == 1) || rc.inIds.Length != 2) continue;
-            var ra = ItemDatabase.Get(rc.inIds[0]); var rb = ItemDatabase.Get(rc.inIds[1]);
-            if ((ra == inItem[0] && rb == inItem[1]) || (ra == inItem[1] && rb == inItem[0])) return rc;
+            if (hv) UITheme.Glow(r, UITheme.Accent, 4f, 0.25f);
+            UITheme.FillV(r, UITheme.Lighten(UITheme.Accent, hv ? 0.10f : 0.03f), UITheme.AccentDim);
+            UITheme.Border2(r, 1.5f, UITheme.Lighten(UITheme.Accent, 0.2f));
         }
-        return null;
-    }
-
-    // 포션 탭: 재료 2칸 → 결과칸 (오른쪽 패널 중앙으로 배치)
-    private void DrawPotionCraft(float rx, float panelW, float gy, float ss, Vector2 m, bool click, ref ItemData hover)
-    {
-        float bigSS = ss * 1.15f;
-        float clusterW = bigSS + 56f + bigSS;
-        float inX = rx + Mathf.Max(20f, (panelW - clusterW) * 0.5f);   // 전체적으로 오른쪽(중앙)으로
-        float in0Y = gy + 30f, in1Y = in0Y + bigSS + 20f;
-        Rect r0 = new Rect(inX, in0Y, bigSS, bigSS);
-        Rect r1 = new Rect(inX, in1Y, bigSS, bigSS);
-        Rect ro = new Rect(inX + bigSS + 56f, (in0Y + in1Y) * 0.5f, bigSS, bigSS);
-        GUI.Label(new Rect(inX + bigSS + 6f, (in0Y + in1Y) * 0.5f, 48f, bigSS), ">", arrow);
-
-        for (int k = 0; k < 2; k++)
+        else
         {
-            Rect r = k == 0 ? r0 : r1;
-            DrawSlotBg(r, true);
-            if (inItem[k] != null) { DrawItem(r, inItem[k], inCount[k], bigSS); if (held == null && r.Contains(m)) hover = inItem[k]; }
-            else { slotName.normal.textColor = new Color(0.6f, 0.55f, 0.45f); GUI.Label(r, "재료", slotName); }
-            if (click && r.Contains(m)) { ClickInput(k); Event.current.Use(); }
+            UITheme.FillV(r, UITheme.SlotTop, UITheme.SlotBot);
+            UITheme.Border2(r, 1f, UITheme.Border);
         }
-
-        var rc = MatchRecipe();
-        ItemData outItem = rc != null ? ItemDatabase.Get(rc.outId) : null;
-        DrawSlotBg(ro, true);
-        Border(ro, 3f, new Color(0.95f, 0.8f, 0.35f));      // 결과칸 강조
-        if (outItem != null)
-        {
-            DrawItem(ro, outItem, 0, bigSS);
-            if (held == null && ro.Contains(m)) hover = outItem;
-            if (click && ro.Contains(m)) { CraftOutput(outItem); Event.current.Use(); }
-        }
+        var st = enabled ? tabOn : tabOff;
+        GUI.Label(r, label, st);
+        return enabled && click && r.Contains(m);
     }
 
-    // 일반 탭: 비포션 레시피 목록(원래 방식 — 인벤에서 재료 자동 소모 + 제작 버튼)
-    private void DrawGeneralList(float rx, float panelW, float gy, Vector2 m, bool click)
-    {
-        var inv = Inventory.Instance;
-        float ry = gy + 12f;
-        int shown = 0;
-        foreach (var rc in recipes)
-        {
-            if (rc.potion) continue;
-            var outIt = ItemDatabase.Get(rc.outId);
-            bool can = inv != null;
-            string req = "";
-            for (int i = 0; i < rc.inIds.Length; i++)
-            {
-                var it = ItemDatabase.Get(rc.inIds[i]);
-                int have = (inv != null && it != null) ? inv.CountOf(it) : 0;
-                if (have < rc.inCounts[i]) can = false;
-                req += (i > 0 ? " + " : "") + (it != null ? it.itemName : rc.inIds[i]) + "(" + have + "/" + rc.inCounts[i] + ")";
-            }
-            GUI.Label(new Rect(rx + 14f, ry, panelW + 20f, 24f), outIt != null ? outIt.itemName : rc.outId, sec);
-            GUI.Label(new Rect(rx + 14f, ry + 24f, panelW + 20f, 22f), req, body);
-            GUI.enabled = can;
-            if (GUI.Button(new Rect(rx + panelW - 104f, ry + 6f, 92f, 40f), can ? "제작" : "제작 불가")) CraftFromList(rc);
-            GUI.enabled = true;
-            ry += 64f; shown++;
-        }
-        if (shown == 0)
-            GUI.Label(new Rect(rx + 14f, gy + 40f, panelW + 26f, 60f), "일반 제작 레시피가 아직 없습니다.\n(포션은 '포션' 탭에서 제작)", body);
-    }
-
-    private void CraftFromList(Recipe rc)
-    {
-        var inv = Inventory.Instance; if (inv == null) return;
-        for (int i = 0; i < rc.inIds.Length; i++)
-        { var it = ItemDatabase.Get(rc.inIds[i]); if (it == null || inv.CountOf(it) < rc.inCounts[i]) return; }
-        for (int i = 0; i < rc.inIds.Length; i++)
-            inv.Remove(ItemDatabase.Get(rc.inIds[i]), rc.inCounts[i]);
-        var outIt = ItemDatabase.Get(rc.outId);
-        if (outIt != null) inv.Add(outIt, 1);
-    }
-
-    // ── 그리기 ──
-    private Rect SlotRect(float ox, float oy, int i, float ss, float pad)
-    { int r = i / Cols, c = i % Cols; return new Rect(ox + pad + c * (ss + pad), oy + pad + r * (ss + pad), ss, ss); }
-
-    private void DrawHeld(Vector2 m, float ss)
-    {
-        if (held == null) return;
-        float hs = ss * 0.78f;
-        Rect ir = new Rect(m.x + 12f, m.y + 6f, hs, hs);
-        if (held.icon != null) GUI.DrawTexture(ir, held.icon.texture, ScaleMode.ScaleToFit);
-        else { slotName.normal.textColor = held.RarityColor(); GUI.Label(ir, held.itemName, slotName); }
-        if (heldCount > 1)
-        {
-            string cs = heldCount.ToString();
-            Rect sr = new Rect(ir.xMax + 3f, ir.y + hs * 0.28f, 80f, 28f);
-            heldNum.normal.textColor = Color.black; GUI.Label(new Rect(sr.x + 1f, sr.y + 1f, sr.width, sr.height), cs, heldNum);
-            heldNum.normal.textColor = Color.white; GUI.Label(sr, cs, heldNum);
-        }
-    }
-
-    private void DrawTabBtn(Rect r, string label, bool on)
-    {
-        Fill(r, on ? new Color(0.86f, 0.63f, 0.30f) : new Color(0.22f, 0.18f, 0.13f));
-        Border(r, 2f, new Color(0.5f, 0.4f, 0.28f));
-        GUI.Label(r, label, on ? tabOn : tabOff);
-    }
-
-    private void DrawSlotBg(Rect r, bool accent)
-    {
-        Fill(r, new Color(0.20f, 0.16f, 0.12f, 0.95f));
-        Border(r, 2f, accent ? new Color(0.85f, 0.55f, 0.25f) : new Color(0.45f, 0.38f, 0.28f));
-    }
-
-    private void DrawItem(Rect r, ItemData it, int cnt, float ss)
-    {
-        Rect inner = new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 10f);
-        if (it.icon != null) GUI.DrawTexture(inner, it.icon.texture, ScaleMode.ScaleToFit);
-        else { slotName.normal.textColor = it.RarityColor(); GUI.Label(inner, it.itemName, slotName); }
-        if (cnt > 1)
-        {
-            Rect cr = new Rect(r.x, r.y, r.width - 5f, r.height - 4f);
-            count.normal.textColor = Color.black; GUI.Label(new Rect(cr.x + 1f, cr.y + 1f, cr.width, cr.height), cnt.ToString(), count);
-            count.normal.textColor = Color.white; GUI.Label(cr, cnt.ToString(), count);
-        }
-    }
-
+    private GUIStyle tipSub;   // 등급명 전용(다른 스타일 색 오염 방지)
     private void DrawTip(ItemData it, Vector2 m)
     {
+        if (tipSub == null) tipSub = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperRight };
         float tw = 290f;
-        tipName.normal.textColor = it.RarityColor();
+        Color rc = it.RarityColor();
+        name_.normal.textColor = rc;
         string nm = it.itemName, desc = it.description;
-        float nh = tipName.CalcHeight(new GUIContent(nm), tw - 16f);
-        float dh = string.IsNullOrEmpty(desc) ? 0f : body.CalcHeight(new GUIContent(desc), tw - 16f);
-        float th = nh + dh + 16f;
+        float nh = name_.CalcHeight(new GUIContent(nm), tw - 20f);
+        float dh = string.IsNullOrEmpty(desc) ? 0f : body.CalcHeight(new GUIContent(desc), tw - 20f);
+        float th = 10f + nh + 9f + (dh > 0f ? dh + 4f : 0f) + 8f;
         float tx = m.x + 16f, tyy = m.y + 16f;
-        if (tx + tw > Screen.width) tx = Screen.width - tw - 4f;
-        if (tyy + th > Screen.height) tyy = Screen.height - th - 4f;
+        if (tx + tw > UIScale.W) tx = UIScale.W - tw - 4f;
+        if (tyy + th > UIScale.H) tyy = UIScale.H - th - 4f;
         Rect tr = new Rect(tx, tyy, tw, th);
-        Fill(tr, new Color(0.10f, 0.08f, 0.06f, 0.98f)); Border(tr, 2f, new Color(0.86f, 0.63f, 0.30f));
-        GUI.Label(new Rect(tx + 8f, tyy + 5f, tw - 16f, nh), nm, tipName);
-        if (dh > 0f) GUI.Label(new Rect(tx + 8f, tyy + 5f + nh, tw - 16f, dh), desc, body);
-    }
+        UITheme.TipFrame(tr, rc);   // 금테 + 상단 희귀도 라인 + 코너 캡
 
-    private void Fill(Rect r, Color c) { var p = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = p; }
-    private void Border(Rect r, float t, Color c)
-    {
-        Fill(new Rect(r.x, r.y, r.width, t), c); Fill(new Rect(r.x, r.yMax - t, r.width, t), c);
-        Fill(new Rect(r.x, r.y, t, r.height), c); Fill(new Rect(r.xMax - t, r.y, t, r.height), c);
+        float cy = tyy + 10f;
+        GUI.Label(new Rect(tx + 10f, cy, tw - 20f, nh), nm, name_);
+        tipSub.normal.textColor = UITheme.A(rc, 0.9f);
+        GUI.Label(new Rect(tx + 10f, cy + 3f, tw - 22f, 18f), UITheme.RarityName(it.rarity), tipSub);
+        cy += nh + 3f;
+        UITheme.Fill(new Rect(tx + 10f, cy, tw - 20f, 1f), UITheme.A(UITheme.Border, 0.5f));
+        cy += 6f;
+        if (dh > 0f) GUI.Label(new Rect(tx + 10f, cy, tw - 20f, dh), desc, body);
     }
 
     private void EnsureStyles()
     {
         if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
         if (title != null) return;
-        Color cream = new Color(0.95f, 0.91f, 0.80f), goldC = new Color(1f, 0.85f, 0.42f);
-        title = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; title.normal.textColor = goldC;
-        sec = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold }; sec.normal.textColor = cream;
-        tipName = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold };
+        Color cream = new Color(0.90f, 0.95f, 1f), goldC = new Color(1f, 0.85f, 0.42f);
+        title = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft }; title.normal.textColor = cream;
+        name_ = new GUIStyle(GUI.skin.label) { fontSize = 21, fontStyle = FontStyle.Bold };
+        sec = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold }; sec.normal.textColor = new Color(0.68f, 0.70f, 0.74f);
         body = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true }; body.normal.textColor = cream;
-        count = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight }; count.normal.textColor = Color.white;
-        slotName = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        tabOn = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; tabOn.normal.textColor = new Color(0.12f, 0.09f, 0.06f);
-        tabOff = new GUIStyle(tabOn); tabOff.normal.textColor = cream;
-        heldNum = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        arrow = new GUIStyle(GUI.skin.label) { fontSize = 40, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; arrow.normal.textColor = goldC;
+        count = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerRight }; count.normal.textColor = Color.white;
+        slotName = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter, wordWrap = true }; slotName.normal.textColor = cream;
+        tabOn = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; tabOn.normal.textColor = Color.white;
+        tabOff = new GUIStyle(tabOn); tabOff.normal.textColor = new Color(0.68f, 0.70f, 0.74f);
+        closeStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; closeStyle.normal.textColor = Color.white;
+        haveStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
     }
 }

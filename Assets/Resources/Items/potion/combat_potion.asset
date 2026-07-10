@@ -14,12 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: combat_potion
   itemName: "\uC804\uD22C \uD3EC\uC158"
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 4313b53a4112ae94ba7319156fad08ef, type: 3}
   maxStack: 20
   description: "\uC77C\uC815 \uC2DC\uAC04 \uACF5\uACA9\uB825\uC774 \uD06C\uAC8C \uC624\uB978\uB2E4."
   kind: 1
   healHearts: 0
   restoreStamina: 0
+  escapeToHub: 0
   tempAttackMult: 0.5
   tempDamageReduction: 0
   buffDuration: 12
@@ -30,4 +31,5 @@ MonoBehaviour:
   attackBonus: 0
   sellValue: 0
   baseValue: 150
+  sellAtFullValue: 0
   rarity: 1

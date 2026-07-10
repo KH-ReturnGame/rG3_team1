@@ -11,6 +11,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
     public Transform player;
     public float attackInterval = 3f;
     public float attackDamage = 2f;       // 플레이어에게 주는 피해 = 하트 칸 수
+    public bool nonLethal = true;         // 훈련용 — 절대 죽이지 않음(딸피 튜토리얼에서도 안전하게 패링 연습)
     public float attackRange = 2.5f;
     private float attackTimer;
 
@@ -79,6 +80,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
 
         currentHealth -= damage;
         hitFlashTimer = flashDuration;  // 번쩍 → "맞았다!"가 눈에 보임
+        DamagePopup.Damage(transform.position + Vector3.up * 1.1f, damage);   // 빨간 데미지 숫자
 
         Debug.Log($"[허수아비] {damage:0.#} 피격! 남은 HP {Mathf.Max(0, currentHealth):0}/{maxHealth:0}" +
                   (isGroggy ? " (그로기 치명타)" : ""));
@@ -108,7 +110,7 @@ public class DummyMonster : MonoBehaviour, IDamageable, IParryable
 
         attackFlashTimer = flashDuration * 2f;
         PlayerController pc = player.GetComponent<PlayerController>();
-        if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);
+        if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position, nonLethal);
     }
 
     private void UpdateColor()

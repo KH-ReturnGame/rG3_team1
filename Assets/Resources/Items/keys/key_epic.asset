@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
+  m_Name: key_epic
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  id: key_epic
+  itemName: "\uD669\uAE08 \uC5F4\uC1E0"
+  icon: {fileID: 21300000, guid: f753e2cdb49cb9a4380d0ca0acb38fa2, type: 3}
+  maxStack: 99
+  description: "\uC7A0\uAE34 \uBB38\uC744 \uC5EC\uB294 \uC5F4\uC1E0. (\uD669\uAE08
+    \uC5F4\uC1E0)"
+  kind: 3
+  healHearts: 0
+  restoreStamina: 0
+  escapeToHub: 0
+  tempAttackMult: 0
+  tempDamageReduction: 0
+  buffDuration: 0
+  maxJumpBonus: 0
+  maxHeartBonus: 0
+  maxStaminaBonus: 0
+  staminaRegenBonus: 0
+  attackBonus: 0
+  sellValue: 0
+  baseValue: 0
+  sellAtFullValue: 0
+  rarity: 3
