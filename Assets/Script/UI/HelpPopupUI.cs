@@ -61,8 +61,8 @@ public class HelpPopupUI : MonoBehaviour
     // 중첩 옵션 처리: stackPopups가 false면 새 도움말이 뜰 때 기존 것을 모두 비움(교체).
     private void Push(Entry e) { if (!stackPopups) stack.Clear(); e.rich = Rich(e.body); stack.Add(e); }
 
-    // [키]와 *강조*를 오렌지 볼드로(richText). 핸드북(Seen)엔 원문이 남는다.
-    private static string Rich(string s)
+    // [키]와 *강조*를 금색 볼드로(richText). 핸드북(Seen)엔 원문이 남는다. 핸드북 표시용으로도 공개.
+    public static string Rich(string s)
     {
         if (string.IsNullOrEmpty(s)) return s;
         string hex = "#" + ColorUtility.ToHtmlStringRGB(UITheme.Accent);

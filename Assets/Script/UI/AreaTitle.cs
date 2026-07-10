@@ -30,8 +30,8 @@ public class AreaTitle : MonoBehaviour
     void OnEnable() { SceneManager.sceneLoaded += OnScene; }
     void OnDisable() { SceneManager.sceneLoaded -= OnScene; }
 
-    // 씬 이름 → (지역명, 서브타이틀). 표기를 바꾸려면 여기만 수정.
-    private static bool Resolve(string scene, out string main, out string sub)
+    // 씬 이름 → (지역명, 서브타이틀). 표기를 바꾸려면 여기만 수정. (핸드북 지도 탭도 사용)
+    public static bool Resolve(string scene, out string main, out string sub)
     {
         switch (scene)
         {

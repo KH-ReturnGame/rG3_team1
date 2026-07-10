@@ -27,4 +27,17 @@ public static class ItemDatabase
         if (string.IsNullOrEmpty(id)) return null;
         return map.TryGetValue(id, out var v) ? v : null;
     }
+
+    // 도감용 전체 목록(등급 → 이름순). 결과는 캐시.
+    private static List<ItemData> all;
+    public static List<ItemData> All()
+    {
+        EnsureLoaded();
+        if (all == null)
+        {
+            all = new List<ItemData>(map.Values);
+            all.Sort((a, b) => { int r = a.rarity.CompareTo(b.rarity); return r != 0 ? r : string.Compare(a.itemName, b.itemName, System.StringComparison.Ordinal); });
+        }
+        return all;
+    }
 }

@@ -25,6 +25,7 @@ public class AcquireFeed : MonoBehaviour
     public static void Notify(ItemData item, int count)
     {
         if (Instance == null || item == null || count <= 0) return;
+        HandbookUI.MarkItemSeen(item);   // 도감 '발견' 기록
         // 최근 같은 아이템이면 합쳐서 갱신(코인 연속 줍기 등)
         for (int i = Instance.entries.Count - 1; i >= 0; i--)
         {

@@ -70,8 +70,9 @@ public class ShopUI : MonoBehaviour
         bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
 
         GUI.color = new Color(0f, 0f, 0f, 0.55f); GUI.DrawTexture(new Rect(0, 0, UIScale.W, UIScale.H), white);
+        GUI.color = Color.white;   // ★딤 후 반드시 복원 — 안 하면 이후 모든 드로우(아이콘·글자)가 검게 물듦
         Rect win = new Rect(x, y, w, h);
-        UITheme.DrawPanel(win);   // 그림자+그라데+테두리+상단 오렌지 바(다른 창과 통일)
+        UITheme.DrawPanel(win);   // 그림자+그라데+금테(다른 창과 통일)
 
         int g = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
         UITheme.DrawHeader(win, MerchantName(merchant), "상점", 20f, 40f);
