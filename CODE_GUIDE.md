@@ -212,7 +212,40 @@ StartScene(StartMenu) → 새 게임 클릭 → SaveSystem.NewGame(슬롯, "Tuto
 
 ---
 
-## 7. 디버깅 팁
+## 7. 사운드 넣는 법 (배선 완료 — 파일만 넣으면 됨)
+
+`AudioManager`(Core)가 자동부팅되고 게임 곳곳에 훅이 이미 박혀 있다. **오디오 파일을 아래 경로에 정해진 이름으로 넣기만 하면 소리가 난다**(코드 수정 불필요, 파일이 없으면 무음으로 무시):
+
+```
+Assets/Resources/Audio/SFX/   ← 효과음(.wav 권장)
+Assets/Resources/Audio/BGM/   ← 배경음(.ogg 권장, 루프)
+```
+
+| SFX 파일명 | 언제 |
+|---|---|
+| swing | 플레이어 공격 휘두름 |
+| hit | 적 타격(히트스톱과 동시) |
+| parry_just | 저스트 패링 "팅" |
+| deflect | 일반 쳐내기 |
+| player_hit | 플레이어 피격 |
+| dash | 대시 |
+| enemy_die | 적 사망 |
+| pickup | 아이템 줍기 |
+| potion | 포션 사용 |
+| chest_open | 보물상자 |
+| unlock | 잠긴 문 해제 |
+| door_slam / door_open | 아레나 게이트 쾅/개방 |
+| levelup | 레벨 업 |
+| acquire | 획득 배너(모듈 등) |
+| gameover | 게임 오버 |
+
+**BGM 파일명**: title(타이틀) / tutorial / village(마을) / stage(지하 1~3·MainMap) / boss — 씬이 바뀌면 자동 크로스페이드. 씬↔곡 매핑은 `AudioManager.SceneBgm()` 표에서 수정.
+
+코드에서 새 소리를 추가하려면 `AudioManager.Sfx("이름")` 한 줄(+위 표에 기록). 볼륨은 `AudioManager.MasterVolume/BgmVolume/SfxVolume`(PlayerPrefs 저장) — 설정 UI를 만들면 이 값만 조절하면 된다.
+
+---
+
+## 8. 디버깅 팁
 
 - **콘솔부터**: 빨간 에러가 하나라도 있으면 그 UI/시스템 전체가 침묵할 수 있다(OnGUI 예외 = 창이 안 그려짐).
 - **어디서 생긴 오브젝트인지 모르겠다** → 이 문서 1-①의 자동부팅 목록 확인. 하이어라키의 DontDestroyOnLoad 섹션에 모여 있다.

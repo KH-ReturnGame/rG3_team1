@@ -331,6 +331,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     {
         state = State.Dead;
         SetMove(0);
+        AudioManager.Sfx("enemy_die", 1f, 0.06f);
         GrantRewards();
         if (!string.IsNullOrEmpty(questKillId) && QuestManager.Instance != null) QuestManager.Instance.ReportKill(questKillId);   // 처치 퀘스트 진행
         Destroy(gameObject);

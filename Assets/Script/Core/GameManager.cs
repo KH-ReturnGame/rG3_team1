@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour
     {
         if (amt <= 0) return;
         xp += amt;
-        while (xp >= XpToNext) { xp -= XpToNext; level++; modPoints += pointsPerLevel; currentHalf = MaxHalf; Toast.Show("레벨 업! Lv." + level + "  (개조 포인트 +" + pointsPerLevel + ")", 3f); }
+        while (xp >= XpToNext) { xp -= XpToNext; level++; modPoints += pointsPerLevel; currentHalf = MaxHalf; AudioManager.Sfx("levelup"); Toast.Show("레벨 업! Lv." + level + "  (개조 포인트 +" + pointsPerLevel + ")", 3f); }
         OnStatsChanged?.Invoke();
     }
 

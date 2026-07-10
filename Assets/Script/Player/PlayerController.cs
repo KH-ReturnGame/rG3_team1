@@ -600,6 +600,7 @@ public class PlayerController : MonoBehaviour
 
     private void PerformAttack(float damage, float rangeMultiplier)
     {
+        AudioManager.Sfx("swing", 0.9f, 0.08f);   // 휘두르는 소리(에셋 없으면 무음)
         GetAttackBox(rangeMultiplier, out Vector2 center, out Vector2 size);
         PerformAreaDamage(center, size, damage);
     }
@@ -730,6 +731,7 @@ public class PlayerController : MonoBehaviour
 
     private void StartDash()
     {
+        AudioManager.Sfx("dash", 0.9f, 0.05f);
         dashCooldownTimer = dashCooldown;   // 무한 대시 방지
         isDashing = true;
         currentDashes--;
@@ -928,6 +930,7 @@ public class PlayerController : MonoBehaviour
 
         hitstunTimer = hitstunDuration;
         hitInvincibleTimer = hitInvincibleTime;   // 피격 후 무적 시작
+        AudioManager.Sfx("player_hit", 1f, 0.05f);
 
         float kbDir = (source.x <= transform.position.x) ? 1f : -1f;   // 공격자 반대 방향으로 조금
         rb.linearVelocity = new Vector2(kbDir * knockbackForce, rb.linearVelocity.y);   // 수평만(공중으로 안 띄움)

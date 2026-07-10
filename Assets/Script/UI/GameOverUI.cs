@@ -38,6 +38,8 @@ public class GameOverUI : MonoBehaviour
         if (showing) return;
         showing = true;
         shownAt = Time.unscaledTime;
+        AudioManager.Sfx("gameover");
+        AudioManager.Bgm("");    // 배경음 정지
         SlowMoFx.End();          // 예지 슬로우 중 사망 대비 — 시간 상태 정리 후 정지
         Time.timeScale = 0f;
     }

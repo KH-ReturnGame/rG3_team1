@@ -184,6 +184,7 @@ public class BattleArena : MonoBehaviour
             d.transform.position = closedPos;
 
             // 착지: 카메라 쿵 + 게이트 잔진동
+            AudioManager.Sfx("door_slam");
             Juice.Shake(0.22f, 0.18f);
             float st = 0f;
             const float shakeDur = 0.28f;
@@ -200,6 +201,7 @@ public class BattleArena : MonoBehaviour
         else
         {
             // 위로 스르륵 올라가 벽 속으로
+            AudioManager.Sfx("door_open");
             Vector3 from = d.transform.position;
             while (t < dur)
             {

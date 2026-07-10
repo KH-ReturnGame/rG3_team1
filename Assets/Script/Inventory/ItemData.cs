@@ -74,6 +74,7 @@ public class ItemData : ScriptableObject
         if (healHearts > 0 && gm.CurrentHearts < gm.MaxHearts) { gm.Heal(healHearts); did = true; }
         if (tempAttackMult > 0f && buffDuration > 0f) { gm.ApplyAttackBuff(tempAttackMult, buffDuration); did = true; }
         if (tempDamageReduction > 0f && buffDuration > 0f) { gm.ApplyDefenseBuff(tempDamageReduction, buffDuration); did = true; }
+        if (did) AudioManager.Sfx("potion");
         return did;
     }
 }

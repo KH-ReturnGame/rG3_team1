@@ -33,6 +33,7 @@ public class LockedDoor : MonoBehaviour, IInteractable
     // LockedDoorUI가 맞는 열쇠 삽입을 확인한 뒤 호출 — 개방 + 토스트
     public void Unlock()
     {
+        AudioManager.Sfx("unlock");
         Toast.Show(requiredKey != null ? requiredKey.itemName + "(으)로 문을 열었다!" : "문이 열렸다!", 2f);
         Open();
     }

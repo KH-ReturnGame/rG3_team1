@@ -38,6 +38,7 @@ public class AcquireBanner : MonoBehaviour
         cur = queue.Dequeue();
         active = true;
         startTime = Time.unscaledTime;
+        AudioManager.Sfx("acquire");
         Juice.Flash(new Color(1f, 0.78f, 0.38f, 0.26f), 0.18f);   // 앰버 번쩍(테마 통일)
         Juice.HitStop(0.07f);
     }

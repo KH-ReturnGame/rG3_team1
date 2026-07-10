@@ -67,6 +67,7 @@ public class TreasureChest : MonoBehaviour, IInteractable
     {
         if (isOpen) return;
         openedKeys.Add(Key);
+        AudioManager.Sfx("chest_open");
 
         // 떨굴 목록 구성: loot[] 아이템(확률) + 골드 가치를 환산한 동화/은화/금화
         var drops = new List<KeyValuePair<ItemData, int>>();
