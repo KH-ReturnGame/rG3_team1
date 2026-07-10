@@ -93,8 +93,8 @@ public class TutorialSequence : MonoBehaviour
             while (arena != null && !arena.IsCleared) yield return null;
             yield return new WaitForSeconds(0.9f);
             if (HelpPopupUI.Instance != null)
-                HelpPopupUI.Instance.ShowTimed("전리품 — 회복 포션",
-                    "상자에서 회복 포션이 나왔습니다!\n[F]로 줍고 → 배낭[B]에서 우클릭 → [1번 슬롯에 등록] → 전투 중 [1]로 바로 마실 수 있습니다.", 10f);
+                HelpPopupUI.Instance.Show("loot", "전리품 — 회복 포션",
+                    "상자에서 회복 포션이 나왔습니다!\n[F]로 줍고 → 배낭[B]에서 우클릭 → [1번 슬롯에 등록] → 전투 중 [1]로 바로 마실 수 있습니다.");
         }
     }
 }

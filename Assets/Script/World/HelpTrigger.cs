@@ -14,12 +14,13 @@ public class HelpTrigger : MonoBehaviour
     [Header("Custom 일 때만 사용")]
     public string customTitle = "";
     [TextArea] public string customBody = "";
+    public string customGifId = "";   // Custom 카드의 GIF 폴더 이름(Resources/Help/<id>/, 비우면 GIF 없음)
 
-    public enum DisplayMode { Manual, Timed }   // Manual: ESC/X로 직접 닫기 / Timed: 잠시 후 자동으로 사라짐
+    public enum DisplayMode { Manual, Timed }   // (구) 카드 리워크로 미사용 — 직렬화 호환용 잔존
 
     [Header("옵션")]
-    public DisplayMode displayMode = DisplayMode.Manual;   // 이 도움말을 어떻게 닫을지
-    public float timedSeconds = 7f;                        // Timed 모드일 때 표시 시간(초)
+    public DisplayMode displayMode = DisplayMode.Manual;   // (구) 미사용
+    public float timedSeconds = 7f;                        // (구) 미사용
     public bool showOnce = false;   // true = 최초 1회만 뜸(이후 재진입해도 안 뜸)
 
     private bool consumed;
@@ -33,11 +34,22 @@ public class HelpTrigger : MonoBehaviour
         if (showOnce && consumed) return;
         string t, b; GetText(out t, out b);
         if (HelpPopupUI.Instance != null)
-        {
-            if (displayMode == DisplayMode.Timed) HelpPopupUI.Instance.ShowTimed(t, b, timedSeconds);
-            else HelpPopupUI.Instance.ShowManual(t, b);   // [ESC]·[X]로 직접 닫을 때까지 유지
-        }
+            HelpPopupUI.Instance.Show(GifId(), t, b);   // 모달 카드(시간 정지 + GIF)
         consumed = true;
+    }
+
+    // 토픽 → GIF 폴더 이름(Resources/Help/<id>/) — 프레임 PNG를 넣으면 카드 하단에 재생됨
+    private string GifId()
+    {
+        switch (topic)
+        {
+            case HelpTopic.TreasureChest: return "chest";
+            case HelpTopic.ChargeJump:    return "charge_jump";
+            case HelpTopic.Parry:         return "parry";
+            case HelpTopic.Combat:        return "attack";
+            case HelpTopic.Hotkeys:       return "hotkeys";
+            default:                      return customGifId;
+        }
     }
 
     public void GetText(out string title, out string body)

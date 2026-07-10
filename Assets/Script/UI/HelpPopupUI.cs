@@ -1,31 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 도움말 팝업(자동부팅·영구 싱글톤). 여러 개가 동시에 뜨면 '카드 스택'으로 중첩:
-//  · 먼저 뜬 도움말이 맨 앞(완전히 보임), 나중에 뜬 것은 뒤로 쌓여 제목이 위로 살짝 삐져나옴
-//  · 덕분에 겹쳐도 앞 도움말에 집중하면서 뒤 도움말 제목을 대강 읽을 수 있음
-// 표시 방식 3가지(항목별):
-//  · ShowManual : [ESC] 또는 [X]로 닫을 때까지 유지. ESC/X는 '맨 앞' 항목을 닫음. 핸드북 기록 O.
-//  · ShowTimed  : duration초 뒤 자동으로 사라짐. 핸드북 기록 O.
-//  · ShowSticky : 코드(ForceHide)로만 닫힘(패링 큐 등). 기록 X.
+// 도움말 시스템(자동부팅·영구) — 젤다 야숨식 '카드' 리워크.
+//  · 카드: 화면을 어둡게 가리고 **시간을 멈춘 뒤**, 인벤토리만 한 창에 [제목+설명(위)] + [시연 GIF(아래)]를 보여준다.
+//    [F]/[Space]/[ESC]/클릭으로 확인·닫기. 여러 개가 겹치면 큐로 하나씩. 컷씬(레터박스) 중엔 대기.
+//  · GIF: Assets/Resources/Help/<id>/ 폴더에 프레임 PNG들(000.png, 001.png … 이름순)을 넣으면 자동 재생(기본 10fps).
+//    폴더가 없으면 "시연 준비 중" 자리 표시 — 지금은 GIF 없이 텍스트만으로 동작.
+//  · 스티키 배너: 각성 패링 큐 같은 '실시간 반응 유도'는 모달이면 안 되므로 상단 작은 배너로 유지(ForceHide로 닫음).
+//  · 본 카드는 Seen에 기록되어 핸드북 도움말 탭에서 다시 볼 수 있다.
 public class HelpPopupUI : MonoBehaviour
 {
     public static HelpPopupUI Instance;
 
-    private class Entry
-    {
-        public string title, body;
-        public string rich;        // 표시용: [키]·*강조*가 오렌지 볼드로 변환된 본문(Seen 기록은 원문 유지)
-        public float shownAt;
-        public bool manual;        // ESC/X로 닫기
-        public float timedUntil;   // >0이면 그 시각에 자동 종료(Timed). 0 && !manual = Sticky(코드로만).
-    }
-    private readonly List<Entry> stack = new List<Entry>();   // [0]=먼저 뜬 것(맨 앞), 뒤로 갈수록 나중에 뜬 것
-    public bool stackPopups = false;   // 중첩 끔(기본) — 새 도움말이 뜨면 이전 것은 즉시 사라짐(교체). true면 카드처럼 쌓임
-    private const float HeaderPeek = 46f;   // 뒤 도움말이 위로 삐져나오는 양(제목 보이게)
-    private const int MaxCascade = 4;       // 이 이상 쌓이면 더 위로 올리지 않음
+    // ── 카드(모달) ──
+    private class Card { public string id, title, body, rich; }
+    private readonly Queue<Card> queue = new Queue<Card>();
+    private Card cur;
+    private float shownAt;
+    private float prevTimeScale = 1f;
+    private Sprite[] gifFrames;
+    public float gifFps = 10f;          // GIF 재생 속도(프레임/초)
+    public float confirmDelay = 0.35f;  // 이 시간 전엔 닫기 입력 무시(오입력 방지)
 
-    private GUIStyle titleStyle, bodyStyle, tagStyle, closeStyle, hintStyle;
+    // ── 스티키 배너(패링 큐 등 실시간 유도 — 모달 아님) ──
+    private string stickyTitle, stickyBody, stickyRich;
+    private float stickyAt;
+
+    private GUIStyle titleSt, bodySt, tagSt, hintSt, phSt, stTitleSt, stBodySt;
     private static Texture2D _tex;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -37,7 +38,7 @@ public class HelpPopupUI : MonoBehaviour
         DontDestroyOnLoad(go);
     }
 
-    // 지나간 도움말 기록(핸드북에서 다시 보기). 제목 기준 중복 제거. 세션 동안 유지.
+    // 지나간 도움말 기록(핸드북 다시보기). 제목 기준 중복 제거. SaveSystem이 저장/복원.
     public class HelpEntry { public string title; public string body; }
     public static readonly List<HelpEntry> Seen = new List<HelpEntry>();
     private static void Record(string t, string b)
@@ -47,21 +48,28 @@ public class HelpPopupUI : MonoBehaviour
         Seen.Add(new HelpEntry { title = t, body = b });
     }
 
-    [Header("표시 시간")]
-    public float manualSeconds = 12f;   // (구)ShowManual 도움말의 자동 소멸 시간 — 이제 전부 시간 지나면 사라짐
+    // ── 발동 API ──
+    // 카드 등록. id = GIF 폴더 이름(Resources/Help/<id>/) — 없거나 null이면 텍스트만.
+    public void Show(string id, string title, string body)
+    {
+        foreach (var c in queue) if (c.title == title) return;          // 같은 카드 중복 큐 방지
+        if (cur != null && cur.title == title) return;
+        queue.Enqueue(new Card { id = id, title = title, body = body, rich = Rich(body) });
+        Record(title, body);
+    }
+    // (구) 호환 — 이제 전부 모달 카드
+    public void ShowTimed(string t, string b, float duration) => Show(null, t, b);
+    public void ShowManual(string t, string b) => Show(null, t, b);
 
-    // (구) ESC/X 수동 닫기 — 이제 전부 자동 소멸(요청). 호출부 호환을 위해 시그니처 유지.
-    public void ShowManual(string t, string b) => ShowTimed(t, b, manualSeconds);
-    // duration초 뒤 자동 종료.
-    public void ShowTimed(string t, string b, float duration) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = Time.unscaledTime + Mathf.Max(0.1f, duration) }); Record(t, b); }
-    // 코드(ForceHide)로만 닫힘. 일시적 입력 유도(패링 큐)라 기록하지 않음.
-    public void ShowSticky(string t, string b) { Push(new Entry { title = t, body = b, shownAt = Time.unscaledTime, manual = false, timedUntil = 0f }); }
-    // Sticky(패링 큐 등)만 제거.
-    public void ForceHide() { stack.RemoveAll(e => !e.manual && e.timedUntil <= 0f); }
-    // 중첩 옵션 처리: stackPopups가 false면 새 도움말이 뜰 때 기존 것을 모두 비움(교체).
-    private void Push(Entry e) { if (!stackPopups) stack.Clear(); e.rich = Rich(e.body); stack.Add(e); }
+    // 스티키 배너(기록 X, ForceHide로만 닫음)
+    public void ShowSticky(string t, string b) { stickyTitle = t; stickyBody = b; stickyRich = Rich(b); stickyAt = Time.unscaledTime; }
+    public void ForceHide() { stickyTitle = null; stickyBody = null; }
 
-    // [키]와 *강조*를 금색 볼드로(richText). 핸드북(Seen)엔 원문이 남는다. 핸드북 표시용으로도 공개.
+    public static bool CardOpen => Instance != null && Instance.cur != null;
+    public static bool ManualOpen => CardOpen;   // (구 이름 호환 — MenuUI의 ESC 게이트가 사용)
+    public bool IsManualOpen => cur != null;
+
+    // [키]와 *강조*를 금색 볼드로(richText). 핸드북(Seen)엔 원문이 남는다.
     public static string Rich(string s)
     {
         if (string.IsNullOrEmpty(s)) return s;
@@ -70,143 +78,155 @@ public class HelpPopupUI : MonoBehaviour
         s = System.Text.RegularExpressions.Regex.Replace(s, @"\*([^*\n]+)\*", m => "<b><color=" + hex + ">" + m.Groups[1].Value + "</color></b>");
         return s;
     }
-    public bool IsManualOpen { get { return stack.Count > 0 && stack[0].manual; } }
-    // ESC로 닫는 도움말이 떠 있는가 — MenuUI가 이걸 보고 같은 ESC에 일시정지를 안 연다.
-    public static bool ManualOpen => Instance != null && Instance.IsManualOpen;
 
     void Update()
     {
-        // 만료된 Timed 제거
-        for (int i = stack.Count - 1; i >= 0; i--)
+        // 다음 카드 오픈(컷씬 중엔 대기)
+        if (cur == null && queue.Count > 0 && !Letterbox.Covering) OpenNext();
+
+        // 닫기 입력
+        if (cur != null && Time.unscaledTime - shownAt > confirmDelay)
         {
-            var e = stack[i];
-            if (!e.manual && e.timedUntil > 0f && Time.unscaledTime >= e.timedUntil) stack.RemoveAt(i);
+            if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)
+                || Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))
+                CloseCard();
         }
-        // ESC → 맨 앞(가장 먼저 뜬) 수동 도움말 닫기
-        if (Input.GetKeyDown(KeyCode.Escape) && stack.Count > 0 && stack[0].manual) stack.RemoveAt(0);
+    }
+
+    private void OpenNext()
+    {
+        cur = queue.Dequeue();
+        shownAt = Time.unscaledTime;
+        prevTimeScale = Time.timeScale > 0.01f ? Time.timeScale : 1f;
+        Time.timeScale = 0f;                 // ★야숨식 — 세상이 멈춘다
+        Inventory.HelpOpen = true;
+        AudioManager.Sfx("help_open");
+
+        // GIF 프레임 로드(이름순 정렬 — 000.png, 001.png … 권장)
+        gifFrames = null;
+        if (!string.IsNullOrEmpty(cur.id))
+        {
+            var frames = Resources.LoadAll<Sprite>("Help/" + cur.id);
+            if (frames != null && frames.Length > 0)
+            {
+                System.Array.Sort(frames, (a, b) => a.name.Length != b.name.Length ? a.name.Length - b.name.Length : string.CompareOrdinal(a.name, b.name));
+                gifFrames = frames;
+            }
+        }
+    }
+
+    private void CloseCard()
+    {
+        Time.timeScale = prevTimeScale;
+        cur = null;
+        gifFrames = null;
+        Inventory.HelpOpen = false;
     }
 
     void OnGUI()
     {
-        if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
-        if (stack.Count == 0) return;
+        DrawSticky();
+        if (cur == null) return;
         EnsureStyles();
-        UIScale.Apply();   // 해상도 독립 스케일
+        UIScale.Apply();
+        GUI.depth = -1200;
+        float sw = UIScale.W, sh = UIScale.H;
+        float k = Mathf.Clamp01((Time.unscaledTime - shownAt) / 0.22f);
+        float ease = 1f - (1f - k) * (1f - k);
 
-        float w = Mathf.Min(720f, UIScale.W - 60f);
-        float x = (UIScale.W - w) * 0.5f;
-        int n = stack.Count;
-        int reveal = Mathf.Min(n - 1, MaxCascade);
-        float frontY = UIScale.H * 0.05f + reveal * HeaderPeek;   // 맨 앞은 아래, 뒤로 갈수록 위로
+        // 딤(화면 가리기)
+        UITheme.Fill(new Rect(0, 0, sw, sh), new Color(0f, 0f, 0f, 0.72f * ease));
 
-        int closeFront = -1;
-        // 뒤(나중·깊은 것)부터 그려 z순서상 앞(먼저 뜬 것)이 위로 오게
-        for (int i = n - 1; i >= 0; i--)
-        {
-            int depth = Mathf.Min(i, MaxCascade);
-            float y = frontY - depth * HeaderPeek;
-            bool isFront = (i == 0);
-            if (DrawPopup(stack[i], x, y, w, isFront) && isFront) closeFront = i;
-        }
-        if (closeFront >= 0) stack.RemoveAt(closeFront);
-    }
+        // 카드(인벤토리 UI 정도 크기) — 위 텍스트 / 아래 GIF
+        float w = Mathf.Min(sw * 0.46f, 700f);
+        float h = Mathf.Min(sh * 0.74f, 720f);
+        float x = (sw - w) * 0.5f, y = (sh - h) * 0.5f - 14f * (1f - ease);
+        Rect card = new Rect(x, y, w, h);
+        var prevC = GUI.color; GUI.color = new Color(1f, 1f, 1f, ease);
+        UITheme.DrawPanel(card);
+        float headH = UITheme.DrawHeader(card, cur.title, "도움말", 20f, 44f);
 
-    // 한 개 그리기. 맨 앞이고 수동이면 [✕] 버튼·닫기 힌트 표시(✕ 클릭 시 true). 뒤 항목은 흐리게.
-    private bool DrawPopup(Entry e, float x, float y, float w, bool isFront)
-    {
-        float k = Mathf.Clamp01((Time.unscaledTime - e.shownAt) / 0.25f);                          // 등장 진행도
-        float ease = 1f - (1f - k) * (1f - k);                                                     // ease-out
-        float a = ease;
-        if (e.timedUntil > 0f) a *= Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / 0.5f);      // Timed 끝 페이드아웃
-        if (!isFront) a *= 0.62f;                                                                   // 뒤 항목은 흐리게(앞에 집중)
-        y -= 14f * (1f - ease);                                                                     // 살짝 위에서 슬라이드 인
-
-        Color ac = UITheme.Accent;
-        float pad = 26f, headH = 42f, gap = 12f, hintH = (isFront && e.manual) ? 22f : 0f;
+        // 본문(위)
+        float pad = 26f;
         float bodyW = w - pad * 2f;
-        float bodyH = bodyStyle.CalcHeight(new GUIContent(e.rich ?? e.body), bodyW);
-        float h = pad * 0.7f + headH + gap + bodyH + ((isFront && e.manual) ? gap + hintH : 0f) + pad;
-        Rect panel = new Rect(x, y, w, h);
+        bodySt.fontSize = Mathf.RoundToInt(Mathf.Clamp(sh * 0.017f, 15f, 19f));
+        float bodyH = bodySt.CalcHeight(new GUIContent(cur.rich), bodyW);
+        float bodyMaxH = h * 0.42f;
+        Rect bodyR = new Rect(x + pad, y + headH + 12f, bodyW, Mathf.Min(bodyH, bodyMaxH));
+        bodySt.normal.textColor = UITheme.Text;
+        GUI.Label(bodyR, cur.rich, bodySt);
 
-        // 패널: 그림자 + 건메탈 그라데(거의 불투명 → 뒤 항목 가림) + 상단 하이라이트 + 얇은 테두리
-        Color prev = GUI.color;
-        UITheme.Shadow(panel, 12f, 0.38f * a);
-        UITheme.FillV(panel, UITheme.A(UITheme.PanelTop, 0.97f * a), UITheme.A(UITheme.PanelBot, 0.97f * a));
-        UITheme.Fill(new Rect(x, y, w, 1f), new Color(1f, 1f, 1f, 0.07f * a));
-        Border(panel, 1f, UITheme.A(UITheme.Border, 0.9f * a));
-
-        // 헤더: 왼쪽 오렌지 바 + ◆ + '도움말' 태그 + 제목, 아래 헤어라인
-        float hy = y + pad * 0.7f;
-        UITheme.Fill(new Rect(x, hy + 4f, 4f, headH - 8f), UITheme.A(ac, a));
-        DrawDiamond(new Vector2(x + pad + 5f, hy + headH * 0.5f), 9f, UITheme.A(ac, a));
-        tagStyle.normal.textColor = UITheme.A(ac, 0.95f * a);
-        GUI.Label(new Rect(x + pad + 16f, hy, 76f, headH), "도움말", tagStyle);
-        titleStyle.normal.textColor = new Color(0.97f, 0.96f, 0.94f, a);
-        GUI.Label(new Rect(x + pad + 92f, hy - 2f, w - pad * 2f - 92f - 36f, headH), e.title, titleStyle);
-        UITheme.Divider(x + pad, hy + headH, w - pad * 2f, 0.5f * a);   // 장식 구분선(양끝 다이아)
-
-        // 본문([키]·*강조*는 오렌지 볼드)
-        bodyStyle.normal.textColor = new Color(0.90f, 0.91f, 0.94f, a);
-        GUI.Label(new Rect(x + pad, hy + headH + gap, bodyW, bodyH + 4f), e.rich ?? e.body, bodyStyle);
-
-        // 하단 라인: Timed = 남은 시간 게이지 / 그 외 = 고정 액센트 라인
-        float frac = 1f;
-        if (e.timedUntil > 0f)
+        // GIF(아래) — 브래킷 액자
+        float gy = y + headH + 12f + Mathf.Min(bodyH, bodyMaxH) + 14f;
+        Rect gif = new Rect(x + pad, gy, w - pad * 2f, card.yMax - gy - 46f);
+        UITheme.Fill(gif, UITheme.A(UITheme.SlotBot, 0.95f));
+        UITheme.Corners(gif, 16f, 2.5f);
+        if (gifFrames != null && gif.height > 40f)
         {
-            float total = Mathf.Max(0.1f, e.timedUntil - e.shownAt);
-            frac = Mathf.Clamp01((e.timedUntil - Time.unscaledTime) / total);
+            var f = gifFrames[(int)(Time.unscaledTime * Mathf.Max(1f, gifFps)) % gifFrames.Length];
+            // 비율 유지로 액자 안에 맞춤
+            float ar = f.rect.width / Mathf.Max(1f, f.rect.height);
+            float fw = gif.width - 16f, fh = fw / ar;
+            if (fh > gif.height - 16f) { fh = gif.height - 16f; fw = fh * ar; }
+            Rect fr = new Rect(gif.x + (gif.width - fw) * 0.5f, gif.y + (gif.height - fh) * 0.5f, fw, fh);
+            GUI.DrawTextureWithTexCoords(fr, f.texture, new Rect(
+                f.rect.x / f.texture.width, f.rect.y / f.texture.height,
+                f.rect.width / f.texture.width, f.rect.height / f.texture.height));
         }
-        UITheme.Fill(new Rect(x, panel.yMax - 2f, w, 2f), UITheme.A(UITheme.Border, 0.6f * a));       // 트랙
-        UITheme.Fill(new Rect(x, panel.yMax - 2f, w * frac, 2f), UITheme.A(ac, 0.9f * a));            // 게이지
-
-        bool clickedClose = false;
-        if (isFront && e.manual)
+        else if (gif.height > 40f)
         {
-            hintStyle.normal.textColor = new Color(0.62f, 0.63f, 0.67f, a);
-            GUI.Label(new Rect(x, panel.yMax - pad - hintH + 4f, w, hintH), "<b>[ESC]</b> 또는 <b>[✕]</b> 를 눌러 닫기", hintStyle);
-
-            Rect close = new Rect(x + w - 40f, y + 10f, 28f, 28f);
-            bool hover = close.Contains(Event.current.mousePosition);
-            if (hover) UITheme.Fill(close, UITheme.A(ac, 0.18f * a));
-            closeStyle.normal.textColor = hover ? UITheme.A(ac, a) : new Color(0.62f, 0.63f, 0.67f, a);
-            GUI.Label(close, "✕", closeStyle);
-            if (Event.current.type == EventType.MouseDown && hover) { Event.current.Use(); clickedClose = true; }
+            // GIF 준비 전 자리 표시
+            UITheme.Diamond(new Vector2(gif.center.x, gif.center.y - 16f), 12f, UITheme.A(UITheme.Accent, 0.6f));
+            phSt.normal.textColor = UITheme.TextDim;
+            GUI.Label(new Rect(gif.x, gif.center.y - 4f, gif.width, 26f), "시연 영상 준비 중", phSt);
         }
-        GUI.color = prev;
-        return clickedClose;
+
+        // 확인 힌트
+        if (Time.unscaledTime - shownAt > confirmDelay)
+        {
+            hintSt.normal.textColor = UITheme.A(UITheme.Accent, 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f));
+            GUI.Label(new Rect(x, card.yMax - 38f, w, 26f), "[F] 확인", hintSt);
+        }
+        GUI.color = prevC;
     }
 
-    // 작은 다이아(◆) — 45도 회전한 사각형
-    private static void DrawDiamond(Vector2 center, float size, Color c)
+    // 스티키 배너(상단 중앙 작은 패널 — 각성 패링 큐 등)
+    private void DrawSticky()
     {
-        Matrix4x4 m = GUI.matrix;
-        GUIUtility.RotateAroundPivot(45f, center);
-        UITheme.Fill(new Rect(center.x - size * 0.5f, center.y - size * 0.5f, size, size), c);
-        GUI.matrix = m;
+        if (string.IsNullOrEmpty(stickyTitle)) return;
+        if (Letterbox.Covering) return;
+        EnsureStyles();
+        UIScale.Apply();
+        float sw = UIScale.W;
+        float a = Mathf.Clamp01((Time.unscaledTime - stickyAt) / 0.2f);
+
+        float w = Mathf.Min(680f, sw - 60f);
+        stBodySt.fontSize = 16;
+        float bh = stBodySt.CalcHeight(new GUIContent(stickyRich), w - 44f);
+        float h = 44f + bh + 16f;
+        float x = (sw - w) * 0.5f, y = UIScale.H * 0.06f;
+        Rect r = new Rect(x, y, w, h);
+        UITheme.Shadow(r, 10f, 0.35f * a);
+        UITheme.FillV(r, UITheme.A(UITheme.PanelTop, 0.96f * a), UITheme.A(UITheme.PanelBot, 0.96f * a));
+        UITheme.Border2(r, 1.2f, UITheme.A(UITheme.Accent, 0.85f * a));
+        UITheme.Corners(r, 10f, 2f);
+        stTitleSt.normal.textColor = new Color(0.97f, 0.95f, 0.88f, a);
+        GUI.Label(new Rect(x + 20f, y + 8f, w - 40f, 28f), stickyTitle, stTitleSt);
+        stBodySt.normal.textColor = new Color(0.90f, 0.91f, 0.94f, a);
+        GUI.Label(new Rect(x + 22f, y + 40f, w - 44f, bh + 4f), stickyRich, stBodySt);
     }
 
     private void EnsureStyles()
     {
-        if (bodyStyle != null) return;
-        titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 25, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
-        tagStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        closeStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter, richText = true };
+        if (bodySt != null) return;
+        titleSt = new GUIStyle(GUI.skin.label) { fontSize = 24, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        bodySt = new GUIStyle(GUI.skin.label) { fontSize = 17, wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
+        tagSt = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        hintSt = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        phSt = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        stTitleSt = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        stBodySt = new GUIStyle(GUI.skin.label) { fontSize = 16, wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
     }
 
-    private static Texture2D Tex()
-    {
-        if (_tex == null) { _tex = new Texture2D(1, 1); _tex.SetPixel(0, 0, Color.white); _tex.Apply(); }
-        return _tex;
-    }
-    private static void Border(Rect r, float t, Color c)
-    {
-        Color o = GUI.color; GUI.color = c;
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), Tex());
-        GUI.DrawTexture(new Rect(r.x, r.yMax - t, r.width, t), Tex());
-        GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), Tex());
-        GUI.DrawTexture(new Rect(r.xMax - t, r.y, t, r.height), Tex());
-        GUI.color = o;
-    }
+    private static Texture2D Tex() { if (_tex == null) { _tex = new Texture2D(1, 1); _tex.SetPixel(0, 0, Color.white); _tex.Apply(); } return _tex; }
 }

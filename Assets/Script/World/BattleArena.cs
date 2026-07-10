@@ -99,6 +99,14 @@ public class BattleArena : MonoBehaviour
                 active = true; primed = false;
                 SetDoors(true);
                 Toast.Show("적을 모두 처치하라!", 2f);
+
+                // 첫 아레나 전투: 배틀 아레나 카드(세션 1회)
+                if (!arenaHelpShown && HelpPopupUI.Instance != null)
+                {
+                    arenaHelpShown = true;
+                    HelpPopupUI.Instance.Show("arena", "배틀 아레나",
+                        "이 구역의 적을 모두 처치할 때까지 문이 닫힙니다 — 물러날 곳은 없습니다.\n전멸시키면 문이 열리고, 때로는 보상이 나타납니다.");
+                }
             }
             return;
         }
@@ -125,13 +133,14 @@ public class BattleArena : MonoBehaviour
                 && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == CombatTutorial.TutorialSceneName)
             {
                 chestHelpShown = true;
-                HelpPopupUI.Instance.ShowTimed("보물상자",
-                    "전투의 보상 — 보물상자가 나타났습니다!\n가까이 가서 [F]로 열면 포션·재료·장신구 같은 전리품을 얻을 수 있습니다.", 8f);
+                HelpPopupUI.Instance.Show("chest", "보물상자",
+                    "전투의 보상 — 보물상자가 나타났습니다!\n가까이 가서 [F]로 열면 포션·재료·장신구 같은 전리품을 얻을 수 있습니다.");
             }
         }
     }
 
     private static bool chestHelpShown;   // 보물상자 도움말(아레나 보상) 세션당 1회
+    private static bool arenaHelpShown;   // 배틀 아레나 카드 세션당 1회
 
     // 문 개폐 — 닫힘: 땅속에서 스르륵 올라옴 / 열림: 스르륵 내려가고 비활성.
     private void SetDoors(bool closed)

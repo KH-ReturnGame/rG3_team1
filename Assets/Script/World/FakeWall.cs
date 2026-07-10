@@ -54,12 +54,22 @@ public class FakeWall : MonoBehaviour
         }
     }
 
+    private static bool helpShown;   // 비밀 통로 카드(세션 1회)
+
     void Update()
     {
         // 플레이어 좌표 기반 판정(레이어/트리거 설정 무관)
         var pc = PlayerController.Instance;
         bool inside = pc != null && area != null && area.OverlapPoint(pc.transform.position);
         target = inside ? enteredAlpha : 1f;
+
+        // 처음으로 가짜 벽을 발견한 순간: 비밀 통로 카드
+        if (inside && !helpShown && HelpPopupUI.Instance != null)
+        {
+            helpShown = true;
+            HelpPopupUI.Instance.Show("fake_wall", "비밀 통로",
+                "눈에 보이는 것이 전부가 아닙니다 — 이 벽은 *통과할 수 있는 가짜 벽*이었습니다.\n수상해 보이는 벽은 직접 걸어 들어가 보세요. 숨겨진 보물이 기다릴지도 모릅니다.");
+        }
 
         if (Mathf.Abs(cur - target) < 0.005f) return;
         cur = Mathf.MoveTowards(cur, target, fadeSpeed * Time.deltaTime);

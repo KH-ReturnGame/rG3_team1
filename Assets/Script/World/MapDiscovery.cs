@@ -2,16 +2,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// 맵 발견(fog-of-war). 플레이어가 CameraZone(카메라 구역)에 '진입'하면 그 구역을 발견으로 기록한다.
-//  · 미니맵 블립과 일반 지도(MapScanner)는 '발견한 구역'만 보여준다 → 처음엔 안 보이고, 탐험하며 드러남.
-//  · 진입 판정은 CameraZone.Contains(위치 포함)로 폴링 — CameraFollow와 동일 방식이라 물리 레이어/태그와 무관.
-//  · 씬별로 발견 상태를 메모리에 보관(같은 씬으로 되돌아오면 유지). 세션 동안만(저장은 안 함).
-//  · 씬에 CameraZone이 하나도 없으면 전부 발견으로 간주(구역 미설정 맵 호환).
+// 맵 발견(fog-of-war). 두 가지 모드로 동작:
+//  · 구역 모드: 씬에 CameraZone이 있으면, 플레이어가 '진입'한 구역을 발견으로 기록(기존 방식).
+//  · ★그리드 모드(구역 없는 씬 — Metroidvania 메인 맵 등): 씬을 gridCell 크기 칸으로 나눠
+//    플레이어가 지나간 칸(+상하좌우)을 발견으로 기록 → 씬 수정 없이 fog-of-war가 생긴다.
+//  미니맵 블립·일반 지도(MapScanner)는 '발견한 영역'만 보여준다. 세션 동안만 유지(저장은 안 함).
 public class MapDiscovery : MonoBehaviour
 {
     public static MapDiscovery Instance;
 
+    public float gridCell = 10f;   // 그리드 모드 칸 크기(유닛) — 작을수록 시야가 좁고 정밀
+
     private static readonly Dictionary<string, HashSet<string>> discovered = new Dictionary<string, HashSet<string>>();
+    private static readonly Dictionary<string, HashSet<long>> gridFound = new Dictionary<string, HashSet<long>>();   // 그리드 모드 발견 칸
     public static int Version { get; private set; }   // 발견이 늘 때마다 +1 (지도 캐시 무효화용)
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -34,14 +37,26 @@ public class MapDiscovery : MonoBehaviour
     {
         var pc = PlayerController.Instance;
         if (pc == null) return;
-        var list = CameraZone.All;
-        if (list.Count == 0) return;
-
         Vector2 p = pc.transform.position;
         string scene = SceneManager.GetActiveScene().name;
+        var list = CameraZone.All;
+
+        if (list.Count == 0)   // ★그리드 모드: 지나간 칸 + 상하좌우 이웃을 발견
+        {
+            HashSet<long> cells;
+            if (!gridFound.TryGetValue(scene, out cells)) { cells = new HashSet<long>(); gridFound[scene] = cells; }
+            int cx = Mathf.FloorToInt(p.x / gridCell), cy = Mathf.FloorToInt(p.y / gridCell);
+            if (cells.Add(CellKey(cx, cy))) Version++;
+            if (cells.Add(CellKey(cx + 1, cy))) Version++;
+            if (cells.Add(CellKey(cx - 1, cy))) Version++;
+            if (cells.Add(CellKey(cx, cy + 1))) Version++;
+            if (cells.Add(CellKey(cx, cy - 1))) Version++;
+            return;
+        }
+
+        // 구역 모드(기존)
         HashSet<string> set;
         if (!discovered.TryGetValue(scene, out set)) { set = new HashSet<string>(); discovered[scene] = set; }
-
         for (int i = 0; i < list.Count; i++)
         {
             var z = list[i];
@@ -50,14 +65,28 @@ public class MapDiscovery : MonoBehaviour
         }
     }
 
-    // 현재 씬에서 발견된 구역들의 Bounds. null이면 '전부 표시'(CameraZone 미설정 씬).
+    private static long CellKey(int x, int y) => ((long)x << 32) ^ (uint)y;
+
+    // 현재 씬에서 발견된 영역들의 Bounds(구역 or 그리드 칸). 빈 목록 = 아직 아무것도 발견 안 함.
     public static List<Bounds> DiscoveredAreas()
     {
-        var list = CameraZone.All;
-        if (list.Count == 0) return null;            // 구역 없는 맵: 가리지 않음
-
         var res = new List<Bounds>();
         string scene = SceneManager.GetActiveScene().name;
+        var list = CameraZone.All;
+
+        if (list.Count == 0)   // 그리드 모드: 발견한 칸들의 Bounds
+        {
+            HashSet<long> cells;
+            float cell = Instance != null ? Instance.gridCell : 10f;
+            if (gridFound.TryGetValue(scene, out cells))
+                foreach (long k in cells)
+                {
+                    int cx = (int)(k >> 32), cy = (int)(uint)(k & 0xFFFFFFFF);
+                    res.Add(new Bounds(new Vector3((cx + 0.5f) * cell, (cy + 0.5f) * cell, 0f), new Vector3(cell, cell, 0f)));
+                }
+            return res;
+        }
+
         HashSet<string> set;
         if (!discovered.TryGetValue(scene, out set) || set.Count == 0) return res;   // 아직 아무 구역도 발견 안함 → 빈 목록
         for (int i = 0; i < list.Count; i++)

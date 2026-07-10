@@ -27,9 +27,20 @@ public class LockedDoorUI : MonoBehaviour
 
     public static bool IsOpen => Instance != null && Instance.door != null;
 
+    private static bool helpShown;   // 잠긴 문 카드(세션 1회)
+
     public static void Open(LockedDoor d)
     {
         if (Instance == null || d == null || d.requiredKey == null) return;
+
+        // 처음 만나는 잠긴 문: 도움말 카드 먼저(닫으면 이어서 문 UI)
+        if (!helpShown && HelpPopupUI.Instance != null)
+        {
+            helpShown = true;
+            HelpPopupUI.Instance.Show("locked_wall", "잠긴 문",
+                "이 문은 맞는 *열쇠*가 있어야 열립니다.\n소지품에서 열쇠를 집어 오른쪽 *열쇠 구멍*에 직접 꽂으세요.");
+        }
+
         Instance.door = d;
         Instance.held = null; Instance.heldCount = 0; Instance.heldRot = 0;
         Instance.openedAt = Time.unscaledTime;

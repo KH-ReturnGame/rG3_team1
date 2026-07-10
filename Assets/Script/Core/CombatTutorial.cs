@@ -124,8 +124,7 @@ public class CombatTutorial : MonoBehaviour
         const string cb = "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
             "[Q]를 누르면 넓게 베는 횡베기 스킬을 사용합니다(쿨타임 있음).\n" +
             "적의 공격은 [우클릭] 가드로 막거나 타이밍 맞춰 패링할 수 있습니다.";
-        if (combatHelpManual) HelpPopupUI.Instance.ShowManual(ct, cb);
-        else HelpPopupUI.Instance.ShowTimed(ct, cb, combatHelpSeconds);
+        HelpPopupUI.Instance.Show("attack", ct, cb);   // 모달 카드(GIF: Resources/Help/attack/)
     }
 
     private Enemy NearestLiveEnemy(Vector3 from, float maxDist)
@@ -195,6 +194,13 @@ public class CombatTutorial : MonoBehaviour
         lessonActive = false;
         lessonEnemy = null;
         parryLessonDone = true;
+
+        // 첫 패링 성공 직후: 패링/그로기 정리 카드(적이 그로기인 동안 읽기 좋게)
+        if (HelpPopupUI.Instance != null)
+            HelpPopupUI.Instance.Show("parry", "패링과 그로기",
+                "방금 해낸 것이 *패링*입니다 — 적의 공격 직전, 완벽한 타이밍의 [우클릭] 가드.\n" +
+                "*저스트 패링*에 성공하면 적이 *그로기*(기절)에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 한 칸 회복합니다.\n" +
+                "그로기 상태의 적은 치명타를 받습니다 — 지금이 반격의 순간!");
     }
 
     // 시간초과 / 공격종료 / 씬전환 → 시간만 복구하고 도움말 닫음(공격은 그대로 진행).

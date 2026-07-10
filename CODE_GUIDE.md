@@ -121,7 +121,7 @@ PlayerController에서 자주 만질 것:
 | **ShopUI / CraftingUI / QuestBoardUI / QuestLogUI** | 상점·제작대·의뢰 게시판·퀘스트 로그 |
 | **HandbookUI.cs** | G키 핸드북(풀스크린): 지도/도감/도움말 탭, Q/E 전환. 도감 발견 기록 static `seenItems` |
 | **DialogueUI.cs** | VN 대화창. `DialogueUI.Show(이름, 초상화, 줄들, 완료콜백)`. 연출 태그 `[놀람]` `[흔들림]` `[떨림]`을 대사 맨 앞에. Ctrl 홀드 스킵 |
-| **HelpPopupUI.cs** | 도움말 팝업(전부 시간 지나면 소멸). `[키]`·`*강조*`가 금색으로 자동 하이라이트. 본 도움말은 `Seen`에 기록 |
+| **HelpPopupUI.cs** | ★도움말 카드(야숨식): 화면 딤+**시간 정지**+인벤 크기 카드(위 설명/아래 GIF), [F]로 닫기, 큐 처리. `Show(gifId, 제목, 본문)`. `[키]`·`*강조*` 금색 하이라이트, `Seen` 기록. 각성 패링 큐만 스티키 배너 유지 |
 | **Toast / AcquireFeed / AcquireBanner** | 상단 알림 / 우측 획득 피드 / 중앙 획득 배너 |
 | **MenuUI.cs** | ESC 일시정지 |
 | **GameOverUI.cs** | 튜토 사망 게임오버(다시 시작=인트로부터/타이틀로) |
@@ -191,6 +191,8 @@ StartScene(StartMenu) → 새 게임 클릭 → SaveSystem.NewGame(슬롯, "Tuto
 - **UI 색 변경**: UITheme.cs 상단 팔레트. HUD만은 StatUI.cs 상단 상수.
 - **지역명 표기**: AreaTitle.Resolve의 switch에 씬 이름 추가.
 - **퀘스트 추가**: QuestManager.BuildQuests에 정의 추가.
+- **도움말 카드 추가**: HelpTrigger(구역 진입) 배치 or 코드에서 `HelpPopupUI.Instance.Show("gif_id", 제목, 본문)`.
+- **도움말 GIF 넣기**: GIF를 **프레임 PNG들로 추출**(ezgif.com 'split' 등) → `Assets/Resources/Help/<id>/000.png, 001.png…` 로 저장하면 해당 카드 하단에서 자동 루프 재생(기본 10fps, HelpPopupUI.gifFps). id 목록: attack(공격) parry(패링·그로기) chest(보물상자) arena(배틀 아레나) locked_wall(잠긴 문) fake_wall(비밀 통로) loot(전리품) charge_jump(차지점프) hotkeys(단축키). 파일이 없으면 "시연 영상 준비 중" 표시.
 - **밸런스**: 플레이어(공격력 10·패링 창)=Player 프리팹 인스펙터 / 적(체력 60·공격력)=각 Enemy 프리팹 / 반사탄=EnemyProjectile 프리팹.
 
 ---
