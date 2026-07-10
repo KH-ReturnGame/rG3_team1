@@ -42,6 +42,8 @@ public class AreaTitle : MonoBehaviour
             case "Stage3":        main = "지하 3구역";    sub = "SUBLEVEL III"; return true;
             case "BossScene":     main = "심층부";        sub = "THE DEPTHS";   return true;
             case "MainMap":       main = "지하 탐사 구역"; sub = "THE UNDERGROUND"; return true;
+            case "Metroidvania":  main = "지하 탐사 구역"; sub = "THE UNDERGROUND"; return true;   // 메인 맵(JANG)
+            case "RealStage1":    main = "지하 1구역";    sub = "SUBLEVEL I";   return true;
         }
         main = sub = null; return false;
     }

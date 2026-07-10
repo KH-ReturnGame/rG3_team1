@@ -63,6 +63,7 @@ public class PlayerController : MonoBehaviour
     public float parryWindow = 0.5f;
     public float justParryWindow = 0.18f;   // 가드 시작 후 이 시간 안에 맞으면 '저스트 패링'(그로기+강연출). 이후는 '쳐내기'(무효+약연출)
     public float parryChainWindow = 0.35f;  // 패링 직후 이 시간 안의 연속 근접 공격은 자동으로 쳐냄(다단기 대응)
+    public int justParryHealHalves = 2;     // 저스트 패링 성공 시 회복(반칸 단위, 2=한 칸, 0=끔) — 회복의 메인 루트(각성 회복 폐지)
     private float parryTimer;
     private float parryChainTimer;
     private bool isGuarding;
@@ -821,18 +822,20 @@ public class PlayerController : MonoBehaviour
         isParrying = false;
         guardCooldownTimer = guardCooldown;   // 같은 프레임의 우클릭이 일반 가드로 중복 처리되는 것 방지
         parryChainTimer = parryChainWindow;   // 연속 패링 개시
+        if (justParryHealHalves > 0 && GameManager.Instance != null) GameManager.Instance.HealHalves(justParryHealHalves);   // 저스트 = 반칸 회복
         var ac = attacker as Component;
         Juice.JustParry();                // "팅" — 히트스톱 + 셰이크 + 금빛 플래시
         ParryFx.Spark(SparkPos(ac != null ? (Vector2)ac.transform.position : default(Vector2)), true);
     }
 
-    // 저스트 패링 — 완벽 타이밍: 적 그로기 + 반격 모션 + Q쿨 초기화 + 강한 연출
+    // 저스트 패링 — 완벽 타이밍: 적 그로기 + 반격 모션 + Q쿨 초기화 + 반칸 회복 + 강한 연출
     private void JustParry(bool isMeleeAttacker, IParryable attacker, Vector2 source)
     {
         if (isMeleeAttacker && attacker != null) attacker.ApplyGroggy();
         PlayStateForced(parrySuccessState);     // 반격 모션(인스펙터에서 교체 가능)
         animBusyTimer = ClipLength(parrySuccessState);
         skillCooldownTimer = 0f;                // Q스킬 즉시 초기화
+        if (justParryHealHalves > 0 && GameManager.Instance != null) GameManager.Instance.HealHalves(justParryHealHalves);
         isParrying = false;                     // 이번 윈도우 소진 — 후속타는 체인이 받는다
         guardParried = true;                    // 가드 쿨타임 면제(즉시 재가드 가능)
         guardCooldownTimer = 0f;
@@ -865,6 +868,7 @@ public class PlayerController : MonoBehaviour
         PlayStateForced(parrySuccessState);
         animBusyTimer = ClipLength(parrySuccessState) * (just ? 1f : 0.5f);
         if (just) skillCooldownTimer = 0f;
+        if (just && justParryHealHalves > 0 && GameManager.Instance != null) GameManager.Instance.HealHalves(justParryHealHalves);   // 저스트 반사도 회복
         isParrying = false;
         guardParried = true;
         guardCooldownTimer = 0f;

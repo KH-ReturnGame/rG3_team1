@@ -64,7 +64,9 @@ public class AudioManager : MonoBehaviour
             case "Stage1":
             case "Stage2":
             case "Stage3":
-            case "MainMap":       return "stage";
+            case "MainMap":
+            case "Metroidvania":
+            case "RealStage1":    return "stage";
             case "BossScene":     return "boss";
             default:              return "";
         }

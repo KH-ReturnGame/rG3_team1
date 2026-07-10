@@ -571,7 +571,7 @@ Sprite:
         format: 0
         dimension: 0
       m_DataSize: 80
-      _typelessdata: 000000bf0000003f000000000000003f0000003f00000000000000bf000000bf000000000000003f000000bf000000000000000000000000000000000000000000000000000000000000000000000000
+      _typelessdata: 000000bf0000003f000000000000003f0000003f00000000000000bf000000bf000000000000003f000000bf00000000000000000000803f0000803f0000803f00000000000000000000803f00000000
     m_Bindpose: []
     textureRect:
       serializedVersion: 2
@@ -790,7 +790,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneDoor
   action: 0
-  targetScene: MainMap
+  targetScene: Metroidvania
   prompt: "F: \uC9C0\uC800 \uD0D0\uD5D8"
 --- !u!61 &208597653
 BoxCollider2D:
@@ -1050,6 +1050,7 @@ MonoBehaviour:
   holdAfter: 0.25
   staggerDistance: 3
   sprawlState: GroundSlam
+  sprawlFrame: 0.62
   wakeState: Crouch
   faintHold: 0.7
   fadeTime: 0.8
@@ -2637,7 +2638,9 @@ MonoBehaviour:
   target: {fileID: 420855758}
   smoothTime: 0.18
   offset: {x: 0, y: 1}
+  zoomMul: 0.78
   lookAheadX: 2.2
+  lookAheadFrac: 0.22
   lookAheadSmooth: 0.4
   playerAnchorY: 0.33
   verticalDeadZone: 1.2
@@ -2938,11 +2941,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79307f9abf9ddaf49b7468222aeb798f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatUI
-  origin: {x: 0.02, y: 0.03}
-  heartSize: 34
-  heartPad: 6
-  barWidth: 220
-  barHeight: 16
+  chipDelay: 0.3
+  chipSpeed: 6
 --- !u!114 &2115036187
 MonoBehaviour:
   m_ObjectHideFlags: 0

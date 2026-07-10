@@ -58,7 +58,7 @@ public class IntroCutscene : MonoBehaviour
         pc.cutsceneActive = true;
         pc.ZeroVelocity();
         pc.PlayAnimFrozen(sprawlState, sprawlFrame);   // 쓰러진 자세 — GroundSlam07 한 장으로 고정(애니 재생 X)
-        GameManager.Instance?.SetHalves(1);       // 딸피(체력 반칸) — LowHealthFx가 붉은 비네트로 표시
+        GameManager.Instance?.SetHalves(2);       // 한 칸으로 시작 — 첫 피격(반칸 피해)에 딸피가 되며 예지가 각성하는 흐름
         if (Letterbox.Instance != null) Letterbox.Instance.Show(letterboxTime);
 
         // 암전에서 시작 → 쓰러진 주인공을 비추며 서서히 밝아짐

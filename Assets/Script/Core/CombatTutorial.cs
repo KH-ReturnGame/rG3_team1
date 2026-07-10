@@ -21,10 +21,10 @@ public class CombatTutorial : MonoBehaviour
 
     [Header("튜토리얼 밸런스")]
     public float enemyDamageCap = 0.5f;   // 튜토 적 공격력 상한(하트) — 반칸씩만 깎여 체력 곡선이 완만
-    public int awakeningHealHearts = 1;   // 각성 시 회복량(칸) — '반칸 무적 구간'을 첫 전투로 한정(하한 위장)
+    // (구) 각성 회복은 폐지 — 회복은 '저스트 패링 성공 시 한 칸'(PlayerController.justParryHealHalves)으로 일원화
 
     [Header("패링 레슨")]
-    [Range(0.02f, 0.5f)] public float slowScale = 0.12f;  // 슬로우모션 배율
+    [Range(0.02f, 0.5f)] public float slowScale = 0.05f;  // 슬로우모션 배율 — '시간이 딱 멈추는 느낌'(거의 정지)
     public float reactSeconds = 3.2f;                     // 우클릭 대기(실시간) — 넘기면 그대로 피격
 
     [Header("예지 타이밍")]
@@ -75,7 +75,6 @@ public class CombatTutorial : MonoBehaviour
         player = null;
         combatHelpShown = false;
         parryLessonDone = false;
-        awakeningHealed = false;
         if (inScene) ApplyEnemyAttackGrace();   // 튜토리얼 적들의 첫 공격을 늦춤
     }
 
@@ -196,21 +195,6 @@ public class CombatTutorial : MonoBehaviour
         lessonActive = false;
         lessonEnemy = null;
         parryLessonDone = true;
-        AwakeningHeal();
-    }
-
-    // 각성 회복: 기프트가 깨어나며 상처가 일부 아묾(+N칸).
-    //  반칸(하한) 상태로 도는 전투를 첫 각성 전투 하나로 한정 — 이후 전투에선 체력이 실제로 닳아 하한이 안 들킨다.
-    private bool awakeningHealed;
-    private void AwakeningHeal()
-    {
-        if (awakeningHealed || !inScene) return;
-        awakeningHealed = true;
-        if (GameManager.Instance != null && awakeningHealHearts > 0)
-        {
-            GameManager.Instance.Heal(awakeningHealHearts);
-            Toast.Show("깨어난 기프트가 상처를 아물게 한다", 3f);
-        }
     }
 
     // 시간초과 / 공격종료 / 씬전환 → 시간만 복구하고 도움말 닫음(공격은 그대로 진행).
@@ -222,7 +206,6 @@ public class CombatTutorial : MonoBehaviour
             SlowMoFx.End();
             if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
             parryLessonDone = true;   // 한 번 발동했으면(성공/실패 무관) 소진
-            AwakeningHeal();          // 패링 실패여도 각성 자체는 일어남 — 회복은 동일
         }
         lessonActive = false;
         lessonEnemy = null;

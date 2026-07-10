@@ -126273,11 +126273,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.55
+      value: -13.38
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.29
+      value: -2.98
       objectReference: {fileID: 0}
     - target: {fileID: 2513995668661594230, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_LocalPosition.z
@@ -126955,7 +126955,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1506136379}
-  - component: {fileID: 1506136378}
   m_Layer: 0
   m_Name: ChunkManager
   m_TagString: Untagged
@@ -126963,28 +126962,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1506136378
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1506136377}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ecaee3640a97b22458c46b41bc470c1f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NewMonoBehaviourScript
-  chunks:
-  - {fileID: 8978392074164899315, guid: 5217c76cbbdb81041bc31f796a4b23d0, type: 3}
-  - {fileID: 8978392074164899315, guid: 7b6df7badc26e8a4fb34f103e904c3de, type: 3}
-  - {fileID: 8978392074164899315, guid: 5c3d2b55676c6964f90599cfb15a65e0, type: 3}
-  - {fileID: 8978392074164899315, guid: b089412d7a4a04b4abfe311e4a65e38f, type: 3}
-  - {fileID: 8978392074164899315, guid: 6f28bef5f994b0045b0a25321910a5e8, type: 3}
-  startPoint: {fileID: 0}
-  stageAssets: {fileID: 1446125704}
-  chunkEnd: {fileID: 8978392074164899315, guid: b395864638fc5b440b357a52e68be62c, type: 3}
-  ChunkCount: 2
 --- !u!4 &1506136379
 Transform:
   m_ObjectHideFlags: 0

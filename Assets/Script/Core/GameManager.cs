@@ -188,11 +188,13 @@ public class GameManager : MonoBehaviour
         if (currentHalf == 0) Die();
     }
 
-    public void Heal(int hearts)
+    public void Heal(int hearts) => HealHalves(Mathf.Max(0, hearts) * 2);
+
+    // 반칸 단위 회복(저스트 패링 보상 등). 실제 회복분만 초록 숫자로 표시.
+    public void HealHalves(int halves)
     {
         int before = currentHalf;
-        currentHalf = Mathf.Min(MaxHalf, currentHalf + Mathf.Max(0, hearts) * 2);
-        // 실제로 회복됐으면 플레이어 위에 초록 숫자(칸 단위)
+        currentHalf = Mathf.Min(MaxHalf, currentHalf + Mathf.Max(0, halves));
         if (currentHalf > before && PlayerController.Instance != null)
             DamagePopup.Heal(PlayerController.Instance.transform.position + Vector3.up * 1.1f, (currentHalf - before) * 0.5f);
         OnStatsChanged?.Invoke();
