@@ -11,8 +11,10 @@ public class Projectile : MonoBehaviour
     public bool faceDirection = true;       // 진행 방향으로 회전
 
     [Header("패링 반사")]
-    public float reflectSpeedMult = 1.5f;   // 반사 시 속도 배율(저스트는 x1.25 추가)
-    public float reflectDamageMult = 3f;    // 반사탄이 적에게 주는 피해 배율(저스트는 x1.5 추가 = 4.5배) — 쳐낸 보람이 있게
+    public float reflectSpeedMult = 1.5f;    // 반사 시 속도 배율(저스트는 x1.25 추가)
+    // 반사탄 피해 = '플레이어 공격력(버프 포함)' × 이 배율(저스트는 x1.5 추가).
+    // ※적 공격력(하트 단위) 기준이 아님 — 적 체력 스케일(수십)에 맞는 유효한 딜이 들어가게.
+    public float reflectDamageMult = 1.2f;
 
     private float damage = 1f;
     private float timer;
@@ -65,7 +67,10 @@ public class Projectile : MonoBehaviour
             Enemy en = other.GetComponentInParent<Enemy>();
             if (en != null)
             {
-                en.TakeDamage(damage * reflectDamageMult * (reflectedJust ? 1.5f : 1f));
+                // 플레이어 공격력 기준(스탯·버프 반영) — 평타보다 살짝 아프게, 저스트는 확실한 보상
+                float baseAtk = PlayerController.Instance != null ? PlayerController.Instance.attackDamage : 10f;
+                float atkMult = GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f;
+                en.TakeDamage(baseAtk * atkMult * reflectDamageMult * (reflectedJust ? 1.5f : 1f));
                 Juice.Hit();
                 Destroy(gameObject);
                 return;

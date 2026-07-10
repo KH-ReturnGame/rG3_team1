@@ -9,7 +9,7 @@ public class RangedEnemy : Enemy
     public float projectileSpeed = 9f;
     public float preferredDistance = 4.5f;  // 유지하려는 거리(이보다 가까우면 후퇴) — attackRange보다 작게
     public Transform firePoint;             // 발사 위치(비우면 자기 위치 + 약간 위)
-    [Range(0f, 80f)] public float aimAngleLimit = 12f;   // 수평 기준 조준 각도 제한(도) — 낮을수록 직선탄(예측·패링 쉬움)
+    [Range(0f, 89f)] public float aimAngleLimit = 80f;   // 수평 기준 조준 각도 제한(도). 80=사실상 플레이어 정조준(직선 궤적). 낮추면 수평탄
 
     public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
 

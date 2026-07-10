@@ -222,3 +222,4 @@ MonoBehaviour:
   projectileSpeed: 9
   preferredDistance: 4.5
   firePoint: {fileID: 0}
+  aimAngleLimit: 80
