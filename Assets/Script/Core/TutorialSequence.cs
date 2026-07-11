@@ -87,14 +87,17 @@ public class TutorialSequence : MonoBehaviour
         pc.cutsceneActive = false;
         if (approacher != null) approacher.ArmAttack(1.4f);   // 공격 개시(살짝 여유 — 자세 잡을 시간)
 
-        // ── 아레나 클리어 감시 → 포션 서바이벌 키트 안내 ──
-        if (arena != null)
-        {
-            while (arena != null && !arena.IsCleared) yield return null;
-            yield return new WaitForSeconds(0.9f);
-            if (HelpPopupUI.Instance != null)
-                HelpPopupUI.Instance.Show("loot", "전리품 — 회복 포션",
-                    "상자에서 회복 포션이 나왔습니다!\n[F]로 줍고 → 배낭[B]에서 우클릭 → [1번 슬롯에 등록] → 전투 중 [1]로 바로 마실 수 있습니다.");
-        }
+        // 독백 끝 → [1p 이동 / 2p 공격] 도움말(적이 다가오는 중이라 force — 전투 억제 무시, 시간 정지로 읽을 틈 확보)
+        yield return new WaitForSeconds(0.15f);
+        if (HelpPopupUI.Instance != null)
+            HelpPopupUI.Instance.ShowPages(true,
+                new HelpPopupUI.HelpPage("move", "이동",
+                    "[A] · [D] (또는 방향키)로 좌우로 이동합니다.\n[Space]로 점프 — 공중에서 한 번 더 누르면 *2단 점프*입니다.\n[Shift] 대시 중에는 잠시 무적이 되어 공격을 피할 수 있습니다."),
+                new HelpPopupUI.HelpPage("attack", "공격",
+                    "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
+                    "[Q]를 누르면 넓게 베는 횡베기 스킬을 사용합니다(쿨타임 있음).\n" +
+                    "공중 [좌클릭]은 공중 베기, [S]와 함께 누르면 낙하 공격이 됩니다."));
+
+        // (구) 아레나 클리어 → 포션 안내 카드는 폐지 — 포션을 '주울 때' TutorialFlow.OnItemAcquired가 인벤토리 카드를 띄운다
     }
 }

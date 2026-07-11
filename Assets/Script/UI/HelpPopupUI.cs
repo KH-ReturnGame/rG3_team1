@@ -12,15 +12,26 @@ public class HelpPopupUI : MonoBehaviour
 {
     public static HelpPopupUI Instance;
 
-    // ── 카드(모달) ──
-    private class Card { public string id, title, body, rich; }
+    // ── 카드(모달) ── 한 카드 = 1개 이상의 페이지(◀ n/m ▶로 넘김)
+    public struct HelpPage
+    {
+        public string id, title, body;
+        public HelpPage(string id, string title, string body) { this.id = id; this.title = title; this.body = body; }
+    }
+    private class Card { public HelpPage[] pages; public string[] rich; public bool force; }
     private readonly Queue<Card> queue = new Queue<Card>();
     private Card cur;
+    private int page;                   // 현재 페이지 인덱스
     private float shownAt;
     private float prevTimeScale = 1f;
     private Sprite[] gifFrames;
     public float gifFps = 10f;          // GIF 재생 속도(프레임/초)
     public float confirmDelay = 0.35f;  // 이 시간 전엔 닫기 입력 무시(오입력 방지)
+
+    // 전투 중 억제: 강제(force)가 아닌 카드는 근처 적이 교전 중이면 대기했다가 전투가 끝나면 표시
+    public float combatRadius = 11f;    // 이 반경 안의 어그로 적 = 전투 중
+    private float combatCheckAt;
+    private bool combatBlocked;
 
     // ── 스티키 배너(패링 큐 등 실시간 유도 — 모달 아님) ──
     private string stickyTitle, stickyBody, stickyRich;
@@ -60,12 +71,23 @@ public class HelpPopupUI : MonoBehaviour
 
     // ── 발동 API ──
     // 카드 등록. id = GIF 폴더 이름(Resources/Help/<id>/) — 없거나 null이면 텍스트만.
-    public void Show(string id, string title, string body)
+    public void Show(string id, string title, string body) => ShowPages(false, new HelpPage(id, title, body));
+    // 이미 본 적 있으면(Seen — 세이브 연동) 다시 안 띄우는 1회성 카드
+    public void ShowOnce(string id, string title, string body)
     {
-        foreach (var c in queue) if (c.title == title) return;          // 같은 카드 중복 큐 방지
-        if (cur != null && cur.title == title) return;
-        queue.Enqueue(new Card { id = id, title = title, body = body, rich = Rich(body) });
-        Record(id, title, body);
+        foreach (var e in Seen) if (e.title == title) return;
+        Show(id, title, body);
+    }
+    // 여러 페이지 카드. force=true: 전투 중 억제를 무시하고 즉시(스크립트 연출 모멘트용)
+    public void ShowPages(bool force, params HelpPage[] pages)
+    {
+        if (pages == null || pages.Length == 0) return;
+        string first = pages[0].title;
+        foreach (var c in queue) if (c.pages[0].title == first) return;   // 같은 카드 중복 큐 방지
+        if (cur != null && cur.pages[0].title == first) return;
+        var rich = new string[pages.Length];
+        for (int i = 0; i < pages.Length; i++) { rich[i] = Rich(pages[i].body); Record(pages[i].id, pages[i].title, pages[i].body); }
+        queue.Enqueue(new Card { pages = pages, rich = rich, force = force });
     }
     // (구) 호환 — 이제 전부 모달 카드
     public void ShowTimed(string t, string b, float duration) => Show(null, t, b);
@@ -91,28 +113,67 @@ public class HelpPopupUI : MonoBehaviour
 
     void Update()
     {
-        // 다음 카드 오픈(컷씬 중엔 대기)
-        if (cur == null && queue.Count > 0 && !Letterbox.Covering) OpenNext();
+        // 다음 카드 오픈(컷씬 중엔 대기, 강제가 아니면 전투 중에도 대기)
+        if (cur == null && queue.Count > 0 && !Letterbox.Covering)
+        {
+            var next = queue.Peek();
+            if (next.force || !CombatNearby()) OpenNext();
+        }
 
-        // 닫기 입력
+        // 페이지/닫기 입력
         if (cur != null && Time.unscaledTime - shownAt > confirmDelay)
         {
-            if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)
-                || Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))
-                CloseCard();
+            int n = cur.pages.Length;
+            if (n > 1)
+            {
+                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) SetPage(page - 1);
+                if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) SetPage(page + 1);
+            }
+            // 다중 페이지 카드에선 클릭은 ◀▶ 화살표 전용(OnGUI에서 처리) — 오클릭으로 넘어가는 것 방지
+            bool click = Input.GetMouseButtonDown(0) && n == 1;
+            if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || click)
+            {
+                if (page < n - 1) SetPage(page + 1);   // 마지막 페이지 전이면 다음 장으로
+                else CloseCard();
+            }
+            if (Input.GetKeyDown(KeyCode.Escape)) CloseCard();
         }
+    }
+
+    // 근처(플레이어 기준 combatRadius)에 어그로 상태 적이 있으면 전투 중 — 0.35초 간격으로만 검사
+    private bool CombatNearby()
+    {
+        if (Time.unscaledTime - combatCheckAt < 0.35f) return combatBlocked;
+        combatCheckAt = Time.unscaledTime;
+        combatBlocked = false;
+        var pc = PlayerController.Instance;
+        if (pc == null) return false;
+        foreach (var e in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+            if (e != null && e.IsAggro && Vector2.Distance(e.transform.position, pc.transform.position) <= combatRadius)
+            { combatBlocked = true; break; }
+        return combatBlocked;
+    }
+
+    private void SetPage(int p)
+    {
+        int np = Mathf.Clamp(p, 0, cur.pages.Length - 1);
+        if (np == page) return;
+        page = np;
+        gifFrames = LoadGifFrames(cur.pages[page].id);
+        AudioManager.Sfx("ui_move", 0.7f);
     }
 
     private void OpenNext()
     {
         cur = queue.Dequeue();
+        page = 0;
         shownAt = Time.unscaledTime;
         prevTimeScale = Time.timeScale > 0.01f ? Time.timeScale : 1f;
         Time.timeScale = 0f;                 // ★야숨식 — 세상이 멈춘다
         Inventory.HelpOpen = true;
         AudioManager.Sfx("help_open");
 
-        gifFrames = LoadGifFrames(cur.id);   // 이름순 정렬 — 000.png, 001.png … 권장
+        gifFrames = LoadGifFrames(cur.pages[0].id);   // 이름순 정렬 — 000.png, 001.png … 권장
     }
 
     private void CloseCard()
@@ -144,17 +205,20 @@ public class HelpPopupUI : MonoBehaviour
         Rect card = new Rect(x, y, w, h);
         var prevC = GUI.color; GUI.color = new Color(1f, 1f, 1f, ease);
         UITheme.DrawPanel(card);
-        float headH = UITheme.DrawHeader(card, cur.title, "도움말", 20f, 44f);
+        int pageCount = cur.pages.Length;
+        string title = cur.pages[page].title;
+        string rich = cur.rich[page];
+        float headH = UITheme.DrawHeader(card, title, "도움말", 20f, 44f);
 
         // 본문(위)
         float pad = 26f;
         float bodyW = w - pad * 2f;
         bodySt.fontSize = Mathf.RoundToInt(Mathf.Clamp(sh * 0.017f, 15f, 19f));
-        float bodyH = bodySt.CalcHeight(new GUIContent(cur.rich), bodyW);
+        float bodyH = bodySt.CalcHeight(new GUIContent(rich), bodyW);
         float bodyMaxH = h * 0.42f;
         Rect bodyR = new Rect(x + pad, y + headH + 12f, bodyW, Mathf.Min(bodyH, bodyMaxH));
         bodySt.normal.textColor = UITheme.Text;
-        GUI.Label(bodyR, cur.rich, bodySt);
+        GUI.Label(bodyR, rich, bodySt);
 
         // GIF(아래) — 브래킷 액자
         float gy = y + headH + 12f + Mathf.Min(bodyH, bodyMaxH) + 14f;
@@ -181,11 +245,40 @@ public class HelpPopupUI : MonoBehaviour
             GUI.Label(new Rect(gif.x, gif.center.y - 4f, gif.width, 26f), "시연 영상 준비 중", phSt);
         }
 
-        // 확인 힌트
+        // 하단: 페이저(◀ n/m ▶) + 확인 힌트
         if (Time.unscaledTime - shownAt > confirmDelay)
         {
-            hintSt.normal.textColor = UITheme.A(UITheme.Accent, 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f));
-            GUI.Label(new Rect(x, card.yMax - 38f, w, 26f), "[F] 확인", hintSt);
+            float footY = card.yMax - 38f;
+            if (pageCount > 1)
+            {
+                // ◀ n/m ▶ — 화살표는 클릭 가능(마우스), ←/→·A/D로도 넘김
+                hintSt.normal.textColor = UITheme.Text;
+                GUI.Label(new Rect(x, footY, w, 26f), (page + 1) + " / " + pageCount, hintSt);
+                Rect lArrow = new Rect(x + w * 0.5f - 86f, footY - 4f, 44f, 32f);
+                Rect rArrow = new Rect(x + w * 0.5f + 42f, footY - 4f, 44f, 32f);
+                bool canL = page > 0, canR = page < pageCount - 1;
+                hintSt.normal.textColor = canL ? UITheme.Accent : UITheme.A(UITheme.TextDim, 0.4f);
+                GUI.Label(lArrow, "◀", hintSt);
+                hintSt.normal.textColor = canR ? UITheme.A(UITheme.Accent, 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f)) : UITheme.A(UITheme.TextDim, 0.4f);
+                GUI.Label(rArrow, "▶", hintSt);
+                var ev = Event.current;
+                if (ev.type == EventType.MouseDown && ev.button == 0)
+                {
+                    if (canL && lArrow.Contains(ev.mousePosition)) { SetPage(page - 1); ev.Use(); }
+                    else if (canR && rArrow.Contains(ev.mousePosition)) { SetPage(page + 1); ev.Use(); }
+                }
+                // 마지막 페이지에서만 확인 힌트
+                if (!canR)
+                {
+                    hintSt.normal.textColor = UITheme.A(UITheme.Accent, 0.55f);
+                    GUI.Label(new Rect(x, footY - 24f, w, 22f), "[F] 확인", hintSt);
+                }
+            }
+            else
+            {
+                hintSt.normal.textColor = UITheme.A(UITheme.Accent, 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f));
+                GUI.Label(new Rect(x, footY, w, 26f), "[F] 확인", hintSt);
+            }
         }
         GUI.color = prevC;
     }

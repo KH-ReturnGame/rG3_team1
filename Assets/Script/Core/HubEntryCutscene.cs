@@ -101,6 +101,12 @@ public class HubEntryCutscene : MonoBehaviour
         if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxTime);
         yield return new WaitForSeconds(0.3f);
         pc.cutsceneActive = false;
+
+        // 8) 도움말 다시보기 안내(1회 — 이미 봤으면 안 뜸)
+        yield return new WaitForSeconds(0.6f);
+        if (HelpPopupUI.Instance != null)
+            HelpPopupUI.Instance.ShowOnce("handbook", "도움말 다시보기",
+                "지금까지 본 도움말은 언제든 다시 볼 수 있습니다.\n[G] 키로 *모험 핸드북*을 열고 [도움말] 탭을 확인해 보세요.\n핸드북에는 지도와 몬스터 도감도 함께 들어 있습니다.");
     }
 
     private IEnumerator WalkIn(PlayerController pc, float distance, float speed)

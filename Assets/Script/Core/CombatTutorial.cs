@@ -35,7 +35,6 @@ public class CombatTutorial : MonoBehaviour
     private bool inScene;
     private PlayerController player;
 
-    private bool combatHelpShown;
     private bool parryLessonDone;
 
     // 패링 레슨 진행 상태
@@ -73,8 +72,8 @@ public class CombatTutorial : MonoBehaviour
         EndLesson();   // 진행 중 레슨이 있으면 시간/도움말 정리(씬 전환 안전)
         inScene = s.name == TutorialSceneName;
         player = null;
-        combatHelpShown = false;
         parryLessonDone = false;
+        guardParryCardShown = false;
         if (inScene) ApplyEnemyAttackGrace();   // 튜토리얼 적들의 첫 공격을 늦춤
     }
 
@@ -105,39 +104,26 @@ public class CombatTutorial : MonoBehaviour
         {
             if (Input.GetMouseButtonDown(1)) { ResolveParrySuccess(); return; }
             bool timedOut = Time.unscaledTime - lessonStartReal > reactSeconds;
-            if (lessonEnemy == null || !lessonEnemy.IsAttacking || timedOut) EndLesson();
+            if (lessonEnemy == null || !lessonEnemy.IsAttacking || timedOut) EndLesson(teachCard: true);
             return;
         }
 
-        // 몬스터 발견 → 공격 도움말 1회
-        if (!combatHelpShown) TryShowCombatHelp();
+        // (구) 몬스터 발견 → 공격 도움말은 폐지 — 독백 끝 [이동/공격] 카드(TutorialSequence)가 대체
     }
 
-    private void TryShowCombatHelp()
+    // 딸피(0.5칸) 상태에서 공격을 받은 순간(각성 레슨 종결 시점) → [1p 가드 / 2p 패링] 카드(1회)
+    private bool guardParryCardShown;
+    private void ShowGuardParryCard()
     {
-        var p = Player();
-        if (p == null || HelpPopupUI.Instance == null) return;
-        if (NearestLiveEnemy(p.transform.position, sightRange) == null) return;
-
-        combatHelpShown = true;
-        const string ct = "전투 — 공격";
-        const string cb = "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
-            "[Q]를 누르면 넓게 베는 횡베기 스킬을 사용합니다(쿨타임 있음).\n" +
-            "적의 공격은 [우클릭] 가드로 막거나 타이밍 맞춰 패링할 수 있습니다.";
-        HelpPopupUI.Instance.Show("attack", ct, cb);   // 모달 카드(GIF: Resources/Help/attack/)
-    }
-
-    private Enemy NearestLiveEnemy(Vector3 from, float maxDist)
-    {
-        Enemy best = null;
-        float bd = maxDist;
-        foreach (var e in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
-        {
-            if (e == null) continue;
-            float d = Vector2.Distance(from, e.transform.position);
-            if (d <= bd) { bd = d; best = e; }
-        }
-        return best;
+        if (guardParryCardShown || HelpPopupUI.Instance == null) return;
+        guardParryCardShown = true;
+        HelpPopupUI.Instance.ShowPages(true,
+            new HelpPopupUI.HelpPage("guard", "가드",
+                "[우클릭]을 누르고 있으면 가드 자세를 취합니다.\n가드 중에는 받는 피해가 줄어들지만, 움직임이 느려집니다.\n위험할 때는 우선 가드부터 — 살아남는 것이 먼저입니다."),
+            new HelpPopupUI.HelpPage("parry", "패링",
+                "적의 공격이 닿기 '직전' 완벽한 타이밍의 [우클릭] 가드는 *패링*이 됩니다.\n" +
+                "*저스트 패링*에 성공하면 적이 *그로기*(기절)에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 반 칸 회복합니다.\n" +
+                "그로기 상태의 적은 치명타를 받습니다 — 반격의 순간을 노리세요!"));
     }
 
     // 적이 예비동작에 진입 → '첫 각성 레슨' 판정(★튜토리얼 씬 한정, 스토리 연출이라 난이도 무관).
@@ -195,16 +181,12 @@ public class CombatTutorial : MonoBehaviour
         lessonEnemy = null;
         parryLessonDone = true;
 
-        // 첫 패링 성공 직후: 패링/그로기 정리 카드(적이 그로기인 동안 읽기 좋게)
-        if (HelpPopupUI.Instance != null)
-            HelpPopupUI.Instance.Show("parry", "패링과 그로기",
-                "방금 해낸 것이 *패링*입니다 — 적의 공격 직전, 완벽한 타이밍의 [우클릭] 가드.\n" +
-                "*저스트 패링*에 성공하면 적이 *그로기*(기절)에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 한 칸 회복합니다.\n" +
-                "그로기 상태의 적은 치명타를 받습니다 — 지금이 반격의 순간!");
+        // 첫 패링 성공 직후: [가드/패링] 정리 카드(적이 그로기인 동안 읽기 좋게)
+        ShowGuardParryCard();
     }
 
     // 시간초과 / 공격종료 / 씬전환 → 시간만 복구하고 도움말 닫음(공격은 그대로 진행).
-    private void EndLesson()
+    private void EndLesson(bool teachCard = false)
     {
         if (pendingPrecog != null) { StopCoroutine(pendingPrecog); pendingPrecog = null; }   // 대기 중 예지 취소(씬 전환 안전)
         if (lessonActive)
@@ -212,6 +194,7 @@ public class CombatTutorial : MonoBehaviour
             SlowMoFx.End();
             if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
             parryLessonDone = true;   // 한 번 발동했으면(성공/실패 무관) 소진
+            if (teachCard) ShowGuardParryCard();   // 패링 못 해서 맞았어도 가드/패링은 가르친다
         }
         lessonActive = false;
         lessonEnemy = null;

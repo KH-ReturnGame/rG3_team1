@@ -20,7 +20,9 @@ public class FlyingEnemy : Enemy
 
     [Header("돌진 사이클 — 위에서 맴돌다 급강하, 짧게 휘청이고 다시 떠오름")]
     public float hoverHeight = 2.5f;    // 추격 시 플레이어 위로 유지하는 고도
-    public float diveRecover = 0.35f;   // 돌진 후 경직(짧게) — attackRecover 대신 사용, 끝나면 떠올라 재추격
+    public float diveRecover = 0.35f;   // 기절 후 떠오르는 시간 — 끝나면 재추격
+    public float overshoot = 2.5f;      // 돌진이 플레이어를 '관통'해 지나가는 거리
+    public float stunTime = 0.8f;       // 관통 후 잠깐 기절(힘 빠져 처지는) 시간
 
     [Header("활동 범위(맵 밖 이탈 방지)")]
     public float leashRange = 14f;      // 스폰 기준 최대 거리 — 경계에서 멈추고 돌진도 중단
@@ -31,6 +33,8 @@ public class FlyingEnemy : Enemy
     private int wallMask;               // 벽/지형(Ground) — 뚫고 못 지나가게 속도 차단
 
     private Vector2 chargeDir;
+    private Vector2 chargeStart;    // 돌진 시작점 — 관통 거리 측정용
+    private float chargeGoal;       // 이번 돌진의 목표 이동 거리(플레이어까지 + overshoot)
     private float bobPhase;
 
     protected override void Start()
@@ -113,37 +117,50 @@ public class FlyingEnemy : Enemy
             chargeDir = player != null ? ((Vector2)(player.position - transform.position)).normalized : new Vector2(dir, 0f);
             FaceMoveDir(chargeDir.x);
             struck = false;
+            chargeStart = transform.position;
+            chargeGoal = (player != null ? Vector2.Distance(player.position, transform.position) : 2f) + overshoot;   // 플레이어를 지나쳐 뒤까지
             state = State.Strike;
-            stateTimer = chargeTime;
+            stateTimer = chargeTime * 2f;   // 시간은 안전망 — 종료 기준은 이동 거리(chargeGoal)
         }
     }
 
-    protected override void TickStrike()   // 돌진(직진) + 접촉 피해
+    protected override void TickStrike()   // 돌진(직진): 플레이어를 '관통'해 뒤까지 지나간 후 기절
     {
         // 돌진 경로에 벽 → 벽 앞에서 돌진 종료(뚫고 나가지 않음)
         if (Physics2D.Raycast(transform.position, chargeDir, chargeSpeed * Time.deltaTime + 0.5f, wallMask).collider != null)
         {
-            SetVelocity(Vector2.zero);
-            state = State.Recover; stateTimer = diveRecover;
+            EndCharge();
             return;
         }
         SetVelocity(chargeDir * chargeSpeed);
         if (!struck && player != null && Dist2D() <= contactRange)
         {
-            struck = true;
+            struck = true;   // 맞혀도 멈추지 않고 그대로 관통
             PlayerController pc = player.GetComponent<PlayerController>();
             if (pc != null) pc.TakeDamage(attackDamage, true, this, transform.position);   // 돌진 = 근접(패링 가능)
         }
         if (state != State.Strike) return;   // 패링당해 그로기로 바뀌면 중단
+
         stateTimer -= Time.deltaTime;
-        if (stateTimer <= 0) { state = State.Recover; stateTimer = diveRecover; }
+        if (Vector2.Distance(transform.position, chargeStart) >= chargeGoal || stateTimer <= 0) EndCharge();
     }
 
-    protected override void TickRecover()  // 돌진 후: 짧게 휘청이며 위로 떠오름 → 바로 재추격(고도 복귀)
+    private void EndCharge()   // 돌진 종료 → 힘 빠져 잠깐 기절 → 떠올라 재추격
+    {
+        SetVelocity(Vector2.zero);
+        state = State.Recover;
+        stateTimer = stunTime + diveRecover;
+    }
+
+    protected override void TickRecover()  // 앞부분(stunTime): 기절해 처짐 → 뒷부분(diveRecover): 떠올라 재추격
     {
         Vector2 v = rb != null ? rb.linearVelocity : Vector2.zero;
-        Vector2 rise = Vector2.up * (flySpeed * 0.8f);   // 땅에 머물지 않고 곧장 날아오름
-        SetVelocity(BlockWalls(Vector2.Lerp(v, rise, 8f * Time.deltaTime)));
+        Vector2 target;
+        if (stateTimer > diveRecover)
+            target = Vector2.down * 1.2f + Vector2.right * Mathf.Sin(Time.time * 14f) * 0.5f;   // 기절: 비틀거리며 살짝 가라앉음
+        else
+            target = Vector2.up * (flySpeed * 0.8f);                                            // 정신 차리고 날아오름
+        SetVelocity(BlockWalls(Vector2.Lerp(v, target, 8f * Time.deltaTime)));
         stateTimer -= Time.deltaTime;
         if (stateTimer <= 0) { attackCdTimer = attackCooldown; state = State.Chase; }
     }

@@ -20,6 +20,25 @@ public class RangedEnemy : Enemy
 
     public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
 
+    protected override void Start()
+    {
+        base.Start();
+        BuildLaser();
+    }
+
+    private void BuildLaser()
+    {
+        var go = new GameObject("AimLaser");
+        go.transform.SetParent(transform, false);
+        laser = go.AddComponent<LineRenderer>();
+        laser.material = new Material(Shader.Find("Sprites/Default"));
+        laser.startWidth = 0.05f; laser.endWidth = 0.02f;
+        laser.positionCount = 2;
+        laser.sortingOrder = 15;
+        laser.useWorldSpace = true;
+        laser.enabled = false;
+    }
+
     // attackRange = '사격 사거리'로 사용(인스펙터에서 크게: 6~7 권장)
     protected override void TickChase()
     {
@@ -35,17 +54,66 @@ public class RangedEnemy : Enemy
         if (d <= attackRange && attackCdTimer <= 0) BeginAttack();    // 사거리 안 + 쿨다운 → 발사 시퀀스(예비동작→발사)
     }
 
-    protected override void DoStrikeHit()   // Strike 시점에 투사체 발사
-    {
-        if (projectilePrefab == null || player == null) return;
-        Vector3 origin = firePoint != null ? firePoint.position : transform.position + Vector3.up * 0.2f;
-        Vector2 toPlayer = (Vector2)(player.position - origin);
+    private Vector3 FireOrigin() => firePoint != null ? firePoint.position : transform.position + Vector3.up * 0.2f;
 
-        // 조준 각도를 수평 기준 ±aimAngleLimit로 클램프 — 대각선 저격 대신 '직선탄'에 가깝게
+    // 조준 각도를 수평 기준 ±aimAngleLimit로 클램프 — 대각선 저격 대신 '직선탄'에 가깝게
+    private Vector2 ClampAim(Vector2 toPlayer)
+    {
         float ang = Mathf.Atan2(toPlayer.y, Mathf.Abs(toPlayer.x)) * Mathf.Rad2Deg;   // 수평 대비 상하각
         ang = Mathf.Clamp(ang, -aimAngleLimit, aimAngleLimit);
         float sign = toPlayer.x >= 0f ? 1f : -1f;
-        Vector2 dir = new Vector2(sign * Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad));
+        return new Vector2(sign * Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad));
+    }
+
+    protected override void BeginAttack()
+    {
+        base.BeginAttack();
+        aimLocked = false;   // 새 사격 시퀀스 — 조준 추적부터 다시
+    }
+
+    // 예비동작: 레이저가 플레이어를 따라가다 발사 직전(aimLockTime) 방향 고정 → 피할 기회
+    protected override void TickWindup()
+    {
+        SetMove(0);
+        stateTimer -= Time.deltaTime;
+
+        Vector3 origin = FireOrigin();
+        if (!aimLocked)
+        {
+            if (player != null) lockedDir = ClampAim((Vector2)(player.position - origin));
+            if (stateTimer <= aimLockTime) aimLocked = true;   // 이후로는 방향 고정
+        }
+        UpdateLaser(origin);
+
+        if (stateTimer <= 0) { state = State.Strike; stateTimer = attackActive; }
+    }
+
+    private void UpdateLaser(Vector3 origin)
+    {
+        if (laser == null) return;
+        laser.enabled = true;
+        // 벽에 막히면 거기까지만
+        float len = laserLength;
+        var hit = Physics2D.Raycast(origin, lockedDir, laserLength, LayerMask.GetMask("Ground"));
+        if (hit.collider != null) len = hit.distance;
+        laser.SetPosition(0, origin);
+        laser.SetPosition(1, origin + (Vector3)(lockedDir * len));
+        // 추적 중 = 흐린 빨강, 고정 = 진한 빨강(발사 임박 신호)
+        Color c = aimLocked ? new Color(1f, 0.15f, 0.1f, 0.95f) : new Color(1f, 0.3f, 0.2f, 0.35f);
+        laser.startColor = c; laser.endColor = new Color(c.r, c.g, c.b, c.a * 0.4f);
+    }
+
+    void LateUpdate()
+    {
+        if (laser != null && laser.enabled && state != State.Windup) laser.enabled = false;   // 예비동작 밖에선 항상 끔
+    }
+
+    protected override void DoStrikeHit()   // Strike 시점: 고정된 레이저 방향 그대로 발사
+    {
+        if (projectilePrefab == null) return;
+        Vector3 origin = FireOrigin();
+        Vector2 dir = aimLocked ? lockedDir
+            : (player != null ? ClampAim((Vector2)(player.position - origin)) : new Vector2(this.dir, 0f));   // 안전망
 
         GameObject go = Instantiate(projectilePrefab, origin, Quaternion.identity);
         Projectile proj = go.GetComponent<Projectile>();

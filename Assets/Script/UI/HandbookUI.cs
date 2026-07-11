@@ -17,6 +17,9 @@ public class HandbookUI : MonoBehaviour
     private int tab;          // 0 지도 / 1 도감 / 2 도움말
     private int sel;          // 목록 선택 인덱스
     private Vector2 scroll;
+    private float mapZoom = 1f;      // 지도 확대(1~5배, 휠)
+    private Vector2 mapPan;          // 지도 이동(드래그)
+    private bool mapDragging;
     private GUIStyle areaTitleSt, areaSubSt, tabSt, rowSt, rowNumSt, detailNameSt, detailSubSt, bodySt, dimSt, hintSt, chipSt;
     private static Texture2D _tex;
 
@@ -168,12 +171,42 @@ public class HandbookUI : MonoBehaviour
             return;
         }
 
-        // 월드→지도 변환(MapScanner가 렌더한 월드 영역 기준, 비율 유지)
+        // ── 확대(휠) · 이동(드래그) 입력 ──
+        var mev = Event.current;
+        if (inner.Contains(mev.mousePosition))
+        {
+            if (mev.type == EventType.ScrollWheel)
+            {
+                float old = mapZoom;
+                mapZoom = Mathf.Clamp(mapZoom * (mev.delta.y < 0f ? 1.15f : 1f / 1.15f), 1f, 5f);
+                // 마우스 위치 중심 줌 — 커서 아래 지점이 그대로 남게 팬 보정
+                Vector2 fromC = mev.mousePosition - inner.center;
+                mapPan = (mapPan + fromC) * (mapZoom / old) - fromC;
+                mev.Use();
+            }
+            else if (mev.type == EventType.MouseDown && mev.button == 0) { mapDragging = true; mev.Use(); }
+        }
+        if (mapDragging)
+        {
+            if (mev.type == EventType.MouseDrag) { mapPan -= mev.delta; mev.Use(); }
+            else if (mev.rawType == EventType.MouseUp) mapDragging = false;
+        }
+        if (Input.GetKeyDown(KeyCode.R)) { mapZoom = 1f; mapPan = Vector2.zero; }   // 초기화
+
+        // 월드→지도 변환(MapScanner가 렌더한 월드 영역 기준, 비율 유지 × 줌)
         Rect wr = MapScanner.WorldRect;
-        float scl = Mathf.Min(inner.width / wr.width, inner.height / wr.height);
+        float scl = Mathf.Min(inner.width / wr.width, inner.height / wr.height) * mapZoom;
         float mw = wr.width * scl, mh = wr.height * scl;
-        Rect mr = new Rect(inner.x + (inner.width - mw) * 0.5f, inner.y + (inner.height - mh) * 0.5f, mw, mh);
-        // 월드 좌표 → 지도 스크린 좌표(GUI는 y가 아래로 증가 — 뒤집기)
+        // 팬 한계: 지도가 화면 밖으로 완전히 사라지지 않게
+        float panLimX = Mathf.Max(0f, (mw - inner.width) * 0.5f) + 40f;
+        float panLimY = Mathf.Max(0f, (mh - inner.height) * 0.5f) + 40f;
+        mapPan.x = Mathf.Clamp(mapPan.x, -panLimX, panLimX);
+        mapPan.y = Mathf.Clamp(mapPan.y, -panLimY, panLimY);
+
+        // 지도 밖으로 넘치는 부분은 잘라냄(줌 상태) — 이후 좌표는 inner 기준 로컬
+        GUI.BeginGroup(inner);
+        Rect mr = new Rect((inner.width - mw) * 0.5f - mapPan.x, (inner.height - mh) * 0.5f - mapPan.y, mw, mh);
+        // 월드 좌표 → 지도 로컬 좌표(GUI는 y가 아래로 증가 — 뒤집기)
         System.Func<Vector2, Vector2> W2M = (w) => new Vector2(
             mr.x + (w.x - wr.x) / wr.width * mr.width,
             mr.y + (1f - (w.y - wr.y) / wr.height) * mr.height);
@@ -219,6 +252,13 @@ public class HandbookUI : MonoBehaviour
             UITheme.Diamond(me, pulse + 3f, UITheme.A(UITheme.Good, 0.35f));
             UITheme.Diamond(me, pulse, UITheme.Good);
         }
+        GUI.EndGroup();
+
+        // 조작 힌트(지도 우하단) + 현재 배율
+        hintSt.normal.textColor = UITheme.A(UITheme.TextDim, 0.85f);
+        string zoomTag = mapZoom > 1.01f ? ("  ×" + mapZoom.ToString("0.0")) : "";
+        GUI.Label(new Rect(inner.x, inner.yMax + 2f, inner.width - 4f, 20f),
+            "휠  확대 · 축소      드래그  이동      [R]  초기화" + zoomTag, hintSt);
     }
 
     // 범례 한 줄(◆ + 라벨)

@@ -766,7 +766,18 @@ public class PlayerController : MonoBehaviour
             currentJumps = maxJumps;
             currentDashes = maxDashes;
         }
+
+        // 메트로배니아에서 처음 원웨이 플랫폼에 '올라선' 순간 → 플랫폼 도움말(1회, 세이브 연동)
+        if (isGrounded && !platformHelpShown && g.usedByEffector && g.GetComponent<PlatformEffector2D>() != null
+            && HelpPopupUI.Instance != null
+            && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Metroidvania")
+        {
+            platformHelpShown = true;
+            HelpPopupUI.Instance.ShowOnce("platform", "통과형 발판",
+                "밑에서 점프하면 그대로 뚫고 올라설 수 있는 발판입니다.\n발판 위에서 [S]+[Space]를 누르면 아래로 내려갑니다.\n높은 곳은 *2단 점프*나 [S]+[Space] 점프 차징으로 올라가 보세요.");
+        }
     }
+    private static bool platformHelpShown;   // 세션 1회 가드(실제 중복 방지는 ShowOnce의 Seen)
 
     // 아래키+점프: 발밑이 원웨이 플랫폼이면 잠깐 충돌을 꺼서 아래로 내려간다. 통과 처리했으면 true.
     private bool TryDropThroughPlatform()
