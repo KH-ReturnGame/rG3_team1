@@ -21,7 +21,7 @@ public class BossHealthBar : MonoBehaviour
     void Update()
     {
         var boss = BossEnemy.Active;
-        if (boss == null) { display = -1f; return; }
+        if (boss == null || !boss.Encountered) { display = -1f; return; }   // 보스방(전투 시작) 전엔 숨김
         float cur = boss.HealthFrac;
         if (display < 0f) { display = cur; chip = cur; return; }
 
@@ -35,7 +35,7 @@ public class BossHealthBar : MonoBehaviour
     void OnGUI()
     {
         var boss = BossEnemy.Active;
-        if (boss == null || display < 0f) return;
+        if (boss == null || !boss.Encountered || display < 0f) return;   // 전투 시작 후에만
         if (Letterbox.Covering) return;
         UIScale.Apply();
         EnsureStyles();

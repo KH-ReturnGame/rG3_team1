@@ -11,7 +11,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/TextMesh Pro/Resources/Fonts &amp; Materials/LiberationSans SDF - Fallback.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Cainos/Pixel Art Platformer - Dungeon/Tileset Pallete/TP Dungeon Ground.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Cainos/Pixel Art Platformer - Dungeon/Tileset Pallete/TP Dungeon Ground.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/BossScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/BossScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Metroidvania.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Metroidvania.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Combat/BossEnemy.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Combat/BossEnemy.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/MainQuestFlow.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/MainQuestFlow.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/QuestTracker.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/QuestTracker.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -200,6 +209,7 @@
       <workItem from="1781540612015" duration="3629000" />
       <workItem from="1782989731745" duration="3339000" />
       <workItem from="1783293515955" duration="620000" />
+      <workItem from="1783777137824" duration="1649000" />
     </task>
     <servers />
   </component>

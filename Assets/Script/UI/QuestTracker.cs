@@ -33,6 +33,10 @@ public class QuestTracker : MonoBehaviour
         if (q == null) return false;
         Vector2 p = PlayerController.Instance != null ? (Vector2)PlayerController.Instance.transform.position : Vector2.zero;
 
+        // 보스 대상(메인 체인 후반): 현재 씬의 보스 위치
+        if (q.pathToBoss && BossEnemy.Active != null)
+        { pos = BossEnemy.Active.transform.position; return true; }
+
         // 대상 씬이 지정된 문(메인 체인): targetScene 정확 매치만(씬에 그 문이 없으면 화살표 미표시)
         if (!string.IsNullOrEmpty(q.pathDoorScene))
         {

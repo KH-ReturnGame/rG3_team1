@@ -26,6 +26,7 @@ public class Quest
     public string objectiveOverride;     // 있으면 목표 문구를 이걸로 표시(채집/처치 진행도 대신)
     public bool pathToDescend;           // 길찾기 대상 = 하강 포탈(우물). 그 외엔 채집/처치 대상으로 자동
     public string pathDoorScene;         // 길찾기 대상 = 이 씬으로 가는 SceneDoor(정확 매치, 씬에 없으면 화살표 미표시)
+    public bool pathToBoss;              // 길찾기 대상 = 현재 씬의 보스(BossEnemy) 위치
     [System.NonSerialized] public int progress;
 
     public string CategoryLabel()
@@ -80,13 +81,13 @@ public class QuestManager : MonoBehaviour
             goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
 
         available.Add(new Quest { id = "mq_descend", category = QuestCategory.Main, giver = "여울", title = "심층을 향해", prereqId = "guide_village",
-            description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부로 가는 길을 찾아라.",
-            autoAccept = true, objectiveOverride = "지하 탐사 구역을 탐험해 심층부로 가는 길을 찾아라", pathDoorScene = "BossScene",
+            description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부의 지배자를 찾아라.",
+            autoAccept = true, objectiveOverride = "지하 탐사 구역을 탐험해 심층부의 지배자를 찾아라", pathToBoss = true,
             goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, rewardGold = 300, xpReward = 120 });
 
         available.Add(new Quest { id = "mq_boss", category = QuestCategory.Main, giver = "???", title = "첫 번째 위협", prereqId = "mq_descend",
             description = "심층부의 공기가 무겁다. 이곳의 지배자가 앞을 가로막는다.\n살아남고 싶다면 — 쓰러뜨려라.",
-            autoAccept = true, goal = QuestGoal.Kill, targetId = "boss_first", targetName = "심층부의 지배자", targetCount = 1,
+            autoAccept = true, goal = QuestGoal.Kill, targetId = "boss_first", targetName = "심층부의 지배자", targetCount = 1, pathToBoss = true,
             rewardGold = 1000, xpReward = 300 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",

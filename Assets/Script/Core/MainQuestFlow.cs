@@ -9,11 +9,9 @@ using UnityEngine.SceneManagement;
 //    TutorialScene 도착 → [수주] mq_awaken   "낯선 어둠 속에서"
 //    StartingArea  도착 → [완료] mq_awaken   (여울의 guide_village는 VillageGuide가 기존대로 수주)
 //    Metroidvania  도착 → [완료] guide_village → [수주] mq_descend "심층을 향해"
-//    BossScene     도착 → [완료] mq_descend  → [수주] mq_boss "첫 번째 위협"
+//    보스 조우(메트로배니아 보스 구역 — BossEnemy가 첫 어그로 시 직접 호출) → [완료] mq_descend → [수주] mq_boss
 //    첫 보스 처치(ReportKill "boss_first")   → mq_boss 즉시 완료(autoAccept라 게시판 수령 없음)
-//
-//  ★보스 연동: 보스가 Enemy 상속이면 인스펙터 questKillId = "boss_first" 만 넣으면 끝.
-//    아니면 보스 사망 코드에서 QuestManager.Instance.ReportKill("boss_first") 한 줄.
+//  ※BossScene은 사용하지 않음 — 보스전은 Metroidvania 안의 한 구역.
 public class MainQuestFlow : MonoBehaviour
 {
     public static MainQuestFlow Instance;
@@ -52,10 +50,7 @@ public class MainQuestFlow : MonoBehaviour
                 qm.CompleteForce("guide_village");    // 우물로 하강 완료
                 qm.AcceptById("mq_descend");
                 break;
-            case "BossScene":
-                qm.CompleteForce("mq_descend");       // 심층부 진입
-                qm.AcceptById("mq_boss");
-                break;
+            // 보스 단계(mq_descend 완료 → mq_boss 수주)는 BossEnemy가 첫 어그로 때 직접 진행
         }
     }
 }
