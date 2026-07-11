@@ -318,8 +318,8 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
         if (currentHealth <= 0) Die();
     }
 
-    // ── IParryable ── (패링당함)
-    public void ApplyGroggy()
+    // ── IParryable ── (패링당함). 보스는 오버라이드해 '누적 후 그로기'로 바꾼다.
+    public virtual void ApplyGroggy()
     {
         if (state == State.Dead) return;
         state = State.Groggy;

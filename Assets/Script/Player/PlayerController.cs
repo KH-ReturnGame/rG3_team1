@@ -886,11 +886,12 @@ public class PlayerController : MonoBehaviour
         return me + new Vector2(Mathf.Sign(source.x - transform.position.x) * 0.55f, 0f);
     }
 
-    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default, bool nonLethal = false)
+    // unblockable=true(보스 붉은 강공격): 패링·쳐내기·가드 경감 전부 무시 — 대시 무적으로만 회피 가능
+    public void TakeDamage(float damage, bool isMeleeAttacker, IParryable attacker = null, Vector2 source = default, bool nonLethal = false, bool unblockable = false)
     {
         if (isDashing || hitInvincibleTimer > 0) return;   // 대시 무적 / 피격 후 무적
 
-        if (isParrying)
+        if (!unblockable && isParrying)
         {
             // 판정 세분화: 윈도우 앞부분 = 저스트 패링(그로기+강연출) / 뒷부분 = 쳐내기(무효+약연출)
             if (parryWindow - parryTimer <= justParryWindow) JustParry(isMeleeAttacker, attacker, source);
@@ -899,7 +900,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // 연속 패링: 패링 직후 짧은 시간 안의 근접 추가타는 자동으로 쳐냄(다단 공격 대응)
-        if (parryChainTimer > 0f && isMeleeAttacker)
+        if (!unblockable && parryChainTimer > 0f && isMeleeAttacker)
         {
             Deflect(source);
             return;
@@ -907,7 +908,7 @@ public class PlayerController : MonoBehaviour
 
         // damage는 "하트" 단위. 가드(패링 X) 중이면 50% 경감하되 반칸 단위로 반영.
         // 가드는 '경감'만 — 피해가 있으면 최소 반칸은 들어간다(완전 무효화는 패링만). 0데미지 버그 방지.
-        float eff = isGuarding ? damage * 0.5f : damage;
+        float eff = (isGuarding && !unblockable) ? damage * 0.5f : damage;
         int halves = Mathf.Max(1, Mathf.RoundToInt(eff * 2f));   // 반칸 단위(예: 가드로 1칸→0.5칸→반칸)
 
         if (GameManager.Instance != null)
