@@ -120,7 +120,7 @@ public class HandbookUI : MonoBehaviour
         GUI.Label(new Rect(0, sh - fm - 4f, sw - fm - 6f, 24f), "[Q] · [E]  탭 전환      [M]  지도      [G] · [ESC]  닫기", hintSt);
     }
 
-    // ── 지도 탭: 좌상단 구역명(밑줄) + 우상단 탐사율 + 지도 크게 ──
+    // ── 지도 탭(메트로배니아식 지도 UI): 방 블록(발견 영역) + 지형 실루엣 + 아이콘(나/보물/포탈/목표) + 범례 ──
     private void DrawMapTab(Rect area)
     {
         string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
@@ -146,26 +146,88 @@ public class HandbookUI : MonoBehaviour
             areaSubSt.alignment = prevAlign;
         }
 
+        // ── 범례(왼쪽 열) ──
+        float legendW = 150f;
+        float ly = area.y + 84f;
+        areaSubSt.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(area.x + 8f, ly - 24f, legendW, 20f), "범  례", areaSubSt);
+        UITheme.Fill(new Rect(area.x + 8f, ly - 4f, legendW - 20f, 1f), UITheme.A(UITheme.Border, 0.5f));
+        ly += 4f;
+        LegendRow(area.x + 8f, ref ly, UITheme.Good, "나 (현위치)");
+        LegendRow(area.x + 8f, ref ly, UITheme.Gold, "보물 상자");
+        LegendRow(area.x + 8f, ref ly, UITheme.Accent, "포탈");
+        LegendRow(area.x + 8f, ref ly, UITheme.Danger, "퀘스트 목표");
+
+        // ── 지도 영역 ──
+        Rect inner = new Rect(area.x + legendW + 10f, area.y + 74f, area.width - legendW - 10f, area.height - 96f);
         Texture2D map = MapScanner.GetMap();
-        Rect inner = new Rect(area.x, area.y + 74f, area.width, area.height - 96f);
-        if (map == null)
+        var areas = MapDiscovery.DiscoveredAreas();
+        if (map == null || areas == null || areas.Count == 0)
         {
-            var areas = MapDiscovery.DiscoveredAreas();
-            GUI.Label(inner, (areas != null && areas.Count == 0)
-                ? "아직 탐험한 구역이 없습니다.\n맵을 돌아다니면 지나온 구역이 지도에 채워집니다."
-                : "이 구역에서는 지도를 만들 수 없습니다.", dimSt);
+            GUI.Label(inner, "아직 탐험한 구역이 없습니다.\n맵을 돌아다니면 지나온 구역이 지도에 채워집니다.", dimSt);
             return;
         }
-        float ar = (float)map.width / Mathf.Max(1, map.height);
-        float w = inner.width, h = w / ar;
-        if (h > inner.height) { h = inner.height; w = h * ar; }
-        Rect mr = new Rect(inner.x + (inner.width - w) * 0.5f, inner.y + (inner.height - h) * 0.5f, w, h);
-        GUI.DrawTexture(mr, map, ScaleMode.ScaleToFit);
 
-        dimSt.alignment = TextAnchor.MiddleLeft;
-        GUI.Label(new Rect(area.x + 8f, area.yMax - 20f, area.width - 16f, 18f),
-            "탐험한 구역만 표시 · 다음 포탈=금색 — 플레이어 위치는 보이지 않습니다.", dimSt);
-        dimSt.alignment = TextAnchor.MiddleCenter;
+        // 월드→지도 변환(MapScanner가 렌더한 월드 영역 기준, 비율 유지)
+        Rect wr = MapScanner.WorldRect;
+        float scl = Mathf.Min(inner.width / wr.width, inner.height / wr.height);
+        float mw = wr.width * scl, mh = wr.height * scl;
+        Rect mr = new Rect(inner.x + (inner.width - mw) * 0.5f, inner.y + (inner.height - mh) * 0.5f, mw, mh);
+        // 월드 좌표 → 지도 스크린 좌표(GUI는 y가 아래로 증가 — 뒤집기)
+        System.Func<Vector2, Vector2> W2M = (w) => new Vector2(
+            mr.x + (w.x - wr.x) / wr.width * mr.width,
+            mr.y + (1f - (w.y - wr.y) / wr.height) * mr.height);
+
+        // 1) 방 블록: 발견 영역을 '테두리(확장) → 채움' 2패스로 그리면 붙은 칸끼리 자연스럽게 합쳐진 실루엣이 된다
+        Color outline = UITheme.A(new Color(0.55f, 0.60f, 0.66f), 0.85f);   // 홀나풍 밝은 윤곽
+        Color roomFill = new Color(0.075f, 0.10f, 0.115f, 0.96f);
+        float grow = 2.5f;
+        foreach (var b in areas)
+        {
+            Vector2 a1 = W2M(new Vector2(b.min.x, b.max.y)), a2 = W2M(new Vector2(b.max.x, b.min.y));
+            Fill(new Rect(a1.x - grow, a1.y - grow, (a2.x - a1.x) + grow * 2f, (a2.y - a1.y) + grow * 2f), outline);
+        }
+        foreach (var b in areas)
+        {
+            Vector2 a1 = W2M(new Vector2(b.min.x, b.max.y)), a2 = W2M(new Vector2(b.max.x, b.min.y));
+            Fill(new Rect(a1.x, a1.y, a2.x - a1.x, a2.y - a1.y), roomFill);
+        }
+
+        // 2) 지형 실루엣(기존 스캔 텍스처)을 방 블록 위에 겹침
+        var prevC = GUI.color; GUI.color = new Color(1f, 1f, 1f, 0.9f);
+        GUI.DrawTexture(mr, map, ScaleMode.StretchToFill);
+        GUI.color = prevC;
+
+        // 3) 아이콘: 보물상자(금 ◆) / 포탈(오렌지 ▲자리 다이아) / 퀘스트 목표(빨강 ◆) / 나(민트, 고동)
+        foreach (var c in TreasureChest.All)
+            if (c != null && !c.IsOpened && MapDiscovery.InAreas(areas, c.Position))
+                UITheme.Diamond(W2M(c.Position), 8f, UITheme.Gold);
+        foreach (var d in UnityEngine.Object.FindObjectsByType<SceneDoor>(UnityEngine.FindObjectsSortMode.None))
+            if (MapDiscovery.InAreas(areas, d.transform.position))
+            {
+                Vector2 mp = W2M(d.transform.position);
+                UITheme.Diamond(mp, 9f, UITheme.Accent);
+                UITheme.Diamond(mp, 4f, new Color(0.05f, 0.085f, 0.085f));
+            }
+        Vector2 qp;
+        if (QuestTracker.TryGetPathTarget(out qp))
+            UITheme.Diamond(W2M(qp), 8f + 2f * Mathf.Sin(Time.unscaledTime * 5f), UITheme.Danger);
+        if (PlayerController.Instance != null)
+        {
+            Vector2 me = W2M(PlayerController.Instance.transform.position);
+            float pulse = 5.5f + 1.5f * Mathf.Sin(Time.unscaledTime * 6f);
+            UITheme.Diamond(me, pulse + 3f, UITheme.A(UITheme.Good, 0.35f));
+            UITheme.Diamond(me, pulse, UITheme.Good);
+        }
+    }
+
+    // 범례 한 줄(◆ + 라벨)
+    private void LegendRow(float x, ref float y, Color c, string label)
+    {
+        UITheme.Diamond(new Vector2(x + 7f, y + 10f), 8f, c);
+        rowSt.normal.textColor = UITheme.Text;
+        GUI.Label(new Rect(x + 20f, y, 130f, 20f), label, rowSt);
+        y += 26f;
     }
 
     // ── 도감 탭(아이템): 왼쪽 번호 목록 + 오른쪽 상세 + 하단 달성도 ──
@@ -284,14 +346,44 @@ public class HandbookUI : MonoBehaviour
         detailNameSt.normal.textColor = new Color(0.95f, 0.88f, 0.65f);
         GUI.Label(new Rect(det.x, det.y, det.width, 30f), seen[sel].title, detailNameSt);
         UITheme.Divider(det.x, det.y + 36f, det.width, 0.4f);
+
+        // 본문(위) + 시연 GIF(아래) — 도움말 카드와 같은 구성
         string rich = HelpPopupUI.Rich(seen[sel].body);
-        Rect br = new Rect(det.x, det.y + 48f, det.width, det.height - 48f);
+        float gifH = det.height * 0.42f;
+        Rect br = new Rect(det.x, det.y + 48f, det.width, det.height - 48f - gifH - 12f);
         float bh = bodySt.CalcHeight(new GUIContent(rich), det.width - 18f);
         scroll = GUI.BeginScrollView(br, scroll, new Rect(0, 0, det.width - 20f, Mathf.Max(bh, br.height)));
         bodySt.normal.textColor = UITheme.Text;
         GUI.Label(new Rect(0, 0, det.width - 20f, bh), rich, bodySt);
         GUI.EndScrollView();
+
+        // GIF 액자(브래킷) — 선택이 바뀌면 프레임 재로드
+        if (helpGifFor != sel) { helpGifFor = sel; helpGif = HelpPopupUI.LoadGifFrames(seen[sel].id); }
+        Rect gif = new Rect(det.x, det.yMax - gifH, det.width, gifH);
+        Fill(gif, UITheme.A(UITheme.SlotBot, 0.9f));
+        UITheme.Corners(gif, 14f, 2.5f);
+        if (helpGif != null)
+        {
+            var f = helpGif[(int)(Time.unscaledTime * 10f) % helpGif.Length];
+            float ar2 = f.rect.width / Mathf.Max(1f, f.rect.height);
+            float fw = gif.width - 16f, fh = fw / ar2;
+            if (fh > gif.height - 16f) { fh = gif.height - 16f; fw = fh * ar2; }
+            Rect fr = new Rect(gif.x + (gif.width - fw) * 0.5f, gif.y + (gif.height - fh) * 0.5f, fw, fh);
+            GUI.DrawTextureWithTexCoords(fr, f.texture, new Rect(
+                f.rect.x / f.texture.width, f.rect.y / f.texture.height,
+                f.rect.width / f.texture.width, f.rect.height / f.texture.height));
+        }
+        else
+        {
+            UITheme.Diamond(new Vector2(gif.center.x, gif.center.y - 12f), 10f, UITheme.A(UITheme.Accent, 0.5f));
+            dimSt.fontSize = 14;
+            GUI.Label(new Rect(gif.x, gif.center.y, gif.width, 22f), "시연 영상 준비 중", dimSt);
+            dimSt.fontSize = 16;
+        }
     }
+
+    private int helpGifFor = -1;      // 어떤 도움말의 GIF를 로드했나(선택 변경 감지)
+    private Sprite[] helpGif;
 
     // ── 장식/부품 ──
     // 프레임 좌우 중앙의 각진 장식(나인 솔즈풍 짧은 대시 클러스터)

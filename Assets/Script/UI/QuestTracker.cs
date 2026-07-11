@@ -33,6 +33,14 @@ public class QuestTracker : MonoBehaviour
         if (q == null) return false;
         Vector2 p = PlayerController.Instance != null ? (Vector2)PlayerController.Instance.transform.position : Vector2.zero;
 
+        // 대상 씬이 지정된 문(메인 체인): targetScene 정확 매치만(씬에 그 문이 없으면 화살표 미표시)
+        if (!string.IsNullOrEmpty(q.pathDoorScene))
+        {
+            foreach (var d in Object.FindObjectsByType<SceneDoor>(FindObjectsSortMode.None))
+                if (d.targetScene == q.pathDoorScene) { pos = d.transform.position; return true; }
+            if (!q.pathToDescend) return false;   // pathToDescend 겸용 퀘스트는 아래 폴백 계속
+        }
+
         if (q.pathToDescend)
         {
             SceneDoor best = null;

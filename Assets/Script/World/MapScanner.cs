@@ -12,6 +12,7 @@ public static class MapScanner
     private static string builtScene;
     private static int builtVersion = -1;    // 마지막 빌드 시점의 발견 버전(달라지면 재생성)
     private static Texture2D map;
+    public static Rect WorldRect { get; private set; }   // 지도 텍스처가 덮는 월드 영역(핸드북 아이콘 정렬용)
     private const int MaxDim = 320;          // 결과 텍스처 긴 변(px)
     private const long CellCap = 600000;     // 너무 큰 타일맵은 스캔 생략(안전)
 
@@ -66,6 +67,8 @@ public static class MapScanner
         float scale = MaxDim / Mathf.Max(worldW, worldH);
         int texW = Mathf.Clamp(Mathf.CeilToInt(worldW * scale) + 6, 8, 640);
         int texH = Mathf.Clamp(Mathf.CeilToInt(worldH * scale) + 6, 8, 640);
+
+        WorldRect = new Rect(minX - 3f / scale, minY - 3f / scale, texW / scale, texH / scale);   // 픽셀↔월드 정렬(패딩 3px 반영)
 
         var tex = new Texture2D(texW, texH, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         var px = new Color[texW * texH];     // 기본 투명

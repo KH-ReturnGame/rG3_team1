@@ -22,9 +22,10 @@ public class Quest
     public int xpReward = 50;            // 완료 시 경험치
     public string prereqId;              // 선행 퀘스트 id(이게 완료돼야 게시판에 등장 — 연계)
     public Sprite icon;
-    public bool autoAccept;              // 마을 진입 시 자동 수주(게시판엔 안 뜸)
+    public bool autoAccept;              // 자동 수주 퀘스트(게시판엔 안 뜸). 목표 달성 시 게시판 수령 없이 즉시 완료
     public string objectiveOverride;     // 있으면 목표 문구를 이걸로 표시(채집/처치 진행도 대신)
     public bool pathToDescend;           // 길찾기 대상 = 하강 포탈(우물). 그 외엔 채집/처치 대상으로 자동
+    public string pathDoorScene;         // 길찾기 대상 = 이 씬으로 가는 SceneDoor(정확 매치, 씬에 없으면 화살표 미표시)
     [System.NonSerialized] public int progress;
 
     public string CategoryLabel()
@@ -64,11 +65,29 @@ public class QuestManager : MonoBehaviour
     private void BuildQuests()
     {
         available.Clear();
-        // 길잡이(마을 진입 시 자동 수주, 게시판엔 안 뜸) — 다친 주인공이 마을에 도착한 직후 안내
-        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "기억을 잃은 자",
+
+        // ══ 메인 퀘스트 체인(튜토 → 마을 → 심층 탐사 → 첫 보스) — MainQuestFlow가 씬 도착으로 수주/완료 ══
+        // prereq로 묶여 있어 순서가 보장된다. autoAccept=게시판 미표시+달성 즉시 완료.
+        available.Add(new Quest { id = "mq_awaken", category = QuestCategory.Main, giver = "???", title = "낯선 어둠 속에서",
+            description = "높은 곳에서 떨어졌다. 몸은 부서질 듯 아프고, 기억은 흐릿하다.\n무너진 통로 어딘가에서 불빛이 새어 나온다 — 일단 이곳을 빠져나가야 한다.",
+            autoAccept = true, objectiveOverride = "무너진 통로를 빠져나가 불빛을 찾아라", pathDoorScene = "StartingArea",
+            goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, xpReward = 40 });
+
+        // 길잡이(마을 진입 시 자동 수주) — 다친 주인공이 마을에 도착한 직후 안내
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "기억을 잃은 자", prereqId = "mq_awaken",
             description = "지상으로 나가려다 추락해, 강한 충격에 기억을 잃었다.\n감지 기프트를 가진 '여울'이 쓰러진 나를 발견해 자기 집으로 데려왔다. — 여긴 지하 마을.\n몸을 추스르고 마을을 둘러보자(엔지니어·상인들·게시판). 채비가 되면 우물로 내려가 본다.",
-            autoAccept = true, objectiveOverride = "마을을 둘러보고, 우물로 내려갈 채비를 하라", pathToDescend = true,
+            autoAccept = true, objectiveOverride = "마을을 둘러보고, 우물로 내려가라", pathToDescend = true, pathDoorScene = "Metroidvania",
             goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
+
+        available.Add(new Quest { id = "mq_descend", category = QuestCategory.Main, giver = "여울", title = "심층을 향해", prereqId = "guide_village",
+            description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부로 가는 길을 찾아라.",
+            autoAccept = true, objectiveOverride = "지하 탐사 구역을 탐험해 심층부로 가는 길을 찾아라", pathDoorScene = "BossScene",
+            goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, rewardGold = 300, xpReward = 120 });
+
+        available.Add(new Quest { id = "mq_boss", category = QuestCategory.Main, giver = "???", title = "첫 번째 위협", prereqId = "mq_descend",
+            description = "심층부의 공기가 무겁다. 이곳의 지배자가 앞을 가로막는다.\n살아남고 싶다면 — 쓰러뜨려라.",
+            autoAccept = true, goal = QuestGoal.Kill, targetId = "boss_first", targetName = "심층부의 지배자", targetCount = 1,
+            rewardGold = 1000, xpReward = 300 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",
             description = "낯선 지저 세계. 마을을 둘러보고 지저꽃을 하나 채집해 적응을 시작하자.",
@@ -115,12 +134,12 @@ public class QuestManager : MonoBehaviour
 
     public Quest Find(string id) => available.Find(x => x.id == id);
 
-    // 마을 진입 시: 미완료·미수주 autoAccept 퀘스트를 자동 수주. 새로 받은 첫 퀘스트 반환(없으면 null).
+    // 마을 진입 시: 미완료·미수주·선행 완료된 autoAccept 퀘스트를 자동 수주. 새로 받은 첫 퀘스트 반환(없으면 null).
     public Quest AcceptAutoQuests()
     {
         Quest first = null;
         foreach (var q in available)
-            if (q.autoAccept && !IsCompleted(q) && !accepted.Contains(q))
+            if (q.autoAccept && !IsCompleted(q) && !accepted.Contains(q) && IsUnlocked(q))   // ★선행 미완료면 아직 안 줌(메인 체인 순서 보장)
             { q.progress = 0; accepted.Add(q); if (first == null) first = q; }
         if (first != null) { tracked = first; Changed(); }
         return first;
@@ -131,6 +150,28 @@ public class QuestManager : MonoBehaviour
     {
         var q = accepted.Find(x => x.id == id);
         if (q != null) { Complete(q); Changed(); }
+    }
+
+    // ── 메인 퀘스트 체인용(MainQuestFlow가 씬 도착 시 호출) ──
+    // id로 수주(미완료·선행 완료 시). 수주하면 추적 대상으로 지정 + 토스트.
+    public void AcceptById(string id)
+    {
+        var q = Find(id);
+        if (q == null || IsCompleted(q) || accepted.Contains(q) || !IsUnlocked(q)) return;
+        q.progress = 0; accepted.Add(q);
+        tracked = q;
+        Toast.Show("주요 퀘스트 — " + q.title, 3.5f);
+        Changed();
+    }
+
+    // id로 강제 완료(씬 도착 = 목표 달성). 미수주 상태(이어하기로 건너뜀 등)여도 보상 지급 후 완료 기록.
+    public void CompleteForce(string id)
+    {
+        var q = Find(id);
+        if (q == null || IsCompleted(q)) return;
+        if (!accepted.Contains(q)) accepted.Add(q);
+        Complete(q);
+        Changed();
     }
 
     public void Accept(Quest q)
@@ -159,12 +200,18 @@ public class QuestManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(killId)) return;
         bool changed = false;
+        var done = new List<Quest>();
         foreach (var q in accepted)
             if (q.goal == QuestGoal.Kill && q.targetId == killId && q.progress < q.targetCount)
             {
                 q.progress = Mathf.Min(q.targetCount, q.progress + 1); changed = true;
-                if (q.progress >= q.targetCount) Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+                if (q.progress >= q.targetCount)
+                {
+                    if (q.autoAccept) done.Add(q);   // 자동 수주(메인 체인)는 게시판 수령 없이 즉시 완료(첫 보스 등)
+                    else Toast.Show("목표 달성: " + q.title + " — 게시판에서 보상을 수령하세요", 4f);
+                }
             }
+        foreach (var q in done) Complete(q);
         if (changed) Changed();
     }
 

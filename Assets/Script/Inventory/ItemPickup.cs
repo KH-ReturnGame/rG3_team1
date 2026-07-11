@@ -129,6 +129,8 @@ public class ItemPickup : MonoBehaviour, IInteractable
         return _shadowSprite;
     }
 
+    private static bool charmHelpShown;   // 장신구 카드(세션 1회)
+
     public void Interact()
     {
         if (item == null || Inventory.Instance == null) return;
@@ -140,6 +142,16 @@ public class ItemPickup : MonoBehaviour, IInteractable
             AudioManager.Sfx("pickup", 0.9f, 0.08f);
             AcquireFeed.Notify(item, picked);   // 획득 알림 연출
             TutorialFlow.OnItemAcquired();        // 온보딩: 첫 아이템 → 배낭 안내
+
+            // 첫 장신구 획득: 착용법 카드(세션 1회)
+            if (item.kind == ItemData.ItemKind.Equipment && !charmHelpShown && HelpPopupUI.Instance != null)
+            {
+                charmHelpShown = true;
+                HelpPopupUI.Instance.Show("charm", "장신구",
+                    "*장신구*는 몸에 지니는 것만으로 힘이 되는 보물입니다.\n" +
+                    "배낭[B]을 열고 왼쪽 *착용칸(3×3)*에 직접 배치하면 효과가 적용됩니다.\n" +
+                    "장신구마다 차지하는 칸 크기가 달라, 어떻게 조합하느냐가 곧 전략입니다. [R]로 회전할 수 있습니다.");
+            }
             if (QuestManager.Instance != null) QuestManager.Instance.ReportGather(item.id, picked);   // 채집 퀘스트 진행
         }
         if (left <= 0) Destroy(gameObject);       // 전부 주웠으면 제거

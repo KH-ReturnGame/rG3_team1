@@ -100,8 +100,9 @@ public class BattleArena : MonoBehaviour
                 SetDoors(true);
                 Toast.Show("적을 모두 처치하라!", 2f);
 
-                // 첫 아레나 전투: 배틀 아레나 카드(세션 1회)
-                if (!arenaHelpShown && HelpPopupUI.Instance != null)
+                // 첫 아레나 전투: 배틀 아레나 카드(세션 1회) — startClosed(아레나 A 같은 게이트형)는 제외,
+                // '평소 열려 있다가 닫히는' 진짜 아레나(B)에서 처음 보여준다
+                if (!arenaHelpShown && !startClosed && HelpPopupUI.Instance != null)
                 {
                     arenaHelpShown = true;
                     HelpPopupUI.Instance.Show("arena", "배틀 아레나",

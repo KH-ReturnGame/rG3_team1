@@ -123,7 +123,7 @@ public static class SaveSystem
         // 도감 발견 / 본 도움말 / 열린 보물상자 — 세션 static들을 슬롯에 보존
         data.dexSeen = HandbookUI.SaveSeenItems();
         data.helpSeen = new List<SavedHelp>();
-        foreach (var h in HelpPopupUI.Seen) data.helpSeen.Add(new SavedHelp { title = h.title, body = h.body });
+        foreach (var h in HelpPopupUI.Seen) data.helpSeen.Add(new SavedHelp { title = h.title, body = h.body, id = h.id });
         data.openedChests = TreasureChest.SaveOpened();
     }
 
@@ -163,7 +163,7 @@ public static class SaveSystem
         HelpPopupUI.Seen.Clear();
         if (data.helpSeen != null)
             foreach (var h in data.helpSeen)
-                if (!string.IsNullOrEmpty(h.title)) HelpPopupUI.Seen.Add(new HelpPopupUI.HelpEntry { title = h.title, body = h.body });
+                if (!string.IsNullOrEmpty(h.title)) HelpPopupUI.Seen.Add(new HelpPopupUI.HelpEntry { title = h.title, body = h.body, id = h.id });
         TreasureChest.LoadOpened(data.openedChests);   // 씬 상자 비주얼(열림)도 함께 갱신
     }
 

@@ -22,6 +22,7 @@ public class SavedHelp   // 본 도움말(핸드북 다시보기 기록)
 {
     public string title;
     public string body;
+    public string id;    // GIF 폴더 id(핸드북 상세에서 재생)
 }
 
 [System.Serializable]

@@ -38,14 +38,24 @@ public class HelpPopupUI : MonoBehaviour
         DontDestroyOnLoad(go);
     }
 
-    // 지나간 도움말 기록(핸드북 다시보기). 제목 기준 중복 제거. SaveSystem이 저장/복원.
-    public class HelpEntry { public string title; public string body; }
+    // 지나간 도움말 기록(핸드북 다시보기 — GIF id 포함). 제목 기준 중복 제거. SaveSystem이 저장/복원.
+    public class HelpEntry { public string title; public string body; public string id; }
     public static readonly List<HelpEntry> Seen = new List<HelpEntry>();
-    private static void Record(string t, string b)
+    private static void Record(string id, string t, string b)
     {
         if (string.IsNullOrEmpty(t)) return;
         foreach (var e in Seen) if (e.title == t) return;
-        Seen.Add(new HelpEntry { title = t, body = b });
+        Seen.Add(new HelpEntry { title = t, body = b, id = id });
+    }
+
+    // GIF 프레임 로더(카드·핸드북 공용): Resources/Help/<id>/ 프레임 PNG들을 이름순 정렬해 반환(없으면 null)
+    public static Sprite[] LoadGifFrames(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return null;
+        var frames = Resources.LoadAll<Sprite>("Help/" + id);
+        if (frames == null || frames.Length == 0) return null;
+        System.Array.Sort(frames, (a, b) => a.name.Length != b.name.Length ? a.name.Length - b.name.Length : string.CompareOrdinal(a.name, b.name));
+        return frames;
     }
 
     // ── 발동 API ──
@@ -55,7 +65,7 @@ public class HelpPopupUI : MonoBehaviour
         foreach (var c in queue) if (c.title == title) return;          // 같은 카드 중복 큐 방지
         if (cur != null && cur.title == title) return;
         queue.Enqueue(new Card { id = id, title = title, body = body, rich = Rich(body) });
-        Record(title, body);
+        Record(id, title, body);
     }
     // (구) 호환 — 이제 전부 모달 카드
     public void ShowTimed(string t, string b, float duration) => Show(null, t, b);
@@ -102,17 +112,7 @@ public class HelpPopupUI : MonoBehaviour
         Inventory.HelpOpen = true;
         AudioManager.Sfx("help_open");
 
-        // GIF 프레임 로드(이름순 정렬 — 000.png, 001.png … 권장)
-        gifFrames = null;
-        if (!string.IsNullOrEmpty(cur.id))
-        {
-            var frames = Resources.LoadAll<Sprite>("Help/" + cur.id);
-            if (frames != null && frames.Length > 0)
-            {
-                System.Array.Sort(frames, (a, b) => a.name.Length != b.name.Length ? a.name.Length - b.name.Length : string.CompareOrdinal(a.name, b.name));
-                gifFrames = frames;
-            }
-        }
+        gifFrames = LoadGifFrames(cur.id);   // 이름순 정렬 — 000.png, 001.png … 권장
     }
 
     private void CloseCard()
