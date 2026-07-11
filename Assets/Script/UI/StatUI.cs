@@ -40,6 +40,8 @@ public class StatUI : MonoBehaviour
     public float chipSpeed = 6f;
 
     private float displayHalf = -1f, chipHalf, chipWait;
+    private float qReadyFlash;            // Q스킬 쿨 완료 순간 번쩍(초)
+    private bool qWasReady = true;
     private GUIStyle goldStyle, cdStyle, glyphStyle;
 
     void Update()
@@ -55,6 +57,16 @@ public class StatUI : MonoBehaviour
 
         if (chipWait > 0f) chipWait -= dt;
         else if (chipHalf > displayHalf) chipHalf = Mathf.Max(displayHalf, chipHalf - chipSpeed * dt);
+
+        // Q스킬 쿨 완료 순간 감지 → 번쩍 + 사운드
+        var pcQ = PlayerController.Instance;
+        if (pcQ != null)
+        {
+            bool ready = pcQ.SkillCooldownLeft <= 0f;
+            if (ready && !qWasReady) { qReadyFlash = 0.6f; AudioManager.Sfx("skill_ready"); }
+            qWasReady = ready;
+        }
+        if (qReadyFlash > 0f) qReadyFlash -= dt;
     }
 
     void OnGUI()
@@ -166,6 +178,8 @@ public class StatUI : MonoBehaviour
         {
             float qs = Mathf.Clamp(sh * 0.052f, 40f, 70f);
             Rect q = new Rect(sw * 0.018f, sh - qs - sh * 0.035f, qs, qs);
+            if (qReadyFlash > 0f)   // 쿨 완료 순간: 배지 뒤 파란 글로우 번쩍(감쇠)
+                UITheme.Glow(q, PipBlue, 12f, 0.55f * (qReadyFlash / 0.6f));
             GUI.DrawTexture(q, BadgeTex());
             glyphStyle.fontSize = Mathf.RoundToInt(qs * 0.46f);
             glyphStyle.normal.textColor = Gold;

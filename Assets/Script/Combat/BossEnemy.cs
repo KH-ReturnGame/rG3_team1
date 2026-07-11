@@ -38,6 +38,11 @@ public class BossEnemy : Enemy
     private int comboMax;                 // 이번 콤보 타수(3~4)
     private bool comboHeavy;              // 마지막 타 = 멈칫 후 강타(패링 타이밍 미끼)
     private bool heavyPaused;             // 강타 멈칫 소비 여부
+    private float moveDashTimer;          // 접근 대쉬(멀면 확 붙음)
+    private float moveDashCd;
+    private float backDashTimer;          // 패턴 마무리 백대쉬(너무 가까우면 거리 벌림)
+    private bool backDashed;              // 백대쉬 직후 → 원거리 패턴 우선
+    private SpriteRenderer redBox;        // 패링 불가 공격 범위 경고(깜박이는 빨간 박스)
     private Vector2 chargeDir;
     private float chargeStartX;
     private SpriteRenderer redGlow;       // 붉은 강공격 텔레그래프(자식 글로우)
@@ -52,6 +57,23 @@ public class BossEnemy : Enemy
         base.Start();
         wallMask = LayerMask.GetMask("Ground");
         BuildRedGlow();
+        BuildRedBox();
+    }
+
+    // 패링 불가 공격 범위 경고 박스(반투명 빨강, 예비동작 동안 깜박임)
+    private void BuildRedBox()
+    {
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        var px = new Color[4]; for (int i = 0; i < 4; i++) px[i] = Color.white;
+        tex.SetPixels(px); tex.Apply();
+        var sprite = Sprite.Create(tex, new Rect(0, 0, 2, 2), new Vector2(0.5f, 0.5f), 2f);   // 1×1 유닛
+
+        var go = new GameObject("RedBox");
+        go.transform.SetParent(transform, false);
+        redBox = go.AddComponent<SpriteRenderer>();
+        redBox.sprite = sprite;
+        redBox.sortingOrder = 3;   // 지형 위, 캐릭터 아래
+        redBox.enabled = false;
     }
 
     // ══════════ 패턴 선택(추격) ══════════
@@ -78,16 +100,33 @@ public class BossEnemy : Enemy
 
         dir = player.position.x >= transform.position.x ? 1 : -1;
         float d = DistToPlayer();
+        if (moveDashCd > 0f) moveDashCd -= Time.deltaTime;
 
-        if (attackCdTimer > 0f)   // 쿨다운: 사거리 언저리 유지
+        // 접근 대쉬 진행 중: 확 붙는다(유동성)
+        if (moveDashTimer > 0f)
         {
-            SetMove(d > attackRange * 0.9f ? dir * moveSpeed : 0f);
+            moveDashTimer -= Time.deltaTime;
+            if (!LedgeAhead()) SetMove(dir * chargeSpeed * 0.9f); else { moveDashTimer = 0f; SetMove(0); }
             return;
         }
 
+        if (attackCdTimer > 0f)   // 쿨다운: 사거리 언저리 유지
+        {
+            SetMove(d > attackRange * 0.9f && !LedgeAhead() ? dir * moveSpeed : 0f);
+            return;
+        }
+
+        // 백대쉬 직후: 벌린 거리에서 원거리 패턴으로 응수
+        if (backDashed) { backDashed = false; BeginPattern(PickRangedOnce()); return; }
+
         // 거리·페이즈 기반 패턴 선택(직전 패턴은 1회 리롤 — 같은 것 연속 방지)
         if (d > attackRange * 2.2f)
+        {
+            // 멀면 가끔 대쉬로 확 붙고 나서 근접전(단조로운 걷기 접근 탈피)
+            if (d > 6.5f && moveDashCd <= 0f && Random.value < 0.5f)
+            { moveDashTimer = 0.28f; moveDashCd = 2.6f; AudioManager.Sfx("dash", 0.9f, 0.06f); return; }
             BeginPattern(PickRanged());
+        }
         else if (d <= attackRange * 1.2f && DyToPlayer() <= attackHeight)
             BeginPattern(PickMelee());
         else if (LedgeAhead()) SetMove(0);      // ★낭떠러지 가드 — 구멍으로 걸어 나가지 않음(원거리 패턴으로 상대)
@@ -168,27 +207,40 @@ public class BossEnemy : Enemy
     {
         switch (p)
         {
-            case Pattern.Combo3:   return attackWindup;          // 0.55 권장
-            case Pattern.Charge:   return 0.7f;
-            case Pattern.Volley:   return 0.6f;
-            case Pattern.LeapSlam: return 0.5f;
-            case Pattern.RedSlash: return redWindup;
+            case Pattern.Combo3:   return attackWindup;           // 0.45 권장
+            case Pattern.Charge:   return 0.55f;                  // ★준비 단계 가속(스타일)
+            case Pattern.Volley:   return 0.5f;
+            case Pattern.LeapSlam: return 0.4f;
+            case Pattern.RedSlash: return redWindup;               // 붉은 공격만 길게(읽기용)
             case Pattern.Roar:     return 1.4f;
-            case Pattern.QuakeWave: return 0.7f;   // 웅크렸다가 내려찍음
+            case Pattern.QuakeWave: return 0.6f;                   // 웅크렸다가 내려찍음
         }
-        return 0.5f;
+        return 0.45f;
     }
 
     // ══════════ 예비동작 ══════════
     protected override void TickWindup()
     {
         SetMove(0);
-        // 붉은 강공격 텔레그래프: 붉은 글로우 고동
+        // 붉은 강공격 텔레그래프: 붉은 글로우 고동 + ★공격 범위 깜박이는 빨간 박스
         if (redGlow != null)
         {
             bool red = cur == Pattern.RedSlash;
             redGlow.enabled = red;
             if (red) redGlow.color = new Color(1f, 0.15f, 0.1f, 0.45f + 0.35f * Mathf.Sin(Time.time * 26f));
+        }
+        if (redBox != null)
+        {
+            bool red = cur == Pattern.RedSlash;
+            redBox.enabled = red;
+            if (red)
+            {
+                // 쇄도(≈2.5) + 베기 반경을 덮는 전방 박스
+                float reach = 2.5f + attackRange + 1.2f;
+                redBox.transform.localScale = new Vector3(reach / Mathf.Abs(transform.lossyScale.x), (attackHeight + 0.4f) * 2f / Mathf.Abs(transform.lossyScale.y), 1f);
+                redBox.transform.localPosition = new Vector3(dir * reach * 0.5f / transform.lossyScale.x, 0f, 0f);
+                redBox.color = new Color(1f, 0.1f, 0.08f, 0.14f + 0.14f * Mathf.Sin(Time.time * 22f));   // 깜박임
+            }
         }
         if (cur == Pattern.Charge && stateTimer > 0.25f) SetMove(-dir * moveSpeed * 1.4f);   // 백스텝(돌진 조짐)
 
@@ -214,7 +266,7 @@ public class BossEnemy : Enemy
                 }
                 stateTimer = leapTime + 1.2f;   // 안전 타임아웃
                 break;
-            case Pattern.RedSlash: stateTimer = 0.55f; struck = false; break;
+            case Pattern.RedSlash: stateTimer = 0.55f; struck = false; if (redBox != null) redBox.enabled = false; break;
             case Pattern.Roar:     ToRecover(0.4f); break;
             case Pattern.QuakeWave:   // 내려찍기 즉시 + 파동 시작
                 Juice.Shake(0.35f, 0.25f);
@@ -300,15 +352,29 @@ public class BossEnemy : Enemy
                 }
                 break;
 
-            case Pattern.Volley:   // 투사체 3연발(반사 기회)
+            case Pattern.Volley:   // 약한 3연발 → 기 모으기 → 큰 것 한 방(전부 반사 기회)
                 SetMove(0);
                 stateTimer -= Time.deltaTime;
                 if (stateTimer <= 0f)
                 {
-                    FireProjectile();
-                    step++;
-                    if (step >= 3) ToRecover(attackRecover);
-                    else stateTimer = 0.28f;
+                    if (step < 3)
+                    {
+                        FireProjectile(1f, 1f, projectileSpeed);
+                        step++;
+                        if (step == 3)
+                        {
+                            stateTimer = 0.6f;   // 기 모으기(노란 기운)
+                            if (redGlow != null) { redGlow.enabled = true; redGlow.color = new Color(1f, 0.75f, 0.2f, 0.5f); }
+                        }
+                        else stateTimer = 0.26f;
+                    }
+                    else
+                    {
+                        if (redGlow != null) redGlow.enabled = false;
+                        FireProjectile(2.2f, 1.9f, projectileSpeed * 1.25f);   // 큰 것 — 반사하면 그만큼 아프다
+                        Juice.Shake(0.2f, 0.15f);
+                        ToRecover(attackRecover);
+                    }
                 }
                 break;
 
@@ -349,10 +415,30 @@ public class BossEnemy : Enemy
     protected override void TickRecover()
     {
         if (redGlow != null) redGlow.enabled = false;
-        base.TickRecover();
+        if (redBox != null) redBox.enabled = false;
+        // 백대쉬: 마무리 단계에 플레이어가 너무 가까우면 뒤로 미끄러지며 거리 벌림(스타일+원거리 패턴 셋업)
+        if (backDashTimer > 0f)
+        {
+            backDashTimer -= Time.deltaTime;
+            int back = -dir;
+            Vector2 probe = (Vector2)transform.position + new Vector2(back * 1.1f, 0f);
+            bool ledge = Physics2D.Raycast(probe, Vector2.down, 3.5f, wallMask).collider == null;
+            SetMove(ledge ? 0f : back * chargeSpeed * 0.85f);
+        }
+        else SetMove(0);
+        stateTimer -= Time.deltaTime;
+        if (stateTimer <= 0f) { attackCdTimer = attackCooldown; state = State.Chase; }
     }
 
-    private void ToRecover(float t) { state = State.Recover; stateTimer = t; SetMove(0); }
+    // 마무리 진입: 준비/마무리를 짧게(스타일리쉬) + 근접 시 백대쉬 셋업
+    private void ToRecover(float t)
+    {
+        state = State.Recover;
+        stateTimer = t * 0.75f;   // ★마무리 단계 가속 — 보스다운 절도
+        SetMove(0);
+        if (player != null && DistToPlayer() < 1.8f && Random.value < 0.6f)
+        { backDashTimer = 0.26f; backDashed = true; AudioManager.Sfx("dash", 0.8f, 0.06f); }
+    }
 
     // 근접 판정(베이스 DoStrikeHit의 커스텀 버전 — 범위·불가 여부 지정)
     private void MeleeHit(float dmg, bool unblockable, float rangeX, float rangeY)
@@ -364,13 +450,14 @@ public class BossEnemy : Enemy
         if (pc != null) pc.TakeDamage(dmg, true, this, transform.position, false, unblockable);
     }
 
-    private void FireProjectile()
+    private void FireProjectile(float dmgMult, float sizeMult, float speed)
     {
         if (projectilePrefab == null || player == null) return;
         Vector3 origin = transform.position + Vector3.up * 0.6f;
         var go = Instantiate(projectilePrefab, origin, Quaternion.identity);
+        go.transform.localScale *= sizeMult;
         var proj = go.GetComponent<Projectile>();
-        if (proj != null) proj.Init((Vector2)(player.position - origin), projectileSpeed, attackDamage * 0.5f, transform);
+        if (proj != null) proj.Init((Vector2)(player.position - origin), speed, attackDamage * 0.5f * dmgMult, transform);
         AudioManager.Sfx("boss_shot", 0.9f, 0.06f);
     }
 

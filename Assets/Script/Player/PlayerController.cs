@@ -63,7 +63,7 @@ public class PlayerController : MonoBehaviour
     public float parryWindow = 0.5f;
     public float justParryWindow = 0.18f;   // 가드 시작 후 이 시간 안에 맞으면 '저스트 패링'(그로기+강연출). 이후는 '쳐내기'(무효+약연출)
     public float parryChainWindow = 0.35f;  // 패링 직후 이 시간 안의 연속 근접 공격은 자동으로 쳐냄(다단기 대응)
-    public int justParryHealHalves = 2;     // 저스트 패링 성공 시 회복(반칸 단위, 2=한 칸, 0=끔) — 회복의 메인 루트(각성 회복 폐지)
+    public int justParryHealHalves = 1;     // 저스트 패링 성공 시 회복(반칸 단위, 0=끔) — 회복의 메인 루트
     private float parryTimer;
     private float parryChainTimer;
     private bool isGuarding;
@@ -754,7 +754,13 @@ public class PlayerController : MonoBehaviour
     private void CheckGrounded()
     {
         if (groundCheck == null) return;
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        Collider2D g = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        bool standing = g != null;
+        // ★원웨이 플랫폼을 '몸으로 통과하는 중'은 착지가 아님(발이 플랫폼 윗면보다 아래) — 무한 점프 방지
+        if (standing && g.usedByEffector && g.GetComponent<PlatformEffector2D>() != null
+            && groundCheck.position.y < g.bounds.max.y - 0.08f)
+            standing = false;
+        isGrounded = standing;
         if (isGrounded && rb.linearVelocity.y <= 0.1f)
         {
             currentJumps = maxJumps;

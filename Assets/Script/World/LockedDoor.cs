@@ -49,9 +49,29 @@ public class LockedDoor : MonoBehaviour, IInteractable
                 if (GameFlow.Instance != null) GameFlow.Instance.AdvanceStage();
                 break;
             default:
-                if (barrier != null) barrier.SetActive(false);
-                else gameObject.SetActive(false);
+                var b = barrier != null ? barrier : gameObject;
+                StartCoroutine(SlideOpen(b));   // 배틀 아레나처럼 위로 스르륵 열림
                 break;
         }
+    }
+
+    // 장벽 개방 연출: 위 벽 속으로 스무스 상승 + 시작 시 쿵(셰이크) → 비활성
+    private System.Collections.IEnumerator SlideOpen(GameObject b)
+    {
+        var rend = b.GetComponentInChildren<Renderer>();
+        float height = rend != null ? rend.bounds.size.y : 3f;
+        Vector3 from = b.transform.position;
+        Vector3 to = from + Vector3.up * height;
+        Juice.Shake(0.18f, 0.2f);
+        float dur = 0.9f, t = 0f;
+        while (t < dur)
+        {
+            float k = t / dur;
+            b.transform.position = Vector3.Lerp(from, to, k * k * (3f - 2f * k));   // 스무스 상승
+            t += Time.deltaTime;
+            yield return null;
+        }
+        b.transform.position = from;   // 재사용 대비 원위치(비활성 전에 — 자기 자신이면 코루틴이 여기서 끝남)
+        b.SetActive(false);
     }
 }

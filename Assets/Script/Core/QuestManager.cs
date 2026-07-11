@@ -230,7 +230,15 @@ public class QuestManager : MonoBehaviour
         if (!string.IsNullOrEmpty(q.rewardItemId) && Inventory.Instance != null) { var it = ItemDatabase.Get(q.rewardItemId); if (it != null) Inventory.Instance.Add(it, Mathf.Max(1, q.rewardItemCount)); }
         accepted.Remove(q);
         if (!completed.Contains(q.id)) completed.Add(q.id);
-        Toast.Show("보상 수령: " + q.title + (q.rewardGold > 0 ? "  (+" + q.rewardGold + "G)" : ""), 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
+
+        // 주요(자동 수주) 퀘스트 = 원신식 보상 배너(중앙 카드) / 게시판 의뢰 = 기존 토스트
+        if (q.autoAccept && q.category == QuestCategory.Main)
+        {
+            string reward = (q.rewardGold > 0 ? "+" + q.rewardGold.ToString("n0") + " G   " : "")
+                          + (q.xpReward > 0 ? "+" + q.xpReward + " XP" : "");
+            AcquireBanner.Show(q.title, reward, null, "주요 퀘스트 완료");
+        }
+        else Toast.Show("보상 수령: " + q.title + (q.rewardGold > 0 ? "  (+" + q.rewardGold + "G)" : ""), 3.5f);   // 연계 퀘스트가 풀렸을 수 있음
     }
 
     // ── 세이브/로드 ──

@@ -222,7 +222,7 @@ MonoBehaviour:
   parryWindow: 0.5
   justParryWindow: 0.18
   parryChainWindow: 0.35
-  justParryHealHalves: 2
+  justParryHealHalves: 1
   dashCooldown: 0.7
   guardCooldown: 0.6
   hitState: HitDamage

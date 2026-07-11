@@ -11,6 +11,13 @@ public class RangedEnemy : Enemy
     public Transform firePoint;             // 발사 위치(비우면 자기 위치 + 약간 위)
     [Range(0f, 89f)] public float aimAngleLimit = 80f;   // 수평 기준 조준 각도 제한(도). 80=사실상 플레이어 정조준(직선 궤적). 낮추면 수평탄
 
+    [Header("레이저 조준(예비동작 텔레그래프)")]
+    public float aimLockTime = 0.25f;    // 발사 직전 이 시간 동안 조준 고정(피할 기회)
+    public float laserLength = 14f;
+    private LineRenderer laser;
+    private Vector2 lockedDir = Vector2.right;
+    private bool aimLocked;
+
     public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
 
     // attackRange = '사격 사거리'로 사용(인스펙터에서 크게: 6~7 권장)

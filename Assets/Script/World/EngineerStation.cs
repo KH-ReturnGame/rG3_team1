@@ -10,21 +10,8 @@ public class EngineerStation : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        var gm = GameManager.Instance;
+        // (구) 최초 대화에서 미니맵 모듈 지급 → 폐지(미니맵은 기본 제공)
         var npc = GetComponent<NpcDialogue>();
-        Sprite face = npc != null ? npc.portrait : null;
-
-        if (gm != null && gm.moduleMinimap == 0)   // 최초 1회: 망토 수리 대화 → 미니맵 모듈 지급
-        {
-            string[] first = {
-                "오, 자네가 그 빨간 망토로군. ...꼴이 영 말이 아닌데?",
-                "이리 줘 보게. 수리하는 김에 — 옜다, 미니맵 모듈도 하나 박아줬네.",
-                "이제 지나온 구역은 지도에 남을 걸세. [,]로 켜고 끄고, 지도는 [M]으로 보게나."
-            };
-            DialogueUI.Show("엔지니어", face, first, () => { if (GameManager.Instance != null) GameManager.Instance.GrantMinimap(); });
-            return;
-        }
-
         if (npc != null && npc.HasLines) npc.Run(OpenEngineer);
         else OpenEngineer();
     }

@@ -177,9 +177,9 @@ MonoBehaviour:
   attackRange: 2.2
   attackHeight: 1.9
   attackDamage: 1
-  attackWindup: 0.55
+  attackWindup: 0.45
   attackActive: 0.1
-  attackRecover: 0.7
+  attackRecover: 0.5
   attackCooldown: 1.4
   firstAttackDelay: 0.6
   groggyDuration: 2.5
