@@ -20,8 +20,11 @@ public class BossEnemy : Enemy
     [Header("패턴 수치")]
     public float comboGap = 0.38f;        // 3연격 타격 간격(연속 패링 리듬)
     public float chargeSpeed = 13f;       // 돌진 속도
-    public float leapTime = 0.65f;        // 도약 체공 시간
-    public float slamWidth = 3.4f;        // 내려찍기 충격파 폭(±)
+    public float leapTime = 0.65f;        // (안전 타임아웃용)
+    public float leapUpSpeed = 15f;       // 빠르게 뛰어오르는 상승 속도
+    public float leapHangTime = 0.55f;    // 정점에서 공중 체공하는 시간(이때 착지 지점 경고)
+    public float leapDownSpeed = 26f;     // 빠르게 내리꽂는 하강 속도
+    public float slamWidth = 3.4f;        // 내려찍기/충격파 폭(±)
     public float redWindup = 0.95f;       // 붉은 강공격 예비동작(길게 — 읽고 피할 시간)
     public float redDamage = 2f;          // 붉은 강공격 피해(하트)
 
@@ -46,6 +49,7 @@ public class BossEnemy : Enemy
     private SpriteRenderer redBox;        // 패링 불가 공격 범위 경고(깜박이는 빨간 박스)
     private Vector2 chargeDir;
     private float chargeStartX;
+    private float landX, groundY, bossGravity;   // 도약 착지 지점(공격·방사 기준) + 원래 중력
     private SpriteRenderer redGlow;       // 붉은 강공격 텔레그래프(자식 글로우)
     private int wallMask;
 
@@ -57,6 +61,7 @@ public class BossEnemy : Enemy
         randomizeStats = false;   // 보스는 수치 고정
         base.Start();
         wallMask = LayerMask.GetMask("Ground");
+        bossGravity = rb != null ? rb.gravityScale : 1f;
         BuildRedGlow();
         BuildRedBox();
     }
@@ -102,16 +107,16 @@ public class BossEnemy : Enemy
         Destroy(go);
     }
 
-    // 충격파 한 링 터뜨림: 보스 좌우 dist 지점에 스파크 + 낮은 판정(점프로 회피)
+    // 충격파 한 링 터뜨림: 착지 지점(landX) 좌우 dist·바닥(groundY)에 스파크 + 낮은 판정(점프로 회피)
     private void QuakeRingHit(int ring)
     {
         float dist = ring * 3.2f;
         for (int s = -1; s <= 1; s += 2)
         {
-            Vector2 wp = (Vector2)transform.position + new Vector2(s * dist, 0.25f);
+            Vector2 wp = new Vector2(landX + s * dist, groundY + 0.25f);
             ParryFx.Spark(wp, false);
             if (player != null && Mathf.Abs(player.position.x - wp.x) <= 1.6f
-                && player.position.y - transform.position.y <= 1.3f)   // 점프 중이면 회피
+                && player.position.y - groundY <= 1.3f)   // 점프 중이면 회피
             {
                 var pcw = player.GetComponent<PlayerController>();
                 if (pcw != null) pcw.TakeDamage(attackDamage * 0.75f, true, this, wp);
@@ -119,12 +124,22 @@ public class BossEnemy : Enemy
         }
         Juice.Shake(0.12f, 0.1f);
     }
-    // 충격파 한 링 예고: 터지기 직전 그 자리에 빨간 경고 박스
+    // 충격파 한 링 예고: 터지기 직전 착지 지점 좌우 바닥에 빨간 경고 박스
     private void QuakeRingWarn(int ring, float lead)
     {
         float dist = ring * 3.2f;
         for (int s = -1; s <= 1; s += 2)
-            SpawnWarnBox((Vector2)transform.position + new Vector2(s * dist, 0.25f), 3.0f, 1.3f, lead);
+            SpawnWarnBox(new Vector2(landX + s * dist, groundY + 0.12f), 3.0f, 1.2f, lead);
+    }
+
+    // 지정 지점(착지 지점 등) 기준 근접 판정 — 보스 위치가 아니라 공격 중심을 명시
+    private void MeleeHitAt(float cx, float cy, float dmg, float rangeX, float rangeY)
+    {
+        if (player == null) return;
+        if (Mathf.Abs(player.position.x - cx) > rangeX) return;
+        if (Mathf.Abs(player.position.y - cy) > rangeY) return;
+        var pc = player.GetComponent<PlayerController>();
+        if (pc != null) pc.TakeDamage(dmg, true, this, new Vector2(cx, cy));
     }
 
     // ══════════ 패턴 선택(추격) ══════════
@@ -308,14 +323,10 @@ public class BossEnemy : Enemy
                 stateTimer = 1.0f; struck = false; break;
             case Pattern.Volley:   stateTimer = 0.01f; break;
             case Pattern.LeapSlam:
-                if (player != null && rb != null)
-                {
-                    float vx = (player.position.x - transform.position.x) / leapTime;
-                    rb.linearVelocity = new Vector2(vx, 5.5f + leapTime * 9.81f * 0.5f);   // 포물선으로 플레이어 머리 위까지
-                    SpawnWarnBox(new Vector2(player.position.x, transform.position.y), slamWidth * 2f, 1.5f, leapTime);   // ★착지(내려찍기) 예상 지점 경고
-                }
-                stateTimer = leapTime + 1.2f;   // 안전 타임아웃
-                step = 0;   // 0=도약 중, 1~3=충격파 링
+                if (rb != null) rb.linearVelocity = new Vector2(0f, leapUpSpeed);   // ★빠르게 뛰어오름(수직)
+                groundY = transform.position.y;   // 도약 시작 = 착지할 지면 레벨(경고·공격·방사의 바닥 기준)
+                stateTimer = 4f;   // 안전 타임아웃
+                step = 0;          // 0=상승 1=체공 2=급강하 3~5=방사 링
                 break;
             case Pattern.RedSlash: stateTimer = 0.55f; struck = false; if (redBox != null) redBox.enabled = false; break;
             case Pattern.Roar:     ToRecover(0.4f); break;
@@ -399,31 +410,56 @@ public class BossEnemy : Enemy
                 }
                 break;
 
-            case Pattern.LeapSlam: // ★도약 → 착지 내려찍기(주변 강타) → 좌우로 퍼지는 충격파 3링(각 링 빨간 경고)
+            case Pattern.LeapSlam: // ★빠른 상승 → 체공(착지 지점 경고) → 급강하 → 착지 지점 강타 → 방사 폭발 3링
                 stateTimer -= Time.deltaTime;
-                if (step == 0)   // 도약 중 — 착지 대기
+                SetMove(0);
+                if (step == 0)   // 빠르게 상승 → 정점에서 체공 전환
                 {
-                    bool falling = rb != null && rb.linearVelocity.y <= 0.05f;
-                    bool grounded = Physics2D.Raycast(transform.position, Vector2.down, 1.0f, wallMask).collider != null;
-                    if ((falling && grounded) || stateTimer <= 0f)
+                    if ((rb != null && rb.linearVelocity.y <= 0.5f) || stateTimer <= 2.6f)
                     {
-                        SetMove(0);
-                        Juice.Shake(0.5f, 0.35f);
-                        AudioManager.Sfx("door_slam");
-                        MeleeHit(attackDamage, false, slamWidth, 1.4f);   // 내려찍기 주변 강타(착지 지점)
+                        landX = player != null ? player.position.x : transform.position.x;   // 착지 지점 = 지금 플레이어 위치
+                        if (rb != null) { rb.gravityScale = 0f; rb.linearVelocity = Vector2.zero; }   // 공중 체공(중력 off)
+                        SpawnWarnBox(new Vector2(landX, groundY + 0.12f), slamWidth * 2f, 1.3f, leapHangTime + 0.15f);   // ★바닥 기준 착지 경고
+                        AudioManager.Sfx("boss_shot", 0.7f, 0.1f);
                         step = 1;
-                        stateTimer = 0.3f;
-                        QuakeRingWarn(1, 0.3f);   // 첫 충격파 링 예고(좌우 빨간 박스)
+                        stateTimer = leapHangTime;
                     }
                 }
-                else   // 충격파 확산 — 링마다 예고 후 터뜨림
+                else if (step == 1)   // 공중 체공 — 착지 지점 위로 서서히 정렬
+                {
+                    if (rb != null) rb.linearVelocity = Vector2.zero;
+                    float nx = Mathf.MoveTowards(transform.position.x, landX, 7f * Time.deltaTime);
+                    transform.position = new Vector3(nx, transform.position.y, transform.position.z);
+                    if (stateTimer <= 0f)   // 체공 끝 → 급강하
+                    {
+                        if (rb != null) { rb.gravityScale = bossGravity; rb.linearVelocity = new Vector2(0f, -leapDownSpeed); }   // ★빠르게 내리꽂음
+                        step = 2;
+                        stateTimer = 1.5f;
+                    }
+                }
+                else if (step == 2)   // 급강하 → 착지
+                {
+                    bool grounded = Physics2D.Raycast(transform.position, Vector2.down, 1.0f, wallMask).collider != null;
+                    if (grounded || transform.position.y <= groundY + 0.05f || stateTimer <= 0f)
+                    {
+                        transform.position = new Vector3(landX, groundY, transform.position.z);   // 착지 지점 고정
+                        if (rb != null) rb.linearVelocity = Vector2.zero;
+                        Juice.Shake(0.55f, 0.35f);
+                        AudioManager.Sfx("door_slam");
+                        MeleeHitAt(landX, groundY, attackDamage, slamWidth, 1.5f);   // ★착지 지점 주변 강타
+                        step = 3;
+                        stateTimer = 0.3f;
+                        QuakeRingWarn(1, 0.3f);   // 방사 첫 링 경고(착지 지점 기준)
+                    }
+                }
+                else   // 방사 폭발(착지 지점 기준, 좌우 3링)
                 {
                     if (stateTimer <= 0f)
                     {
-                        QuakeRingHit(step);
-                        step++;
-                        if (step > 3) ToRecover(attackRecover * 1.2f);
-                        else { stateTimer = 0.3f; QuakeRingWarn(step, 0.3f); }
+                        int ring = step - 2;   // step3→링1, 4→링2, 5→링3
+                        QuakeRingHit(ring);
+                        if (ring >= 3) ToRecover(attackRecover * 1.2f);
+                        else { step++; stateTimer = 0.3f; QuakeRingWarn(ring + 1, 0.3f); }
                     }
                 }
                 break;
@@ -472,6 +508,7 @@ public class BossEnemy : Enemy
         state = State.Recover;
         stateTimer = t * 0.75f;   // ★마무리 단계 가속 — 보스다운 절도
         SetMove(0);
+        if (rb != null) rb.gravityScale = bossGravity;   // 도약 체공 중 종료 시 중력 복구(공중 고착 방지)
         if (player != null && DistToPlayer() < 1.8f && Random.value < 0.6f)
         { backDashTimer = 0.26f; backDashed = true; AudioManager.Sfx("dash", 0.8f, 0.06f); }
     }
@@ -501,6 +538,7 @@ public class BossEnemy : Enemy
     public override void ApplyGroggy()
     {
         if (state == State.Dead) return;
+        if (rb != null) rb.gravityScale = bossGravity;   // 도약 체공 중 패링당하면 중력 복구
         stagger++;
         if (stagger >= staggerNeed)
         {
