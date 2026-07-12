@@ -129,8 +129,8 @@ public class HelpPopupUI : MonoBehaviour
                 if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) SetPage(page - 1);
                 if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) SetPage(page + 1);
             }
-            // 다중 페이지 카드에선 클릭은 ◀▶ 화살표 전용(OnGUI에서 처리) — 오클릭으로 넘어가는 것 방지
-            bool click = Input.GetMouseButtonDown(0) && n == 1;
+            // 아무 데나 클릭 / F / Space / Enter = 다음 페이지, 마지막 페이지면 닫기(뒤로가기는 ←/A 키)
+            bool click = Input.GetMouseButtonDown(0);
             if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || click)
             {
                 if (page < n - 1) SetPage(page + 1);   // 마지막 페이지 전이면 다음 장으로
@@ -261,12 +261,7 @@ public class HelpPopupUI : MonoBehaviour
                 GUI.Label(lArrow, "◀", hintSt);
                 hintSt.normal.textColor = canR ? UITheme.A(UITheme.Accent, 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f)) : UITheme.A(UITheme.TextDim, 0.4f);
                 GUI.Label(rArrow, "▶", hintSt);
-                var ev = Event.current;
-                if (ev.type == EventType.MouseDown && ev.button == 0)
-                {
-                    if (canL && lArrow.Contains(ev.mousePosition)) { SetPage(page - 1); ev.Use(); }
-                    else if (canR && rArrow.Contains(ev.mousePosition)) { SetPage(page + 1); ev.Use(); }
-                }
+                // 화살표 클릭은 Update의 '아무 데나 클릭=다음'과 겹치므로 두지 않음(뒤로가기는 ←/A 키)
                 // 마지막 페이지에서만 확인 힌트
                 if (!canR)
                 {

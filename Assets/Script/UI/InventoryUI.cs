@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // B키로 열고/닫는 인벤토리 창 (OnGUI 기반, Canvas 세팅 불필요). 메이플식 컴팩트 + 타르코프식 그리드:
@@ -59,7 +60,15 @@ public class InventoryUI : MonoBehaviour
     void Awake() { Instance = this; SetupItemCollisions(); }
 
     // 엔지니어 NPC가 호출 — 후드 패널을 '업그레이드 모드'로 연다(+ 버튼 활성).
-    public void OpenEngineer() { open = true; panelTab = 1; hoodSubTab = 0; hoodUpgrade = true; }
+    //  ★한 프레임 늦춰 연다: 대화를 닫은 그 입력(F/좌클릭)이 '방금 열린 창'에 관여해 바로 닫히는
+    //    프레임 경쟁을 피한다(대화 종료 입력이 이 프레임에 소비된 뒤 다음 프레임에 오픈).
+    public void OpenEngineer() { StartCoroutine(OpenEngineerNextFrame()); }
+    private IEnumerator OpenEngineerNextFrame()
+    {
+        yield return null;
+        open = true; panelTab = 1; hoodSubTab = 0; hoodUpgrade = true;
+        Inventory.InvUIOpen = true;   // 즉시 반영(다음 InventoryUI.Update 전에 IsUIOpen=true 보장)
+    }
 
     // Item 레이어는 맵(Ground)하고만 충돌(밀림 방지)
     private void SetupItemCollisions()

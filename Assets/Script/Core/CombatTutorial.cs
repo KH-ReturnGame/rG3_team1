@@ -135,7 +135,7 @@ public class CombatTutorial : MonoBehaviour
     {
         if (!inScene || lessonActive || SlowMoFx.Active || pendingPrecog != null) return;
         if (parryLessonDone) return;                               // 레슨은 1회 — 이후는 AutoPrecog 몫
-        if (e == null || !e.IsParryableMelee) return;              // 레슨은 근접 공격에서만
+        if (e == null) return;                                     // 근접·원거리 모두 첫 예지 대상(원거리 공격에도 발동 — 예비동작 중 우클릭이면 발사 전 차단·그로기)
         var p = Player();
         if (p == null || e.TargetPlayer != p.transform) return;    // 플레이어를 노리는 공격만
         if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만

@@ -9,6 +9,7 @@ public class ShopStation : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        if (QuestManager.Instance != null) QuestManager.Instance.ReportVisit("shop");   // 마을 둘러보기 진행
         var npc = GetComponent<NpcDialogue>();
         if (npc != null && npc.HasLines) npc.Run(OpenShop);
         else OpenShop();

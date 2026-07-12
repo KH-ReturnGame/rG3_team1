@@ -50,4 +50,7 @@ public class SaveSlotData
     public List<string> dexSeen = new List<string>();        // 도감에서 '발견'된 아이템 id
     public List<SavedHelp> helpSeen = new List<SavedHelp>(); // 본 도움말(핸드북 다시보기)
     public List<string> openedChests = new List<string>();   // 열린 보물상자 키(씬:좌표 or chestId)
+    public int gameMode;         // 0=일반 1=트레져헌터 2=스피드런 (GameMode.Mode)
+    public float playTime;       // 타임어택 누적 플레이 시간(초)
+    public bool timeAttackDone;  // 타임어택 목표 달성 여부
 }

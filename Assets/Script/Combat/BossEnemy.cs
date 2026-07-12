@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // 첫 보스 "굶주린 흡수체" — 기프트를 흡수하다 폭주한 옛 전사(Enemy 상속, 패턴 상태머신).
@@ -76,6 +77,56 @@ public class BossEnemy : Enemy
         redBox.enabled = false;
     }
 
+    // 월드 고정 경고 박스: lead초 동안 그 자리에 빨간 박스를 깜박이다 사라진다(내려찍기/충격파 예고).
+    private void SpawnWarnBox(Vector2 worldPos, float width, float height, float lead)
+    {
+        if (redBox == null) return;
+        StartCoroutine(WarnRoutine(worldPos, width, height, lead));
+    }
+    private IEnumerator WarnRoutine(Vector2 pos, float w, float h, float lead)
+    {
+        var go = new GameObject("BossWarn");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = redBox.sprite;
+        sr.sortingOrder = 3;
+        go.transform.position = pos;
+        go.transform.localScale = new Vector3(w, h, 1f);
+        float t = 0f;
+        while (t < lead)
+        {
+            float k = t / lead;
+            sr.color = new Color(1f, 0.12f, 0.08f, 0.10f + 0.20f * (0.5f + 0.5f * Mathf.Sin(t * 30f)) * (0.35f + 0.65f * k));   // 임박할수록 진하게 깜박
+            t += Time.deltaTime;
+            yield return null;
+        }
+        Destroy(go);
+    }
+
+    // 충격파 한 링 터뜨림: 보스 좌우 dist 지점에 스파크 + 낮은 판정(점프로 회피)
+    private void QuakeRingHit(int ring)
+    {
+        float dist = ring * 3.2f;
+        for (int s = -1; s <= 1; s += 2)
+        {
+            Vector2 wp = (Vector2)transform.position + new Vector2(s * dist, 0.25f);
+            ParryFx.Spark(wp, false);
+            if (player != null && Mathf.Abs(player.position.x - wp.x) <= 1.6f
+                && player.position.y - transform.position.y <= 1.3f)   // 점프 중이면 회피
+            {
+                var pcw = player.GetComponent<PlayerController>();
+                if (pcw != null) pcw.TakeDamage(attackDamage * 0.75f, true, this, wp);
+            }
+        }
+        Juice.Shake(0.12f, 0.1f);
+    }
+    // 충격파 한 링 예고: 터지기 직전 그 자리에 빨간 경고 박스
+    private void QuakeRingWarn(int ring, float lead)
+    {
+        float dist = ring * 3.2f;
+        for (int s = -1; s <= 1; s += 2)
+            SpawnWarnBox((Vector2)transform.position + new Vector2(s * dist, 0.25f), 3.0f, 1.3f, lead);
+    }
+
     // ══════════ 패턴 선택(추격) ══════════
     protected override void TickChase()
     {
@@ -122,9 +173,9 @@ public class BossEnemy : Enemy
         // 거리·페이즈 기반 패턴 선택(직전 패턴은 1회 리롤 — 같은 것 연속 방지)
         if (d > attackRange * 2.2f)
         {
-            // 멀면 가끔 대쉬로 확 붙고 나서 근접전(단조로운 걷기 접근 탈피)
-            if (d > 6.5f && moveDashCd <= 0f && Random.value < 0.5f)
-            { moveDashTimer = 0.28f; moveDashCd = 2.6f; AudioManager.Sfx("dash", 0.9f, 0.06f); return; }
+            // 멀면 자주 대쉬로 확 붙고 나서 근접전(단조로운 걷기 접근 탈피 — 유동적)
+            if (d > 6.0f && moveDashCd <= 0f && Random.value < 0.7f)
+            { moveDashTimer = 0.3f; moveDashCd = 1.9f; AudioManager.Sfx("dash", 0.9f, 0.06f); return; }
             BeginPattern(PickRanged());
         }
         else if (d <= attackRange * 1.2f && DyToPlayer() <= attackHeight)
@@ -148,7 +199,6 @@ public class BossEnemy : Enemy
     private Pattern PickRangedOnce()
     {
         float r = Random.value;
-        if (phase2 && r < 0.30f) return Pattern.QuakeWave;   // P2: 지면 파동 추가
         return r < 0.6f ? Pattern.Charge : Pattern.Volley;
     }
 
@@ -162,8 +212,7 @@ public class BossEnemy : Enemy
         if (phase2)
         {
             if (r < 0.24f) return Pattern.RedSlash;
-            if (r < 0.44f) return Pattern.LeapSlam;
-            if (r < 0.58f) return Pattern.QuakeWave;
+            if (r < 0.52f) return Pattern.LeapSlam;   // 내려찍기+충격파 통합 패턴(QuakeWave 흡수)
             return Pattern.Combo3;
         }
         return r < 0.75f ? Pattern.Combo3 : Pattern.Charge;   // P1 근접에도 가끔 돌진(거리 흔들기)
@@ -263,16 +312,13 @@ public class BossEnemy : Enemy
                 {
                     float vx = (player.position.x - transform.position.x) / leapTime;
                     rb.linearVelocity = new Vector2(vx, 5.5f + leapTime * 9.81f * 0.5f);   // 포물선으로 플레이어 머리 위까지
+                    SpawnWarnBox(new Vector2(player.position.x, transform.position.y), slamWidth * 2f, 1.5f, leapTime);   // ★착지(내려찍기) 예상 지점 경고
                 }
                 stateTimer = leapTime + 1.2f;   // 안전 타임아웃
+                step = 0;   // 0=도약 중, 1~3=충격파 링
                 break;
             case Pattern.RedSlash: stateTimer = 0.55f; struck = false; if (redBox != null) redBox.enabled = false; break;
             case Pattern.Roar:     ToRecover(0.4f); break;
-            case Pattern.QuakeWave:   // 내려찍기 즉시 + 파동 시작
-                Juice.Shake(0.35f, 0.25f);
-                AudioManager.Sfx("door_slam");
-                stateTimer = 0.22f; step = 0;
-                break;
         }
     }
 
@@ -327,31 +373,6 @@ public class BossEnemy : Enemy
                 }
                 break;
 
-            case Pattern.QuakeWave:   // 지면 파동 — 좌우로 3단 확산(점프 회피, 링마다 스파크)
-                SetMove(0);
-                stateTimer -= Time.deltaTime;
-                if (stateTimer <= 0f)
-                {
-                    step++;
-                    float dist = step * 3.2f;
-                    for (int s = -1; s <= 1; s += 2)
-                    {
-                        Vector2 wp = (Vector2)transform.position + new Vector2(s * dist, 0.25f);
-                        ParryFx.Spark(wp, false);   // 파동 이펙트(백은빛 스파크 재사용)
-                        if (player != null
-                            && Mathf.Abs(player.position.x - wp.x) <= 1.5f
-                            && player.position.y - transform.position.y <= 1.3f)   // 점프 중이면 회피
-                        {
-                            var pcw = player.GetComponent<PlayerController>();
-                            if (pcw != null) pcw.TakeDamage(attackDamage * 0.75f, true, this, wp);
-                        }
-                    }
-                    Juice.Shake(0.12f, 0.1f);
-                    if (step >= 3) ToRecover(attackRecover * 1.1f);
-                    else stateTimer = 0.22f;
-                }
-                break;
-
             case Pattern.Volley:   // 약한 3연발 → 기 모으기 → 큰 것 한 방(전부 반사 기회)
                 SetMove(0);
                 stateTimer -= Time.deltaTime;
@@ -378,17 +399,32 @@ public class BossEnemy : Enemy
                 }
                 break;
 
-            case Pattern.LeapSlam: // 도약 → 착지 충격파(점프로 회피)
+            case Pattern.LeapSlam: // ★도약 → 착지 내려찍기(주변 강타) → 좌우로 퍼지는 충격파 3링(각 링 빨간 경고)
                 stateTimer -= Time.deltaTime;
-                bool falling = rb != null && rb.linearVelocity.y <= 0.05f;
-                bool grounded = Physics2D.Raycast(transform.position, Vector2.down, 1.0f, wallMask).collider != null;
-                if ((falling && grounded) || stateTimer <= 0f)
+                if (step == 0)   // 도약 중 — 착지 대기
                 {
-                    SetMove(0);
-                    Juice.Shake(0.4f, 0.3f);
-                    AudioManager.Sfx("door_slam");
-                    MeleeHit(attackDamage, false, slamWidth, 1.2f);   // 넓고 낮은 충격파 — 점프하면 회피
-                    ToRecover(attackRecover * 1.2f);
+                    bool falling = rb != null && rb.linearVelocity.y <= 0.05f;
+                    bool grounded = Physics2D.Raycast(transform.position, Vector2.down, 1.0f, wallMask).collider != null;
+                    if ((falling && grounded) || stateTimer <= 0f)
+                    {
+                        SetMove(0);
+                        Juice.Shake(0.5f, 0.35f);
+                        AudioManager.Sfx("door_slam");
+                        MeleeHit(attackDamage, false, slamWidth, 1.4f);   // 내려찍기 주변 강타(착지 지점)
+                        step = 1;
+                        stateTimer = 0.3f;
+                        QuakeRingWarn(1, 0.3f);   // 첫 충격파 링 예고(좌우 빨간 박스)
+                    }
+                }
+                else   // 충격파 확산 — 링마다 예고 후 터뜨림
+                {
+                    if (stateTimer <= 0f)
+                    {
+                        QuakeRingHit(step);
+                        step++;
+                        if (step > 3) ToRecover(attackRecover * 1.2f);
+                        else { stateTimer = 0.3f; QuakeRingWarn(step, 0.3f); }
+                    }
                 }
                 break;
 

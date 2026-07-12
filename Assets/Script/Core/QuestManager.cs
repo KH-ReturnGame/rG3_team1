@@ -27,7 +27,9 @@ public class Quest
     public bool pathToDescend;           // 길찾기 대상 = 하강 포탈(우물). 그 외엔 채집/처치 대상으로 자동
     public string pathDoorScene;         // 길찾기 대상 = 이 씬으로 가는 SceneDoor(정확 매치, 씬에 없으면 화살표 미표시)
     public bool pathToBoss;              // 길찾기 대상 = 현재 씬의 보스(BossEnemy) 위치
+    public List<string> visitIds;        // 방문형 목표(여러 지점 상호작용 — 마을 둘러보기 등). 비우면 일반 채집/처치
     [System.NonSerialized] public int progress;
+    [System.NonSerialized] public HashSet<string> visited;   // 이미 방문한 지점(중복 카운트 방지)
 
     public string CategoryLabel()
     { switch (category) { case QuestCategory.Main: return "주요"; case QuestCategory.Gather: return "수집"; case QuestCategory.Combat: return "전투"; } return ""; }
@@ -35,6 +37,8 @@ public class Quest
     { if (!string.IsNullOrEmpty(targetName)) return targetName; if (goal == QuestGoal.Gather) { var it = ItemDatabase.Get(targetId); if (it != null) return it.itemName; } return targetId; }
     public string ObjectiveText()
     {
+        if (visitIds != null && visitIds.Count > 0)   // 방문형: 둘러보기 진행도
+            return progress >= targetCount ? "마을을 다 둘러봤다" : "마을을 둘러보기 (" + progress + "/" + targetCount + ")";
         if (!string.IsNullOrEmpty(objectiveOverride)) return objectiveOverride;
         if (progress >= targetCount) return "목표 달성! — 게시판에서 보상 수령";
         return TargetDisplay() + (goal == QuestGoal.Gather ? " 채집하기 (" : " 처치 (") + progress + "/" + targetCount + ")";
@@ -74,11 +78,12 @@ public class QuestManager : MonoBehaviour
             autoAccept = true, objectiveOverride = "무너진 통로를 빠져나가 불빛을 찾아라", pathDoorScene = "StartingArea",
             goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, xpReward = 40 });
 
-        // 길잡이(마을 진입 시 자동 수주) — 다친 주인공이 마을에 도착한 직후 안내
-        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "기억을 잃은 자", prereqId = "mq_awaken",
-            description = "지상으로 나가려다 추락해, 강한 충격에 기억을 잃었다.\n감지 기프트를 가진 '여울'이 쓰러진 나를 발견해 자기 집으로 데려왔다. — 여긴 지하 마을.\n몸을 추스르고 마을을 둘러보자(엔지니어·상인들·게시판). 채비가 되면 우물로 내려가 본다.",
-            autoAccept = true, objectiveOverride = "마을을 둘러보고, 우물로 내려가라", pathToDescend = true, pathDoorScene = "Metroidvania",
-            goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 1, xpReward = 30 });
+        // 길잡이(마을 진입 시 자동 수주) — 다친 주인공이 마을을 둘러보며 정보를 모은다(방문형 목표 4곳)
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "낯선 지하 마을", prereqId = "mq_awaken",
+            description = "누군가 쓰러진 나를 이 지하 마을로 옮겨 주었다. 이름도, 어디서 왔는지도 기억나지 않는다.\n우선 몸을 추스르며 마을을 둘러보자 — 엔지니어, 상인, 제작대, 게시판. 무언가 단서가 있을지도.",
+            autoAccept = true, pathToDescend = true, pathDoorScene = "Metroidvania",
+            goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 4,
+            visitIds = new List<string> { "engineer", "shop", "craft", "board" }, xpReward = 30 });
 
         available.Add(new Quest { id = "mq_descend", category = QuestCategory.Main, giver = "여울", title = "심층을 향해", prereqId = "guide_village",
             description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부의 지배자를 찾아라.",
@@ -197,6 +202,40 @@ public class QuestManager : MonoBehaviour
             }
         if (changed) Changed();
     }
+    // 방문형 목표(마을 둘러보기): 지점 상호작용 시 호출. 아직 안 들른 곳이면 진행도 +1, 다 돌면 즉시 완료.
+    public void ReportVisit(string visitId)
+    {
+        if (string.IsNullOrEmpty(visitId)) return;
+        bool changed = false;
+        var done = new List<Quest>();
+        foreach (var q in accepted)
+            if (q.visitIds != null && q.visitIds.Contains(visitId) && q.progress < q.targetCount)
+            {
+                if (q.visited == null) q.visited = new HashSet<string>();
+                if (q.visited.Add(visitId))   // 로드 후 visited는 비어있을 수 있음 → Count 덮어쓰기 대신 증가(진행도 후퇴 방지)
+                {
+                    q.progress = Mathf.Min(q.targetCount, q.progress + 1);
+                    changed = true;
+                    Toast.Show(VisitLabel(visitId) + "  (" + q.progress + "/" + q.targetCount + ")", 2.5f);
+                    if (q.progress >= q.targetCount && q.autoAccept) done.Add(q);   // 다 둘러봄 → 즉시 완료(완료 독백은 HubEntryCutscene가 감지)
+                }
+            }
+        foreach (var q in done) Complete(q);
+        if (changed) Changed();
+    }
+
+    private string VisitLabel(string id)
+    {
+        switch (id)
+        {
+            case "engineer": return "엔지니어와 이야기했다";
+            case "shop":     return "재료 상인을 만났다";
+            case "craft":    return "제작대를 살펴봤다";
+            case "board":    return "의뢰 게시판을 확인했다";
+        }
+        return "둘러봤다";
+    }
+
     public void ReportKill(string killId)
     {
         if (string.IsNullOrEmpty(killId)) return;
@@ -234,6 +273,7 @@ public class QuestManager : MonoBehaviour
         // 주요(자동 수주) 퀘스트 = 원신식 보상 배너(중앙 카드) / 게시판 의뢰 = 기존 토스트
         if (q.autoAccept && q.category == QuestCategory.Main)
         {
+            SlowMoFx.BeginTimed(0.04f, 0.5f);   // 극적 순간 — 화면이 잠깐 멎었다 다시 흐른다
             string reward = (q.rewardGold > 0 ? "+" + q.rewardGold.ToString("n0") + " G   " : "")
                           + (q.xpReward > 0 ? "+" + q.xpReward + " XP" : "");
             AcquireBanner.Show(q.title, reward, null, "주요 퀘스트 완료");

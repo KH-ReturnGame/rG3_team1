@@ -1,11 +1,11 @@
 using System.Collections;
 using UnityEngine;
 
-// 마을(허브) 진입 컷씬.
-//  · 첫 도착(길잡이 퀘스트 미완료) = 캐논 각성 시퀀스(순서 강제):
-//    걸어 들어옴(Walk) → 입구서 쓰러짐 → 암전 → (여울 집) 밝아짐 → 깨어나는 모션 → 여울 대사.
-//    ★ 대사는 이 컷씬이 '끝에서 직접' 띄운다(VillageGuide가 독립 재생하면 레이스로 먼저 떠버림).
-//  · 재진입 = 평범하게 걸어 들어오기.
+// 마을(허브) 진입 연출 + 마을 탐방 스토리.
+//  · 첫 도착: 마을로 걸어 들어와 주인공 '독백'(기억상실·구조·회복 결심). 여울이 떠먹여 주던 각성 컷씬은 폐지.
+//    이후 마을을 돌아다니며 엔지니어·상인·제작대·게시판을 둘러보는 것이 guide_village 퀘스트 목표.
+//  · 마을을 다 둘러보면(guide_village 완료) 주인공 독백으로 '우물 아래로 내려가자' — 다음 방향 제시.
+//  · 재진입: 짧게 걸어 들어오기만.
 public class HubEntryCutscene : MonoBehaviour
 {
     [Header("걷기")]
@@ -21,20 +21,26 @@ public class HubEntryCutscene : MonoBehaviour
     public float letterboxTime = 0.5f;
     public float holdAfter = 0.25f;
 
-    [Header("첫 도착 각성 (걷기→기절→암전→깨어남→모션→대사)")]
-    public float staggerDistance = 3f;      // 비틀거리며 들어오는 거리(짧게)
-    public string sprawlState = "GroundSlam";   // 쓰러진 자세(클립)
-    [Range(0f, 1f)] public float sprawlFrame = 0.62f;   // 클립의 이 지점에서 정지 = GroundSlam07 스프라이트 한 장 고정
-    public string wakeState = "Crouch";         // 깨어나는(일어나는) 모션
-    public float faintHold = 0.7f;          // 쓰러진 채 유지
-    public float fadeTime = 0.8f;           // 암전/밝아짐 시간
-    public float blackHold = 1.2f;          // 암전 유지(데려오는 시간 경과)
-    public float wakeHold = 1.0f;           // 깨어나는 모션 유지
+    // 첫 도착 독백(기억상실 + 누군가 구조 + 회복/둘러보기 결심)
+    [TextArea] public string[] arrivalLines = {
+        "[아픔]……여긴, 어디지. 낯선 천장. 낯선 공기.",
+        "위에서… 떨어진 것 같은데. 그 다음이 기억나지 않아. 내 이름조차도.",
+        "누군가 쓰러진 날 여기까지 옮겨준 모양이다. …얼굴도 제대로 못 봤지만.",
+        "[결심]지금은 회복이 먼저야. 몸을 추스르고, 이 마을을 둘러보자.",
+        "엔지니어, 상인, 제작대, 게시판… 뭐라도 단서가 있겠지."
+    };
+
+    // 마을을 다 둘러본 뒤 독백(다음 목표 = 우물 하강)
+    [TextArea] public string[] exploredLines = {
+        "[한숨]몸은… 이제 좀 움직일 만하다.",
+        "마을은 대충 파악했어. 더 서성여 봐야 나올 건 없겠지.",
+        "[결심]답은 아래에 있어. 저 우물 — 지하 깊은 곳으로 내려가 보자."
+    };
 
     private static bool playedThisSession;
-    private float fadeAlpha;
-    private Texture2D black;
-    private bool dialogueDone;
+    private bool introDone;
+    private bool wasExploredAtEntry;   // 진입 시점에 이미 완료 상태였나(재진입·이어하기 → 완료 독백 생략)
+    private bool exploredNarrated;
 
     void Start() { StartCoroutine(Play()); }
 
@@ -45,6 +51,7 @@ public class HubEntryCutscene : MonoBehaviour
 
         var qm = QuestManager.Instance;
         var guide = qm != null ? qm.Find("guide_village") : null;
+        wasExploredAtEntry = guide != null && qm.IsCompleted(guide);
         bool firstArrival = guide != null && !qm.IsCompleted(guide) && !playedThisSession;
         playedThisSession = true;
 
@@ -53,60 +60,52 @@ public class HubEntryCutscene : MonoBehaviour
         if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Show(letterboxTime);
         yield return null;
 
-        if (!firstArrival)
+        // 걸어 들어오기(공통)
+        yield return WalkIn(pc, walkInDistance, firstArrival ? walkSpeed * 0.8f : walkSpeed);
+        pc.CutsceneStop();
+
+        if (firstArrival)
         {
-            // 재진입: 평범하게 걸어 들어오기
-            yield return WalkIn(pc, walkInDistance, walkSpeed);
-            pc.CutsceneStop();
-            if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxTime);
-            yield return new WaitForSeconds(holdAfter);
-            pc.cutsceneActive = false;
-            yield break;
+            // 첫 도착: 길잡이 퀘스트 수주 + 주인공 독백
+            if (qm != null) qm.AcceptAutoQuests();
+            bool done = false;
+            DialogueUI.Show("???", null, arrivalLines, () => done = true);
+            while (!done) yield return null;
         }
 
-        // ── 첫 도착 각성 시퀀스 ──
-        if (qm != null) qm.AcceptAutoQuests();                    // 길잡이 퀘스트 수주(대사는 아래에서 직접)
-
-        // 1) 비틀비틀 걸어 들어옴
-        yield return WalkIn(pc, staggerDistance, walkSpeed * 0.75f);
-        // 2) 입구서 쓰러짐 — GroundSlam07 한 장으로 고정(애니 재생 X)
-        pc.CutsceneStop();
-        pc.PlayAnimFrozen(sprawlState, sprawlFrame);
-        yield return new WaitForSeconds(faintHold);
-        // 3) 암전 (감지 NPC가 여울 집으로 데려가는 시간)
-        yield return Fade(0f, 1f, fadeTime);
-        yield return new WaitForSeconds(blackHold);
-        // 4) 여울 집에서 밝아짐(아직 누운 채 — 같은 프레임 고정)
-        pc.PlayAnimFrozen(sprawlState, sprawlFrame);
-        yield return Fade(1f, 0f, fadeTime);
-        yield return new WaitForSeconds(0.4f);
-        // 5) 깨어나는 모션
-        pc.PlayAnim(wakeState);
-        yield return new WaitForSeconds(wakeHold);
-        // 6) 여울 대사 (끝날 때까지 대기) — 초상화는 Resources/Portraits/여울.png 자동 로드(DialogueUI 규약)
-        Sprite portrait = null;
-        string[] lines = {
-            "[놀람]그쪽은 대체 누구신가요?? 이 주변엔 이곳말곤 마을이 없을 텐데.",
-            "쓰러져 있는 걸 감지해서 데려온 거예요. ...뭘 그렇게 봐요, 고맙단 인사는 됐고. 치료도 내가 아니라 다른 사람 불러서 해준 거니까.",
-            "이름은? 어디서 왔어요? ...하나도, 기억이 안 난다고요.",
-            "머리를 어지간히 세게 부딪힌 모양이네. ...위에서 떨어진 것 같긴 한데, 그 낡은 후드 하나 걸치고서.",
-            "여긴 지하 마을이에요. 일단 몸부터 추스르고 마을이나 둘러봐요. 엔지니어, 상인들, 게시판... 필요한 건 거기서 알아서 찾고.",
-            "정신 들면 의뢰라도 받든가. ...[V]로 길 찾을 수 있으니까. 뭐, 죽지 않을 만큼은 챙기고 다녀요."
-        };
-        dialogueDone = false;
-        DialogueUI.Show("여울", portrait, lines, () => dialogueDone = true);
-        while (!dialogueDone) yield return null;
-
-        // 7) 정리
         if (useLetterbox && Letterbox.Instance != null) Letterbox.Instance.Hide(letterboxTime);
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(holdAfter);
         pc.cutsceneActive = false;
+        introDone = true;
 
-        // 8) 도움말 다시보기 안내(1회 — 이미 봤으면 안 뜸)
-        yield return new WaitForSeconds(0.6f);
-        if (HelpPopupUI.Instance != null)
+        // 첫 도착 컷씬 끝 → 도움말 다시보기 안내(1회, 이미 봤으면 생략)
+        if (firstArrival && HelpPopupUI.Instance != null)
             HelpPopupUI.Instance.ShowOnce("handbook", "도움말 다시보기",
                 "지금까지 본 도움말은 언제든 다시 볼 수 있습니다.\n[G] 키로 *모험 핸드북*을 열고 [도움말] 탭을 확인해 보세요.\n핸드북에는 지도와 몬스터 도감도 함께 들어 있습니다.");
+    }
+
+    // 마을을 다 둘러본 순간(guide_village가 방금 완료) → 우물 하강 독백 1회
+    void Update()
+    {
+        if (!introDone || exploredNarrated || wasExploredAtEntry) return;
+        var qm = QuestManager.Instance;
+        if (qm == null || !qm.completed.Contains("guide_village")) return;
+        // UI/대사/컷씬 중엔 대기(마지막 방문이 제작대 등 UI였을 수 있음 — 닫힌 뒤에 독백)
+        if (Inventory.IsUIOpen || DialogueUI.IsOpen || Letterbox.Covering) return;
+
+        exploredNarrated = true;
+        StartCoroutine(NarrateExplored());
+    }
+
+    private IEnumerator NarrateExplored()
+    {
+        var pc = PlayerController.Instance;
+        yield return new WaitForSeconds(0.4f);
+        if (pc != null) { pc.cutsceneActive = true; pc.ZeroVelocity(); }
+        bool done = false;
+        DialogueUI.Show("???", null, exploredLines, () => done = true);
+        while (!done) yield return null;
+        if (pc != null) pc.cutsceneActive = false;
     }
 
     private IEnumerator WalkIn(PlayerController pc, float distance, float speed)
@@ -122,23 +121,5 @@ public class HubEntryCutscene : MonoBehaviour
             t += Time.deltaTime;
             yield return null;
         }
-    }
-
-    private IEnumerator Fade(float from, float to, float dur)
-    {
-        float t = 0f;
-        while (t < dur) { fadeAlpha = Mathf.Lerp(from, to, t / dur); t += Time.deltaTime; yield return null; }
-        fadeAlpha = to;
-    }
-
-    void OnGUI()
-    {
-        if (fadeAlpha <= 0.001f) return;
-        if (black == null) { black = new Texture2D(1, 1); black.SetPixel(0, 0, Color.black); black.Apply(); }
-        GUI.depth = -1900;
-        var prev = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, fadeAlpha);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), black);
-        GUI.color = prev;
     }
 }

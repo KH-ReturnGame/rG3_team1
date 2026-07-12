@@ -86,8 +86,8 @@ public class QuestTracker : MonoBehaviour
         float pad = 10f, w = 300f;
         float x = 14f, y = Screen.height * 0.40f;
 
-        // 배경 패널(살짝 어둡게, 왼쪽 시안 띠)
-        float h = PathActive ? 116f : 70f;
+        // 배경 패널(살짝 어둡게, 왼쪽 시안 띠) — 아래로 넉넉히(비활성 시에도 [V] 길찾기 안내가 배경 안에 들어오게)
+        float h = PathActive ? 128f : 92f;
         Fill(new Rect(x, y, w, h), UITheme.A(UITheme.BgSolid, 0.62f));
         Fill(new Rect(x, y, 3f, h), UITheme.A(UITheme.Accent, 0.95f));
 
@@ -102,9 +102,9 @@ public class QuestTracker : MonoBehaviour
         objStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
         GUI.Label(new Rect(x + pad + 4f, y + 34f, w - pad - 10f, 22f), q.ObjectiveText(), objStyle);
 
-        // [V] 길찾기 힌트
-        hintStyle.normal.textColor = PathActive ? new Color(0.45f, 0.95f, 1f) : new Color(0.55f, 0.70f, 0.82f);
-        GUI.Label(new Rect(x + pad + 4f, y + 52f, w - pad - 10f, 18f), PathActive ? "[V] 길찾기 끄기" : "[V] 버튼을 눌러서 길찾기", hintStyle);
+        // [V] 길찾기 힌트 — 아래로 여유 있게 배치(배경 안)
+        hintStyle.normal.textColor = PathActive ? new Color(0.45f, 0.95f, 1f) : new Color(0.68f, 0.82f, 0.94f);
+        GUI.Label(new Rect(x + pad + 4f, y + 58f, w - pad - 10f, 22f), PathActive ? "[V] 길찾기 끄기" : "[V] 버튼을 눌러서 길찾기", hintStyle);
 
         // 길찾기: 방향 화살표 + 거리
         if (PathActive)
@@ -115,17 +115,17 @@ public class QuestTracker : MonoBehaviour
             {
                 Vector2 dir = tp - (Vector2)pc.transform.position;
                 float dist = dir.magnitude;
-                Rect ar = new Rect(x + pad, y + 74f, 38f, 38f);
+                Rect ar = new Rect(x + pad, y + 86f, 38f, 38f);
                 Fill(ar, UITheme.A(UITheme.Accent, 0.18f));
                 arrowStyle.normal.textColor = new Color(0.45f, 0.95f, 1f);
                 GUI.Label(ar, ArrowFor(dir), arrowStyle);
                 distStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
-                GUI.Label(new Rect(ar.xMax + 8f, y + 74f, w - 60f, 38f), Mathf.RoundToInt(dist) + "m", distStyle);
+                GUI.Label(new Rect(ar.xMax + 8f, y + 86f, w - 60f, 38f), Mathf.RoundToInt(dist) + "m", distStyle);
             }
             else
             {
                 distStyle.normal.textColor = new Color(0.6f, 0.7f, 0.8f);
-                GUI.Label(new Rect(x + pad, y + 78f, w - pad, 24f), "이 구역엔 목표가 없습니다", distStyle);
+                GUI.Label(new Rect(x + pad, y + 90f, w - pad, 24f), "이 구역엔 목표가 없습니다", distStyle);
             }
         }
     }
@@ -137,7 +137,7 @@ public class QuestTracker : MonoBehaviour
         iconStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
         objStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = false };
-        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 12, fontStyle = FontStyle.Bold };
+        hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold };
         arrowStyle = new GUIStyle(GUI.skin.label) { fontSize = 28, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         distStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
     }

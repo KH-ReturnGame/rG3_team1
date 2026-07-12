@@ -126431,10 +126431,6 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 5994272772996261918, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
-      propertyPath: maxJumps
-      value: 1000
-      objectReference: {fileID: 0}
-    - target: {fileID: 5994272772996261918, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: jumpForce
       value: 12
       objectReference: {fileID: 0}

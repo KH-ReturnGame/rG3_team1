@@ -13,6 +13,7 @@ public class DialogueUI : MonoBehaviour
 {
     public static DialogueUI Instance { get; private set; }
     public static bool IsOpen { get; private set; }
+    public static float ClosedAt = -99f;   // 마지막으로 대화가 닫힌 시각(unscaled) — 종료 입력이 상호작용에 재사용되는 것 방지
 
     private string speaker;
     private Sprite portrait;
@@ -146,6 +147,7 @@ public class DialogueUI : MonoBehaviour
     private void Close()
     {
         IsOpen = false; Inventory.DialogueOpen = false;
+        ClosedAt = Time.unscaledTime;   // 이 직후 같은 F/클릭이 상호작용에 재사용되지 않게(대화 재시작 방지)
         Action cb = onComplete; onComplete = null; lines = null;
         if (cb != null) cb();
     }

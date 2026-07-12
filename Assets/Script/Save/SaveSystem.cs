@@ -35,8 +35,8 @@ public static class SaveSystem
 
     public static void Delete(int slot) { if (Exists(slot)) File.Delete(PathFor(slot)); }
 
-    // 새 게임: 기본 데이터 생성·저장 후 시작 씬 로드
-    public static void NewGame(int slot, string startScene)
+    // 새 게임: 기본 데이터 생성·저장 후 시작 씬 로드(모드 선택 포함)
+    public static void NewGame(int slot, string startScene, GameMode.Mode mode = GameMode.Mode.Normal)
     {
         if (string.IsNullOrEmpty(startScene)) startScene = "TutorialScene";
 
@@ -47,12 +47,15 @@ public static class SaveSystem
             hearts = -1,            // -1 = 최대치로 시작
             maxHearts = 3,
             gold = 0,
-            items = new List<SavedItem>()
+            items = new List<SavedItem>(),
+            gameMode = (int)mode
         };
         Write(slot, data);
         CurrentSlot = slot;
         pending = data;
         IntroPending = true;   // 새 게임 → 시작 씬에서 인트로 컷씬 재생
+        GameMode.Current = mode;
+        TimeAttack.Reset();    // 타임어택 타이머 초기화
         TutorialFlow.Begin();  // 새 게임 → 온보딩 도움말 흐름 무장
         LoadSceneSafe(startScene);
     }
@@ -125,6 +128,9 @@ public static class SaveSystem
         data.helpSeen = new List<SavedHelp>();
         foreach (var h in HelpPopupUI.Seen) data.helpSeen.Add(new SavedHelp { title = h.title, body = h.body, id = h.id });
         data.openedChests = TreasureChest.SaveOpened();
+        data.gameMode = (int)GameMode.Current;
+        data.playTime = TimeAttack.PlayTime;
+        data.timeAttackDone = TimeAttack.Done;
     }
 
     private static void Apply(SaveSlotData data)
@@ -165,6 +171,8 @@ public static class SaveSystem
             foreach (var h in data.helpSeen)
                 if (!string.IsNullOrEmpty(h.title)) HelpPopupUI.Seen.Add(new HelpPopupUI.HelpEntry { title = h.title, body = h.body, id = h.id });
         TreasureChest.LoadOpened(data.openedChests);   // 씬 상자 비주얼(열림)도 함께 갱신
+        GameMode.Current = (GameMode.Mode)Mathf.Clamp(data.gameMode, 0, 2);
+        TimeAttack.Load(data.playTime, data.timeAttackDone);
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록

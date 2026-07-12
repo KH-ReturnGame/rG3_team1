@@ -13,6 +13,7 @@ public class StartMenu : MonoBehaviour
     private enum Page { Main, NewGame, Load }
     private Page page = Page.Main;
     private int confirmSlot = -1;   // 덮어쓰기 확인 중인 슬롯
+    private GameMode.Mode selectedMode = GameMode.Mode.Normal;   // 새 게임 모드(일반/트레져헌터/스피드런)
 
     private GUIStyle titleRed, titleCream, subStyle, menuStyle, headerStyle, slotStyle, slotSub, smallStyle, verStyle;
 
@@ -168,8 +169,38 @@ public class StartMenu : MonoBehaviour
 
         headerStyle.fontSize = Mathf.RoundToInt(sh * 0.024f);
         headerStyle.normal.textColor = new Color(0.60f, 0.61f, 0.65f);
-        GUI.Label(new Rect(x, y, w, sh * 0.04f), newGameMode ? "새 게임 — 슬롯 선택" : "불러오기", headerStyle);
+        GUI.Label(new Rect(x, y, w, sh * 0.04f), newGameMode ? "새 게임 — 모드 · 슬롯 선택" : "불러오기", headerStyle);
         y += sh * 0.055f;
+
+        // ── 모드 선택(클릭으로 일반 ↔ 트레져 헌터 ↔ 스피드런 순환) ──
+        if (newGameMode)
+        {
+            Rect mr = new Rect(x, y, w, sh * 0.045f);
+            bool mhv = mr.Contains(m);
+            smallStyle.fontSize = Mathf.RoundToInt(sh * 0.023f);
+            var a0 = smallStyle.alignment; smallStyle.alignment = TextAnchor.MiddleCenter;
+            Color mdim = mhv ? Color.white : new Color(0.62f, 0.63f, 0.67f);
+            Color mval = selectedMode == GameMode.Mode.Normal ? new Color(0.85f, 0.88f, 0.80f) : new Color(0.96f, 0.80f, 0.34f);
+            string ms1 = "모드   ‹ ", ms2 = GameMode.Label(selectedMode), ms3 = " ›";
+            float mw1 = smallStyle.CalcSize(new GUIContent(ms1)).x;
+            float mw2 = smallStyle.CalcSize(new GUIContent(ms2)).x;
+            float mw3 = smallStyle.CalcSize(new GUIContent(ms3)).x;
+            float mx0 = sw * 0.5f - (mw1 + mw2 + mw3) * 0.5f;
+            SetCol(smallStyle, mdim); GUI.Label(new Rect(mx0, mr.y, mw1 + 4f, mr.height), ms1, smallStyle);
+            SetCol(smallStyle, mval); GUI.Label(new Rect(mx0 + mw1, mr.y, mw2 + 4f, mr.height), ms2, smallStyle);
+            SetCol(smallStyle, mdim); GUI.Label(new Rect(mx0 + mw1 + mw2, mr.y, mw3 + 4f, mr.height), ms3, smallStyle);
+            smallStyle.alignment = a0;
+
+            verStyle.fontSize = Mathf.RoundToInt(sh * 0.016f);
+            var pa = verStyle.alignment; verStyle.alignment = TextAnchor.MiddleCenter;
+            verStyle.normal.textColor = new Color(0.60f, 0.60f, 0.63f);
+            GUI.Label(new Rect(sw * 0.5f - 320f, mr.yMax - 2f, 640f, sh * 0.028f), GameMode.Desc(selectedMode), verStyle);
+            verStyle.alignment = pa;
+            verStyle.normal.textColor = new Color(0.42f, 0.40f, 0.38f);
+
+            if (mhv && click) { selectedMode = GameMode.Next(selectedMode); Event.current.Use(); }
+            y += sh * 0.078f;
+        }
 
         slotStyle.fontSize = Mathf.RoundToInt(sh * 0.024f);
         slotSub.fontSize = Mathf.RoundToInt(sh * 0.017f);
@@ -191,7 +222,7 @@ public class StartMenu : MonoBehaviour
                 UITheme.Fill(r, UITheme.A(UITheme.Danger, 0.08f));
                 slotStyle.normal.textColor = UITheme.Text;
                 GUI.Label(new Rect(r.x + 18f, r.y, r.width * 0.55f, rowH), "슬롯 " + (i + 1) + " — 덮어쓸까요?", slotStyle);
-                if (TextBtn(new Rect(r.xMax - 170f, r.y, 70f, rowH), "예", UITheme.Danger, m, click)) SaveSystem.NewGame(i, startScene);
+                if (TextBtn(new Rect(r.xMax - 170f, r.y, 70f, rowH), "예", UITheme.Danger, m, click)) SaveSystem.NewGame(i, startScene, selectedMode);
                 if (TextBtn(new Rect(r.xMax - 92f, r.y, 80f, rowH), "아니오", new Color(0.62f, 0.63f, 0.67f), m, click)) confirmSlot = -1;
             }
             else
@@ -209,7 +240,7 @@ public class StartMenu : MonoBehaviour
                         ? (hv ? Color.white : new Color(0.72f, 0.73f, 0.76f))
                         : new Color(0.38f, 0.39f, 0.43f);
                     GUI.Label(new Rect(r.x + 18f, r.y, r.width - 36f, rowH), "슬롯 " + (i + 1) + "    " + (newGameMode ? "새 게임 시작" : "비어있음"), slotStyle);
-                    if (newGameMode && hv && click) { SaveSystem.NewGame(i, startScene); Event.current.Use(); }
+                    if (newGameMode && hv && click) { SaveSystem.NewGame(i, startScene, selectedMode); Event.current.Use(); }
                 }
                 else
                 {

@@ -178,13 +178,33 @@ public class StatUI : MonoBehaviour
         {
             float qs = Mathf.Clamp(sh * 0.052f, 40f, 70f);
             Rect q = new Rect(sw * 0.018f, sh - qs - sh * 0.035f, qs, qs);
-            if (qReadyFlash > 0f)   // 쿨 완료 순간: 배지 뒤 파란 글로우 번쩍(감쇠)
-                UITheme.Glow(q, PipBlue, 12f, 0.55f * (qReadyFlash / 0.6f));
-            GUI.DrawTexture(q, BadgeTex());
-            glyphStyle.fontSize = Mathf.RoundToInt(qs * 0.46f);
-            glyphStyle.normal.textColor = Gold;
-            GUI.Label(q, "Q", glyphStyle);
 
+            bool qReady = pc.SkillCooldownLeft <= 0f;
+            float flashK = qReadyFlash > 0f ? qReadyFlash / 0.6f : 0f;                 // 1→0 감쇠
+            float readyPulse = qReady ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4.5f) : 0f;
+
+            // (a) 준비 완료 지속 — 배지 뒤 은은한 맥동 글로우(아드레날린 '풀' 상태 강조)
+            if (qReady) UITheme.Glow(q, PipBlue, 7f + 5f * readyPulse, 0.16f + 0.14f * readyPulse);
+
+            // (b) 쿨 완료 순간 — 강한 글로우 폭발 + 바깥으로 확산하는 링
+            if (qReadyFlash > 0f)
+            {
+                UITheme.Glow(q, PipBlue, 22f, 0.72f * flashK);
+                float ex = (1f - flashK) * qs;                                          // 링 확산 0→qs
+                Rect ring = new Rect(q.x - ex * 0.5f, q.y - ex * 0.5f, q.width + ex, q.height + ex);
+                UITheme.Border2(ring, 1f + 2.5f * flashK, UITheme.A(PipBlue, 0.85f * flashK));
+            }
+
+            // (c) 배지 — 완료 순간 스케일 펀치(살짝 커졌다 복귀)
+            float punch = 1f + 0.20f * flashK * flashK;
+            float gw = qs * punch, gh = qs * punch;
+            Rect qDraw = new Rect(q.center.x - gw * 0.5f, q.center.y - gh * 0.5f, gw, gh);
+            GUI.DrawTexture(qDraw, BadgeTex());
+            glyphStyle.fontSize = Mathf.RoundToInt(qs * 0.46f);
+            glyphStyle.normal.textColor = qReady ? UITheme.Lighten(Gold, 0.22f * readyPulse) : UITheme.A(Gold, 0.7f);
+            GUI.Label(qDraw, "Q", glyphStyle);
+
+            // (d) 진행 핍 — 쿨 중엔 차오르고, 준비되면 전부 밝게 맥동
             float frac = pc.skillCooldown > 0f ? 1f - Mathf.Clamp01(pc.SkillCooldownLeft / pc.skillCooldown) : 1f;
             int pips = 5, lit = Mathf.FloorToInt(frac * pips + 0.0001f);
             float pw = qs * 0.42f, ph = qs * 0.30f, pGap = 5f;
@@ -193,7 +213,8 @@ public class StatUI : MonoBehaviour
             {
                 var prev = GUI.color;
                 bool on = i < lit;
-                GUI.color = on ? PipBlue : new Color(PipBlue.r, PipBlue.g, PipBlue.b, 0.18f);
+                if (qReady) GUI.color = Color.Lerp(PipBlue, UITheme.Lighten(PipBlue, 0.3f), readyPulse);   // 준비: 전부 밝게 맥동
+                else        GUI.color = on ? PipBlue : new Color(PipBlue.r, PipBlue.g, PipBlue.b, 0.18f);
                 GUI.DrawTexture(new Rect(px + i * (pw + pGap), py, pw, ph), PipTex());
                 GUI.color = prev;
             }

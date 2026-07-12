@@ -19,6 +19,9 @@ public class PlayerInteractor : MonoBehaviour
     void Update()
     {
         if (Inventory.IsUIOpen) { nearest = null; nearestCol = null; return; }   // UI 열려있으면 잠금
+        // 대화가 방금 닫혔으면(같은 프레임 F로 종료 등) 그 입력이 상호작용에 재사용돼 대화가 재시작되는 것 방지.
+        // InventoryUI.open→InvUIOpen 반영이 한 프레임 늦어 생기는 IsUIOpen=false 창을 덮는다.
+        if (Time.unscaledTime - DialogueUI.ClosedAt < 0.2f) { nearest = null; nearestCol = null; return; }
         nearest = FindNearest(out nearestCol);
         if (nearest != null && Input.GetKeyDown(interactKey))
             nearest.Interact();

@@ -56,6 +56,14 @@ public class RangedEnemy : Enemy
 
     private Vector3 FireOrigin() => firePoint != null ? firePoint.position : transform.position + Vector3.up * 0.2f;
 
+    // 조준점 = 플레이어 '몸통'(콜라이더 중심). player.position은 발밑 피벗이라 그대로 쓰면 발을 겨냥함.
+    private Vector2 PlayerAimPoint()
+    {
+        if (player == null) return Vector2.zero;
+        var col = player.GetComponent<Collider2D>();
+        return col != null ? (Vector2)col.bounds.center : (Vector2)player.position + Vector2.up * 0.8f;
+    }
+
     // 조준 각도를 수평 기준 ±aimAngleLimit로 클램프 — 대각선 저격 대신 '직선탄'에 가깝게
     private Vector2 ClampAim(Vector2 toPlayer)
     {
@@ -80,7 +88,7 @@ public class RangedEnemy : Enemy
         Vector3 origin = FireOrigin();
         if (!aimLocked)
         {
-            if (player != null) lockedDir = ClampAim((Vector2)(player.position - origin));
+            if (player != null) lockedDir = ClampAim(PlayerAimPoint() - (Vector2)origin);   // 몸통 조준
             if (stateTimer <= aimLockTime) aimLocked = true;   // 이후로는 방향 고정
         }
         UpdateLaser(origin);
@@ -113,7 +121,7 @@ public class RangedEnemy : Enemy
         if (projectilePrefab == null) return;
         Vector3 origin = FireOrigin();
         Vector2 dir = aimLocked ? lockedDir
-            : (player != null ? ClampAim((Vector2)(player.position - origin)) : new Vector2(this.dir, 0f));   // 안전망
+            : (player != null ? ClampAim(PlayerAimPoint() - (Vector2)origin) : new Vector2(this.dir, 0f));   // 안전망(몸통 조준)
 
         GameObject go = Instantiate(projectilePrefab, origin, Quaternion.identity);
         Projectile proj = go.GetComponent<Projectile>();

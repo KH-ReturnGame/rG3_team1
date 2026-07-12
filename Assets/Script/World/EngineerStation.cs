@@ -10,6 +10,7 @@ public class EngineerStation : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        if (QuestManager.Instance != null) QuestManager.Instance.ReportVisit("engineer");   // 마을 둘러보기 진행
         // (구) 최초 대화에서 미니맵 모듈 지급 → 폐지(미니맵은 기본 제공)
         var npc = GetComponent<NpcDialogue>();
         if (npc != null && npc.HasLines) npc.Run(OpenEngineer);
