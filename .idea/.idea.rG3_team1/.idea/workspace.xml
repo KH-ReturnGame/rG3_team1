@@ -11,7 +11,44 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/CODE_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODE_GUIDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Animation.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Animation/Effects.anim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Animation/Effects.anim.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Animation/all.controller" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Animation/all.controller.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Black.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Black.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Bluewa.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Bluewa.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/MapWork.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/MapWork.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Red.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/Red.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/RoundEffect.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/RoundEffect.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/RoundHits.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/RoundHits.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/ThunderEffects.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/ThunderEffects.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/YellowEffect.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/YellowEffect.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/addtive.mat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/addtive.mat.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/orange.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/orange.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/ui_renewer_reward_item.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Effect/ui_renewer_reward_item.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Scenes.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Scenes/SampleScene.unity" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Scenes/SampleScene.unity.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Script.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Script/GameManager.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Script/GameManager.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Script/SpriteAnimation.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Effect_Vol.1/Script/SpriteAnimation.cs.meta" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -200,7 +237,7 @@
       <workItem from="1781540612015" duration="3629000" />
       <workItem from="1782989731745" duration="3339000" />
       <workItem from="1783293515955" duration="620000" />
-      <workItem from="1783777137824" duration="2841000" />
+      <workItem from="1783777137824" duration="4586000" />
     </task>
     <servers />
   </component>
