@@ -191,8 +191,8 @@ StartScene(StartMenu) → 새 게임 클릭 → SaveSystem.NewGame(슬롯, "Tuto
 - **UI 색 변경**: UITheme.cs 상단 팔레트. HUD만은 StatUI.cs 상단 상수.
 - **지역명 표기**: AreaTitle.Resolve의 switch에 씬 이름 추가.
 - **퀘스트 추가**: QuestManager.BuildQuests에 정의 추가.
-- **도움말 카드 추가**: HelpTrigger(구역 진입) 배치 or 코드에서 `HelpPopupUI.Instance.Show("gif_id", 제목, 본문)`.
-- **도움말 GIF 넣기**: GIF를 **프레임 PNG들로 추출**(ezgif.com 'split' 등) → `Assets/Resources/Help/<id>/000.png, 001.png…` 로 저장하면 해당 카드 하단에서 자동 루프 재생(기본 10fps, HelpPopupUI.gifFps). id 목록: attack(공격) parry(패링·그로기) chest(보물상자) arena(배틀 아레나) locked_wall(잠긴 문) fake_wall(비밀 통로) loot(전리품) charm(장신구) charge_jump(차지점프) hotkeys(단축키). 파일이 없으면 "시연 영상 준비 중" 표시. 핸드북 도움말 다시보기에서도 같은 GIF가 재생된다.
+- **도움말 카드 추가**: HelpTrigger(구역 진입) 배치 or 코드에서 `HelpPopupUI.Instance.Show("gif_id", 제목, 본문)`. 이미 본 카드는 안 띄우려면 `ShowOnce(...)`. **여러 페이지 카드**(하단 ◀ n/m ▶, ←→/AD/화살표 클릭으로 넘김): `ShowPages(force, new HelpPopupUI.HelpPage(id,제목,본문), ...)`. **전투 억제**: force=false 카드는 근처(11u)에 어그로 적이 있으면 전투가 끝날 때까지 큐에서 대기 — 스크립트 연출 모멘트(독백 끝 등)는 force=true로 즉시.
+- **도움말 GIF 넣기**: GIF를 **프레임 PNG들로 추출**(ezgif.com 'split' 등) → `Assets/Resources/Help/<id>/000.png, 001.png…` 로 저장하면 해당 카드 하단에서 자동 루프 재생(기본 10fps, HelpPopupUI.gifFps). id 목록: move(이동) attack(공격) guard(가드) parry(패링) chest(보물상자) arena(배틀 아레나) locked_wall(잠긴 문) fake_wall(비밀 통로) loot(인벤토리) use_item(아이템 사용) charm(장신구) charge_jump(차지점프) hotkeys(단축키) platform(통과형 발판) handbook(도움말 다시보기). 파일이 없으면 "시연 영상 준비 중" 표시. 핸드북 도움말 다시보기에서도 같은 GIF가 재생된다.
 - **밸런스**: 플레이어(공격력 10·패링 창)=Player 프리팹 인스펙터 / 적(체력 60·공격력)=각 Enemy 프리팹 / 반사탄=EnemyProjectile 프리팹.
 
 ---

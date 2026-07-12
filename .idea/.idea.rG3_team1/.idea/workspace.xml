@@ -11,11 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/QuestManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Player/PlayerController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/UI/StatUI.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/UI/StatUI.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/World/EngineerStation.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/World/EngineerStation.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/World/LockedDoor.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/World/LockedDoor.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CODE_GUIDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CODE_GUIDE.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -204,7 +200,7 @@
       <workItem from="1781540612015" duration="3629000" />
       <workItem from="1782989731745" duration="3339000" />
       <workItem from="1783293515955" duration="620000" />
-      <workItem from="1783777137824" duration="2245000" />
+      <workItem from="1783777137824" duration="2841000" />
     </task>
     <servers />
   </component>
