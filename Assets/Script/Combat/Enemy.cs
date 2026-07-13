@@ -61,6 +61,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     private GUIStyle labelStyle;
 
     protected float currentHealth;
+    protected bool invuln;            // 무적(보스 페이즈 전환 등) — TakeDamage 무시
     protected State state;
     protected float stateTimer;       // 공격 단계 잔여 시간
     protected float attackCdTimer;    // 공격 쿨다운
@@ -308,7 +309,7 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     // ── IDamageable ── (플레이어 공격에 맞음)
     public void TakeDamage(float damage)
     {
-        if (state == State.Dead) return;
+        if (state == State.Dead || invuln) return;
         if (state == State.Groggy) damage *= groggyDamageMultiplier;   // 그로기 중 치명타
 
         currentHealth -= damage;

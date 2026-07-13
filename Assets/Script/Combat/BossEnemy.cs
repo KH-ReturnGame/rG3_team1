@@ -52,6 +52,10 @@ public class BossEnemy : Enemy
     private float landX, groundY, bossGravity;   // 도약 착지 지점(공격·방사 기준) + 원래 중력
     private SpriteRenderer redGlow;       // 붉은 강공격 텔레그래프(자식 글로우)
     private int wallMask;
+    private Animator anim;                // Hero_Knight 애니메이터(상태별 재생)
+    private float attackAnimLen = 0.55f;  // Attack 클립 길이(Start에서 조회) — 연타가 애니를 끊지 않게 간격 계산
+    private float hitDelay = 0.28f;       // 휘두름 시작 → 타격(정점) 시점
+    private bool comboHit;                // 이번 콤보 타의 타격을 냈는지(휘두름/마무리 2단계)
 
     void OnEnable() { Active = this; }
     void OnDisable() { if (Active == this) Active = null; }
@@ -62,9 +66,31 @@ public class BossEnemy : Enemy
         base.Start();
         wallMask = LayerMask.GetMask("Ground");
         bossGravity = rb != null ? rb.gravityScale : 1f;
+        anim = GetComponent<Animator>();
+        if (anim != null && anim.runtimeAnimatorController != null)
+            foreach (var c in anim.runtimeAnimatorController.animationClips)
+                if (c.name == "Boss_Attack1") attackAnimLen = c.length;
+        hitDelay = attackAnimLen * 0.5f;   // 타격 = 휘두름 애니의 중간(정점)
         BuildRedGlow();
         BuildRedBox();
     }
+
+    // 상태·패턴 → 애니메이션(anim int: 0=Idle 1=Run 2=Attack 3=Jump 4=Fall 5=Hurt 6=Death)
+    void LateUpdate()
+    {
+        if (anim == null) return;
+        int a;
+        if (state == State.Dead) a = 6;
+        else if (state == State.Groggy) a = 5;
+        else if (cur == Pattern.LeapSlam && state == State.Strike)
+            a = step == 0 ? 3 : (step == 2 ? 4 : 0);          // 상승=Jump, 급강하=Fall, 그 외=Idle
+        else if (rb != null && Mathf.Abs(rb.linearVelocity.x) > 0.3f) a = 1;        // 이동
+        else a = 0;                                                                // 대기(공격 동작은 attack 트리거로 재생)
+        anim.SetInteger("anim", a);
+    }
+
+    // 공격 휘두름 애니(1회) — 각 타격 시작 시 호출해 타격 시점과 맞춘다
+    private void TrigAttack() { if (anim != null) anim.SetTrigger("attack"); }
 
     // 패링 불가 공격 범위 경고 박스(반투명 빨강, 예비동작 동안 깜박임)
     private void BuildRedBox()
@@ -188,15 +214,15 @@ public class BossEnemy : Enemy
         // 거리·페이즈 기반 패턴 선택(직전 패턴은 1회 리롤 — 같은 것 연속 방지)
         if (d > attackRange * 2.2f)
         {
-            // 멀면 자주 대쉬로 확 붙고 나서 근접전(단조로운 걷기 접근 탈피 — 유동적)
-            if (d > 6.0f && moveDashCd <= 0f && Random.value < 0.7f)
-            { moveDashTimer = 0.3f; moveDashCd = 1.9f; AudioManager.Sfx("dash", 0.9f, 0.06f); return; }
+            // 멀면 적극적으로 대쉬로 확 붙어 근접전(이동을 능동적으로 — 단조로운 걷기 접근 탈피)
+            if (d > 4.5f && moveDashCd <= 0f && Random.value < 0.85f)
+            { moveDashTimer = 0.3f; moveDashCd = 1.4f; AudioManager.Sfx("dash", 0.9f, 0.06f); return; }
             BeginPattern(PickRanged());
         }
         else if (d <= attackRange * 1.2f && DyToPlayer() <= attackHeight)
             BeginPattern(PickMelee());
         else if (LedgeAhead()) SetMove(0);      // ★낭떠러지 가드 — 구멍으로 걸어 나가지 않음(원거리 패턴으로 상대)
-        else SetMove(dir * moveSpeed);          // 접근
+        else SetMove(dir * moveSpeed * 1.35f);  // 중거리도 빠르게 접근(이동 능동적)
     }
 
     // 진행 방향 앞 발밑에 지면이 없으면 true(추락 방지)
@@ -214,7 +240,7 @@ public class BossEnemy : Enemy
     private Pattern PickRangedOnce()
     {
         float r = Random.value;
-        return r < 0.6f ? Pattern.Charge : Pattern.Volley;
+        return r < 0.3f ? Pattern.Charge : Pattern.Volley;   // 돌진 비중↓ — 멀면 주로 볼리 견제(접근은 대쉬가 담당)
     }
 
     private Pattern PickMelee()
@@ -226,11 +252,11 @@ public class BossEnemy : Enemy
         float r = Random.value;
         if (phase2)
         {
-            if (r < 0.24f) return Pattern.RedSlash;
-            if (r < 0.52f) return Pattern.LeapSlam;   // 내려찍기+충격파 통합 패턴(QuakeWave 흡수)
-            return Pattern.Combo3;
+            if (r < 0.18f) return Pattern.RedSlash;
+            if (r < 0.40f) return Pattern.LeapSlam;   // 내려찍기+충격파 통합 패턴(QuakeWave 흡수)
+            return Pattern.Combo3;                     // 평타 비중↑(0.60)
         }
-        return r < 0.75f ? Pattern.Combo3 : Pattern.Charge;   // P1 근접에도 가끔 돌진(거리 흔들기)
+        return r < 0.88f ? Pattern.Combo3 : Pattern.Charge;   // P1 근접은 평타 위주(돌진은 가끔)
     }
 
     // 직전과 같은 패턴이면 한 번 다시 굴림(그래도 같으면 허용 — 무한루프 방지)
@@ -243,6 +269,7 @@ public class BossEnemy : Enemy
     private void BeginPattern(Pattern p)
     {
         if (AttackHold) return;   // 대사·컷씬 중 봉인(베이스 규칙 준수)
+        if (p != Pattern.Roar) invuln = false;   // 다음 패턴이 시작되면 페이즈2 전환 무적 해제
         cur = p;
         lastPattern = p;
         step = 0;
@@ -252,6 +279,7 @@ public class BossEnemy : Enemy
         {
             comboMax = (phase2 && Random.value < 0.5f) ? 4 : 3;     // P2는 4연격 섞임
             comboHeavy = Random.value < 0.35f;                       // 마지막 타 강타 변형(멈칫 미끼)
+            comboHit = false;
         }
         SetMove(0);
         state = State.Windup;
@@ -260,6 +288,7 @@ public class BossEnemy : Enemy
         if (p == Pattern.Roar)
         {
             phase2 = true;
+            invuln = true;   // ★페이즈2 전환(포효) 동안 무적 — 다음 패턴이 시작될 때 풀린다
             attackCooldown *= 0.72f;   // 고속화
             moveSpeed *= 1.25f;
             Juice.Shake(0.5f, 0.6f);
@@ -315,7 +344,7 @@ public class BossEnemy : Enemy
         state = State.Strike;
         switch (cur)
         {
-            case Pattern.Combo3:   stateTimer = 0.01f; break;                            // 첫 타 즉시
+            case Pattern.Combo3:   stateTimer = hitDelay; TrigAttack(); break;          // 첫 타 — 휘두름 시작 → 정점(hitDelay)에서 타격
             case Pattern.Charge:
                 chargeDir = new Vector2(player != null && player.position.x >= transform.position.x ? 1f : -1f, 0f);
                 dir = (int)chargeDir.x;
@@ -328,7 +357,7 @@ public class BossEnemy : Enemy
                 stateTimer = 4f;   // 안전 타임아웃
                 step = 0;          // 0=상승 1=체공 2=급강하 3~5=방사 링
                 break;
-            case Pattern.RedSlash: stateTimer = 0.55f; struck = false; if (redBox != null) redBox.enabled = false; break;
+            case Pattern.RedSlash: stateTimer = 0.55f; struck = false; TrigAttack(); if (redBox != null) redBox.enabled = false; break;
             case Pattern.Roar:     ToRecover(0.4f); break;
         }
     }
@@ -344,22 +373,31 @@ public class BossEnemy : Enemy
                 if (stateTimer <= 0f)
                 {
                     bool last = step == comboMax - 1;
-                    if (last && comboHeavy && !heavyPaused)
+                    if (!comboHit)   // ── 휘두름 정점 → 타격 ──
                     {
-                        heavyPaused = true;             // 멈칫 — 여기서 패링을 지르면 늦거나 빠름
-                        stateTimer = 0.5f;
-                        if (redGlow != null) { redGlow.enabled = true; redGlow.color = new Color(1f, 0.8f, 0.2f, 0.4f); }   // 노란 기 — 강타 예고
-                        break;
+                        if (last && comboHeavy && !heavyPaused)
+                        {
+                            heavyPaused = true;             // 멈칫 — 여기서 패링을 지르면 늦거나 빠름
+                            stateTimer = 0.5f;
+                            if (redGlow != null) { redGlow.enabled = true; redGlow.color = new Color(1f, 0.8f, 0.2f, 0.4f); }   // 노란 기 — 강타 예고
+                            break;
+                        }
+                        if (redGlow != null && cur == Pattern.Combo3) redGlow.enabled = false;
+                        float dmg = (last && comboHeavy) ? attackDamage * 1.6f : attackDamage;
+                        float rx = (last && comboHeavy) ? attackRange + 1.2f : attackRange + 0.5f;
+                        if (last && comboHeavy) { Juice.Shake(0.25f, 0.18f); }
+                        MeleeHit(dmg, false, rx, attackHeight);
+                        if (state != State.Strike) return;   // 패링 휘청/그로기로 끊김
+                        comboHit = true;
+                        stateTimer = Mathf.Max(0.05f, attackAnimLen - hitDelay);   // ★애니 마무리(완주)까지 대기 — 끊김 없이
                     }
-                    if (redGlow != null && cur == Pattern.Combo3) redGlow.enabled = false;
-                    float dmg = (last && comboHeavy) ? attackDamage * 1.6f : attackDamage;
-                    float rx = (last && comboHeavy) ? attackRange + 1.2f : attackRange + 0.5f;
-                    if (last && comboHeavy) { Juice.Shake(0.25f, 0.18f); }
-                    MeleeHit(dmg, false, rx, attackHeight);
-                    if (state != State.Strike) return;   // 패링 휘청/그로기로 끊김
-                    step++;
-                    if (step >= comboMax) ToRecover(attackRecover);
-                    else stateTimer = comboGap * Random.Range(0.85f, 1.2f);   // 리듬 흔들기
+                    else   // ── 애니 마무리 끝 → 다음 타 ──
+                    {
+                        comboHit = false;
+                        step++;
+                        if (step >= comboMax) ToRecover(attackRecover);
+                        else { stateTimer = hitDelay; TrigAttack(); }   // 다음 타: 휘두름 시작 → 정점에서 타격
+                    }
                 }
                 break;
 
@@ -447,6 +485,7 @@ public class BossEnemy : Enemy
                         Juice.Shake(0.55f, 0.35f);
                         AudioManager.Sfx("door_slam");
                         MeleeHitAt(landX, groundY, attackDamage, slamWidth, 1.5f);   // ★착지 지점 주변 강타
+                        TrigAttack();
                         step = 3;
                         stateTimer = 0.3f;
                         QuakeRingWarn(1, 0.3f);   // 방사 첫 링 경고(착지 지점 기준)
@@ -509,7 +548,7 @@ public class BossEnemy : Enemy
         stateTimer = t * 0.75f;   // ★마무리 단계 가속 — 보스다운 절도
         SetMove(0);
         if (rb != null) rb.gravityScale = bossGravity;   // 도약 체공 중 종료 시 중력 복구(공중 고착 방지)
-        if (player != null && DistToPlayer() < 1.8f && Random.value < 0.6f)
+        if (player != null && DistToPlayer() < 1.8f && Random.value < 0.45f)
         { backDashTimer = 0.26f; backDashed = true; AudioManager.Sfx("dash", 0.8f, 0.06f); }
     }
 
@@ -532,6 +571,7 @@ public class BossEnemy : Enemy
         var proj = go.GetComponent<Projectile>();
         if (proj != null) proj.Init((Vector2)(player.position - origin), speed, attackDamage * 0.5f * dmgMult, transform);
         AudioManager.Sfx("boss_shot", 0.9f, 0.06f);
+        TrigAttack();   // 던지는 휘두름 애니
     }
 
     // ══════════ 그로기(저스트 패링 누적) ══════════
