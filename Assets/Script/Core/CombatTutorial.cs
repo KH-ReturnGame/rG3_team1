@@ -199,4 +199,40 @@ public class CombatTutorial : MonoBehaviour
         lessonActive = false;
         lessonEnemy = null;
     }
+
+    // ── 첫 예지 중 '우클릭' 시각 암시 ── 스티키 배너 텍스트에 더해, 화면에 깜박이는 마우스 우클릭 아이콘을 띄운다.
+    private static Texture2D white;
+    private GUIStyle hintSt;
+    void OnGUI()
+    {
+        if (!lessonActive) return;
+        if (hintSt == null) hintSt = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+
+        float sw = Screen.width, sh = Screen.height;
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+        GUI.depth = -1400;
+
+        // 마우스 아이콘(절차) — 오른쪽 버튼이 빨갛게 깜박여 '우클릭'을 가리킨다
+        float mw = 54f, mh = 78f;
+        float mx = sw * 0.5f - mw * 0.5f, my = sh * 0.60f;
+        DrawMouse(mx, my, mw, mh, pulse);
+
+        // "우클릭!" 텍스트(깜박임)
+        hintSt.normal.textColor = new Color(1f, 0.85f, 0.4f, 0.55f + 0.45f * pulse);
+        GUI.Label(new Rect(0, my + mh + 6f, sw, 34f), "우클릭!", hintSt);
+    }
+
+    private void DrawMouse(float x, float y, float w, float h, float pulse)
+    {
+        if (white == null) { white = new Texture2D(1, 1); white.SetPixel(0, 0, Color.white); white.Apply(); }
+        float bh = h * 0.44f;   // 버튼부 높이
+        Fill(new Rect(x - 3f, y - 3f, w + 6f, h + 6f), new Color(0f, 0f, 0f, 0.5f));                 // 외곽 그림자
+        Fill(new Rect(x, y, w, h), new Color(0.86f, 0.87f, 0.9f, 0.96f));                            // 몸체
+        Fill(new Rect(x, y, w * 0.5f, bh), new Color(0.52f, 0.53f, 0.58f, 0.92f));                   // 왼쪽 버튼(비활성)
+        Fill(new Rect(x + w * 0.5f, y, w * 0.5f, bh), new Color(0.92f, 0.26f, 0.2f, 0.45f + 0.55f * pulse));   // ★오른쪽 버튼(빨강 깜박)
+        Fill(new Rect(x + w * 0.5f - 1f, y, 2f, bh), new Color(0.3f, 0.3f, 0.35f, 0.9f));            // 중앙 분할선
+        Fill(new Rect(x + w * 0.5f - 3.5f, y + h * 0.12f, 7f, h * 0.16f), new Color(0.4f, 0.4f, 0.45f, 0.95f));  // 스크롤 휠
+    }
+
+    private static void Fill(Rect r, Color c) { var o = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = o; }
 }

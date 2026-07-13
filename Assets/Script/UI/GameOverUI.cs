@@ -92,13 +92,13 @@ public class GameOverUI : MonoBehaviour
         }
     }
 
-    // 다시 시작: 튜토리얼을 인트로부터(진짜 처음부터)
+    // 다시 시작: 새 게임을 만드는 것처럼 완전히 처음부터(스탯·인벤·퀘스트 전부 초기화 + 인트로부터)
     private void Restart()
     {
         showing = false;
         Time.timeScale = 1f;
-        SaveSystem.IntroPending = true;   // 인트로(암전·독백·딸피)부터 다시 — 대사는 [Ctrl]로 스킵 가능
-        SceneManager.LoadScene(CombatTutorial.TutorialSceneName);
+        int slot = SaveSystem.CurrentSlot >= 0 ? SaveSystem.CurrentSlot : 0;
+        SaveSystem.NewGame(slot, CombatTutorial.TutorialSceneName, GameMode.Current);   // 진행 데이터 싱글톤까지 새 게임 상태로 리셋
     }
 
     private void GoTitle()

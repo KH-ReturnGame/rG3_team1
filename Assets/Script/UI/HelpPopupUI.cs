@@ -113,6 +113,9 @@ public class HelpPopupUI : MonoBehaviour
 
     void Update()
     {
+        // 카드가 떠 있는 동안엔 매 프레임 시간을 0으로 재고정 — 히트스톱(Juice) 등이 timeScale을 되돌려도 도움말 중엔 확실히 멈춤
+        if (cur != null && Time.timeScale != 0f) Time.timeScale = 0f;
+
         // 다음 카드 오픈(컷씬 중엔 대기, 강제가 아니면 전투 중에도 대기)
         if (cur == null && queue.Count > 0 && !Letterbox.Covering)
         {
