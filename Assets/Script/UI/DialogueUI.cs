@@ -19,6 +19,11 @@ public class DialogueUI : MonoBehaviour
     private Sprite portrait;
     private string[] lines;
     private Action onComplete;
+    private string[] choices;      // 마지막 줄 후 표시할 선택지(null이면 일반 대화)
+    private Action<int> onChoice;  // 선택 콜백(고른 인덱스) — 선택지 대화의 종료 콜백을 겸함
+    private bool choosing;         // 선택지 표시 중(하나를 고를 때까지 대화가 닫히지 않음)
+    private int choiceSel;         // 현재 하이라이트된 선택지
+    private float chooseTime;      // 선택지가 열린 시각(직전 입력이 바로 확정되는 것 방지)
     private int index;
     private float shown;          // 현재 줄에서 보여준 글자 수(실수 — 타자 진행)
     private float openTime;
@@ -82,7 +87,7 @@ public class DialogueUI : MonoBehaviour
     }
 
     private Texture2D white;
-    private GUIStyle nameStyle, textStyle, hintStyle, skipStyle;
+    private GUIStyle nameStyle, textStyle, hintStyle, skipStyle, choiceStyle;
 
     void Awake() { if (Instance != null && Instance != this) { Destroy(gameObject); return; } Instance = this; DontDestroyOnLoad(gameObject); }
 
@@ -93,6 +98,19 @@ public class DialogueUI : MonoBehaviour
     {
         if (Instance == null || lines == null || lines.Length == 0) { if (onComplete != null) onComplete(); return; }
         Instance.Begin(speaker, portrait, lines, onComplete);
+    }
+
+    // 선택지 대화: 마지막 줄이 다 보이면 선택지가 떠서 하나를 고를 때까지 닫히지 않는다.
+    //  onChoice(고른 인덱스)가 종료 콜백을 겸한다 — 콜백 안에서 새 Show(후속 대사)를 바로 열어도 안전.
+    //  lines를 비우면 대사 없이 선택지만 바로 뜬다.
+    public static void Show(string speaker, Sprite portrait, string[] lines, string[] choices, Action<int> onChoice)
+    {
+        if (choices == null || choices.Length == 0) { Show(speaker, portrait, lines, null); return; }
+        if (Instance == null) { if (onChoice != null) onChoice(0); return; }
+        if (lines == null || lines.Length == 0) lines = new string[] { "" };
+        Instance.Begin(speaker, portrait, lines, null);
+        Instance.choices = choices;
+        Instance.onChoice = onChoice;
     }
 
     // 초상화 자동 로드: Resources/Portraits/<화자 이름>.png 를 찾는다.
@@ -113,6 +131,7 @@ public class DialogueUI : MonoBehaviour
     private void Begin(string sp, Sprite por, string[] ln, Action done)
     {
         speaker = sp; portrait = por != null ? por : AutoPortrait(sp); lines = ln; onComplete = done;
+        choices = null; onChoice = null; choosing = false;   // 선택지 상태 초기화(선택지 대화는 Show가 Begin 뒤에 지정)
         index = 0; openTime = Time.unscaledTime;
         StartLine();
         IsOpen = true; Inventory.DialogueOpen = true;
@@ -124,13 +143,39 @@ public class DialogueUI : MonoBehaviour
         int len = curText.Length;
         if (shown < len) shown += CharsPerSec * Time.unscaledDeltaTime;
 
-        // [Ctrl] 길게 → 대화 전체 스킵
-        if (Input.GetKey(skipKey))
+        // [Ctrl] 길게 → 대화 전체 스킵(선택지가 있으면 닫는 대신 마지막 줄+선택지로 점프 — 선택은 건너뛸 수 없음)
+        if (!choosing && Input.GetKey(skipKey))
         {
             skipTimer += Time.unscaledDeltaTime;
-            if (skipTimer >= skipHold) { skipTimer = 0f; Close(); return; }
+            if (skipTimer >= skipHold)
+            {
+                skipTimer = 0f;
+                if (choices != null)
+                {
+                    if (index != lines.Length - 1) { index = lines.Length - 1; StartLine(); }
+                    shown = curText.Length;
+                }
+                else { Close(); return; }
+            }
         }
         else skipTimer = 0f;
+
+        // 마지막 줄이 다 보였고 선택지가 있으면 → 선택 모드 진입
+        if (!choosing && choices != null && index == lines.Length - 1 && shown >= curText.Length)
+        { choosing = true; choiceSel = 0; chooseTime = Time.unscaledTime; }
+
+        // 선택 모드: W·S/화살표로 이동, Space/F/Enter로 확정(마우스는 OnGUI에서 호버·클릭 처리)
+        if (choosing)
+        {
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+            { choiceSel = (choiceSel + choices.Length - 1) % choices.Length; AudioManager.Sfx("ui_move"); }
+            if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+            { choiceSel = (choiceSel + 1) % choices.Length; AudioManager.Sfx("ui_move"); }
+            bool confirm = Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.F)
+                || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+            if (confirm && Time.unscaledTime - chooseTime > 0.25f) ConfirmChoice(choiceSel);
+            return;
+        }
 
         if (Time.unscaledTime - openTime < 0.18f) return;   // 연 직후 입력 무시(여는 F가 첫 줄을 바로 넘기지 않게)
         bool advance = Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.F)
@@ -150,6 +195,18 @@ public class DialogueUI : MonoBehaviour
         ClosedAt = Time.unscaledTime;   // 이 직후 같은 F/클릭이 상호작용에 재사용되지 않게(대화 재시작 방지)
         Action cb = onComplete; onComplete = null; lines = null;
         if (cb != null) cb();
+    }
+
+    // 선택 확정: 대화를 닫고 onChoice(인덱스) 실행 — 콜백 안에서 후속 대사 Show를 바로 열어도 안전.
+    private void ConfirmChoice(int i)
+    {
+        Action<int> cb = onChoice;
+        choices = null; onChoice = null; choosing = false;
+        IsOpen = false; Inventory.DialogueOpen = false;
+        ClosedAt = Time.unscaledTime;
+        onComplete = null; lines = null;
+        AudioManager.Sfx("ui_move");
+        if (cb != null) cb(i);
     }
 
     void OnGUI()
@@ -191,12 +248,15 @@ public class DialogueUI : MonoBehaviour
         textStyle.normal.textColor = UITheme.Text;
         GUI.Label(new Rect(box.x + 28f, box.y + 64f, box.width - 56f, box.height - 78f), full.Substring(0, n), textStyle);
 
-        // 진행 표시 ▼ (줄 다 보이면 깜빡)
-        if (n >= full.Length && Mathf.Sin(Time.unscaledTime * 5f) > 0f)
+        // 진행 표시 ▼ (줄 다 보이면 깜빡 — 선택지가 떠 있을 땐 숨김)
+        if (!choosing && n >= full.Length && Mathf.Sin(Time.unscaledTime * 5f) > 0f)
         {
             hintStyle.normal.textColor = UITheme.Lighten(UITheme.Accent, 0.2f);
             GUI.Label(new Rect(box.xMax - 42f, box.yMax - 34f, 24f, 24f), "▼", hintStyle);
         }
+
+        // 선택지 목록(대사박스 오른쪽 위)
+        if (choosing && choices != null) DrawChoices(box);
 
         // 스킵 힌트(우상단) + 홀드 진행 게이지 — 전용 작은 스타일(이름표 스타일 재사용 금지: 21px 글자가 20px 상자에 깨졌음)
         if (skipStyle == null)
@@ -211,6 +271,39 @@ public class DialogueUI : MonoBehaviour
             Rect sg = new Rect(box.xMax - 190f, box.y + 32f, 170f, 4f);
             UITheme.Fill(sg, UITheme.A(UITheme.Border, 0.4f));
             UITheme.Fill(new Rect(sg.x, sg.y, sg.width * Mathf.Clamp01(skipTimer / skipHold), sg.height), UITheme.Accent);
+        }
+    }
+
+    // 선택지 목록 — 대사박스 오른쪽 위에 세로로 쌓임. 마우스 호버=이동·클릭=확정(키보드는 Update에서).
+    private void DrawChoices(Rect box)
+    {
+        float cw = Mathf.Min(box.width * 0.46f, 460f), rh = 46f, gap = 8f;
+        float cx = box.xMax - cw;
+        float cy = box.y - choices.Length * (rh + gap) - 6f;
+        Vector2 m = Event.current.mousePosition;
+        bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
+
+        for (int i = 0; i < choices.Length; i++)
+        {
+            Rect r = new Rect(cx, cy + i * (rh + gap), cw, rh);
+            if (r.Contains(m)) choiceSel = i;   // 호버 = 하이라이트 이동
+            bool sel = choiceSel == i;
+
+            Fill(new Rect(r.x + 3f, r.y + 4f, r.width, r.height), new Color(0f, 0f, 0f, 0.30f));   // 그림자
+            UITheme.FillV(r, UITheme.A(UITheme.PanelTop, sel ? 0.99f : 0.90f), UITheme.A(UITheme.PanelBot, 0.985f));
+            Border(r, 1.5f, sel ? UITheme.A(UITheme.Accent, 0.95f) : UITheme.A(UITheme.Border, 0.55f));
+
+            Color tc = sel ? Color.white : new Color(0.72f, 0.73f, 0.76f);
+            choiceStyle.normal.textColor = choiceStyle.hover.textColor = tc;
+            if (sel)
+            {
+                UITheme.Fill(new Rect(r.x + 10f, r.y + rh * 0.24f, 4f, rh * 0.52f), UITheme.Accent);   // 좌측 오렌지 바
+                GUI.Label(new Rect(r.x + 20f, r.y, 24f, rh), "▸", choiceStyle);
+            }
+            GUI.Label(new Rect(r.x + 44f, r.y, r.width - 56f, rh), choices[i], choiceStyle);
+
+            if (click && r.Contains(m) && Time.unscaledTime - chooseTime > 0.2f)
+            { Event.current.Use(); ConfirmChoice(i); return; }
         }
     }
 
@@ -249,6 +342,7 @@ public class DialogueUI : MonoBehaviour
         nameStyle = new GUIStyle(GUI.skin.label) { fontSize = 21, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         textStyle = new GUIStyle(GUI.skin.label) { fontSize = 25, wordWrap = true, alignment = TextAnchor.UpperLeft };
         hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 22, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        choiceStyle = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
     }
 
     private void Fill(Rect r, Color c) { Color o = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = o; }
