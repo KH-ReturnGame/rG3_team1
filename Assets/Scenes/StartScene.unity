@@ -286,10 +286,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StartMenu
   startScene: TutorialScene
-  titleRatio: 0.055
-  buttonRatio: 0.028
-  slotRatio: 0.024
-  panelWidthRatio: 0.62
+  buildLabel: "\uACBD\uD669\uC81C \uB370\uBAA8 \uBE4C\uB4DC"
 --- !u!4 &484430205
 Transform:
   m_ObjectHideFlags: 0

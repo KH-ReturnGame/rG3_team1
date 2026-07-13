@@ -11,9 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Prefabs/Boss_Devourer.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Prefabs/Boss_Devourer.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Combat/BossEnemy.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Combat/BossEnemy.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Script/Combat/Enemy.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Combat/Enemy.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/indexLayout.xml" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -203,6 +201,7 @@
       <workItem from="1782989731745" duration="3339000" />
       <workItem from="1783293515955" duration="620000" />
       <workItem from="1783777137824" duration="6299000" />
+      <workItem from="1783953569324" duration="594000" />
     </task>
     <servers />
   </component>
