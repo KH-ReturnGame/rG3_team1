@@ -756,9 +756,12 @@ public class PlayerController : MonoBehaviour
         if (groundCheck == null) return;
         Collider2D g = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
         bool standing = g != null;
-        // ★원웨이 플랫폼을 '몸으로 통과하는 중'은 착지가 아님(발이 플랫폼 윗면보다 아래) — 무한 점프 방지
-        if (standing && g.usedByEffector && g.GetComponent<PlatformEffector2D>() != null
-            && groundCheck.position.y < g.bounds.max.y - 0.08f)
+        var eff = g != null ? g.GetComponent<PlatformEffector2D>() : null;
+        bool oneWay = g != null && g.usedByEffector && eff != null && eff.useOneWay;
+        // ★원웨이 플랫폼을 아래→위로 '통과하며 상승 중'일 때만 착지가 아님 — 무한 점프 방지.
+        //   (CompositeCollider2D는 bounds가 타일맵 전체라 발-윗면 높이 비교가 불가 → 상승 속도로 판정.
+        //    서 있거나 내려앉는 중(vy<=0)이면 정상 착지)
+        if (standing && oneWay && rb.linearVelocity.y > 0.1f)
             standing = false;
         isGrounded = standing;
         if (isGrounded && rb.linearVelocity.y <= 0.1f)
@@ -768,7 +771,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // 메트로배니아에서 처음 원웨이 플랫폼에 '올라선' 순간 → 플랫폼 도움말(1회, 세이브 연동)
-        if (isGrounded && !platformHelpShown && g.usedByEffector && g.GetComponent<PlatformEffector2D>() != null
+        if (isGrounded && !platformHelpShown && oneWay
             && HelpPopupUI.Instance != null
             && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Metroidvania")
         {
