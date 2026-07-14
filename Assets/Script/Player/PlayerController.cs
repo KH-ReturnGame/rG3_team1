@@ -272,6 +272,7 @@ public class PlayerController : MonoBehaviour
             ? CameraFollow.Instance.BoundsBottom - fallMargin : -50f;
         if (transform.position.y < killY)
         {
+            if (FallExit.TryHandleFall(this)) return;   // 낙하 출구(마을 오른쪽 등): 복귀 대신 암전 후 씬 이동
             if (rb != null) rb.linearVelocity = Vector2.zero;
             transform.position = lastSafePos;
             if (GameManager.Instance != null) GameManager.Instance.TakeDamage(fallDamage);

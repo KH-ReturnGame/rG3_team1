@@ -85,7 +85,7 @@ PrefabInstance:
     - target: {fileID: 1160356261127867848, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: c794c61eb96248f4fbcd054821a369cd, type: 2}
+      objectReference: {fileID: 22100000, guid: 63f4ed1d13778014d955478a23ae48d6, type: 2}
     - target: {fileID: 1160356261127867848, guid: 283c8286ff7f8a74082557772d9afce2, type: 3}
       propertyPath: m_AnimatePhysics
       value: 0
