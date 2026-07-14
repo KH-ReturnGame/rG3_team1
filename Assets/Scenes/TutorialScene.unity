@@ -61518,13 +61518,21 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Size.y
+      value: 1.0128682
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Offset.y
+      value: 0.4954306
+      objectReference: {fileID: 0}
     - target: {fileID: 7349770363597920578, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_LocalPosition.x
       value: -22.13
       objectReference: {fileID: 0}
     - target: {fileID: 7349770363597920578, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.9
+      value: -4
       objectReference: {fileID: 0}
     - target: {fileID: 7349770363597920578, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_LocalPosition.z
@@ -97586,6 +97594,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Size.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Offset.y
+      value: 0.49312305
+      objectReference: {fileID: 0}
     - target: {fileID: 7349770363597920578, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_LocalPosition.x
       value: 36.76
@@ -98648,6 +98664,14 @@ PrefabInstance:
     - target: {fileID: 3663341020648372873, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_Name
       value: Treasure Chest
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Size.y
+      value: 1.0238338
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695457300501822487, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
+      propertyPath: m_Offset.y
+      value: 0.50447726
       objectReference: {fileID: 0}
     - target: {fileID: 7349770363597920578, guid: 2a50f5f6016b3cf44854b5c63ed81c17, type: 3}
       propertyPath: m_LocalPosition.x

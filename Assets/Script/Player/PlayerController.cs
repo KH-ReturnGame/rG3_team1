@@ -125,9 +125,9 @@ public class PlayerController : MonoBehaviour
     private float plungeArmTimer;                            // >0이면 한 번 더 누를 때 낙하 공격
     private float hoverTimer;                                // >0이면 잠깐 체공(아래 베기 중)
 
-    [Header("발도 / 납도 (Sheathe / Draw)")]
-    public KeyCode sheatheKey = KeyCode.R;     // 검 뽑기/넣기 토글 키
-    public bool startDrawn = true;             // 시작 시 검을 든 상태로?
+    [Header("발도 / 납도 — 폐지(항상 검을 든 상태)")]
+    public KeyCode sheatheKey = KeyCode.R;     // (폐지) 토글 입력 제거 — 이 키는 더 이상 아무 동작 안 함
+    public bool startDrawn = true;             // (폐지) 씬/프리팹 값과 무관하게 항상 발도로 시작
     private bool isSwordDrawn;
 
     [Header("Animation 상태 이름 (컨트롤러의 상태명과 대소문자까지 정확히 일치)")]
@@ -251,7 +251,7 @@ public class PlayerController : MonoBehaviour
         lastSafePos = transform.position;
         currentJumps = maxJumps;
         currentDashes = maxDashes;
-        isSwordDrawn = startDrawn;
+        isSwordDrawn = true;   // 납도/발도 토글 폐지 — 항상 검을 든 상태(직렬화된 startDrawn 값에 좌우되지 않게 고정)
         PlayStateForced(isSwordDrawn ? swordIdleState : idleState);
     }
 
@@ -397,9 +397,8 @@ public class PlayerController : MonoBehaviour
 
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
-        // 발도/납도 토글
-        if (Input.GetKeyDown(sheatheKey) && animBusyTimer <= 0)
-            ToggleSheathe();
+        // (구) 발도/납도 토글 — 폐지. 항상 발도 상태(R키는 인벤토리 회전 전용으로 남음).
+        // 컷씬의 CutsceneDrawSword()는 이미 뽑힌 상태면 무시되므로 안전.
 
         // 가드/패링 (검을 들었을 때만)
         if (mouseOk && Input.GetMouseButtonDown(1) && isSwordDrawn && animBusyTimer <= 0 && !isChargingJump && guardCooldownTimer <= 0f)
