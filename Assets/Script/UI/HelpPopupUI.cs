@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Video;
 
 // 도움말 시스템(자동부팅·영구) — 젤다 야숨식 '카드' 리워크.
 //  · 카드: 화면을 어둡게 가리고 **시간을 멈춘 뒤**, 인벤토리만 한 창에 [제목+설명(위)] + [시연 GIF(아래)]를 보여준다.
@@ -26,6 +27,11 @@ public class HelpPopupUI : MonoBehaviour
     private float prevTimeScale = 1f;
     private Sprite[] gifFrames;
     public float gifFps = 10f;          // GIF 재생 속도(프레임/초)
+
+    // ── 시연 영상(mp4) ── id에 해당하는 Resources/HelpVideo/<id>.mp4 가 있으면 GIF 대신 재생
+    private VideoPlayer video;
+    private RenderTexture videoRT;
+    private bool usingVideo;
     public float confirmDelay = 0.35f;  // 이 시간 전엔 닫기 입력 무시(오입력 방지)
 
     // 전투 중 억제: 강제(force)가 아닌 카드는 근처 적이 교전 중이면 대기했다가 전투가 끝나면 표시
@@ -48,6 +54,25 @@ public class HelpPopupUI : MonoBehaviour
         Instance = go.AddComponent<HelpPopupUI>();
         DontDestroyOnLoad(go);
     }
+
+    void Awake()
+    {
+        // (구) VideoPlayer 방식 — 디코더 초기화·Prepare가 너무 느려 폐지.
+        //  영상은 ffmpeg로 10fps PNG 프레임(Resources/Help/<id>/)으로 변환해 GIF 시스템으로 재생한다.
+    }
+
+    // id의 시연 매체 로드: Resources/Help/<id>/ 의 PNG 프레임 시퀀스(10fps 재생)
+    private void LoadMedia(string id)
+    {
+        usingVideo = false;
+        gifFrames = LoadGifFrames(id);
+    }
+
+    // (구) 비디오 프리웜 — PNG 프레임 방식으로 전환되어 불필요(호출부 호환용 no-op)
+    private void PrewarmVideo(string id) { }
+
+    // (구) RenderTexture 재생성 — 비디오 폐지로 미사용
+    private void EnsureVideoRT(int w, int h) { }
 
     // 지나간 도움말 기록(핸드북 다시보기 — GIF id 포함). 제목 기준 중복 제거. SaveSystem이 저장/복원.
     public class HelpEntry { public string title; public string body; public string id; }
@@ -88,6 +113,7 @@ public class HelpPopupUI : MonoBehaviour
         var rich = new string[pages.Length];
         for (int i = 0; i < pages.Length; i++) { rich[i] = Rich(pages[i].body); Record(pages[i].id, pages[i].title, pages[i].body); }
         queue.Enqueue(new Card { pages = pages, rich = rich, force = force });
+        if (cur == null && queue.Count == 1) PrewarmVideo(pages[0].id);   // 카드가 뜨기 전에 영상 준비 시작
     }
     // (구) 호환 — 이제 전부 모달 카드
     public void ShowTimed(string t, string b, float duration) => Show(null, t, b);
@@ -183,7 +209,7 @@ public class HelpPopupUI : MonoBehaviour
         int np = Mathf.Clamp(p, 0, cur.pages.Length - 1);
         if (np == page) return;
         page = np;
-        gifFrames = LoadGifFrames(cur.pages[page].id);
+        LoadMedia(cur.pages[page].id);
         AudioManager.Sfx("ui_move", 0.7f);
     }
 
@@ -197,7 +223,7 @@ public class HelpPopupUI : MonoBehaviour
         Inventory.HelpOpen = true;
         AudioManager.Sfx("help_open");
 
-        gifFrames = LoadGifFrames(cur.pages[0].id);   // 이름순 정렬 — 000.png, 001.png … 권장
+        LoadMedia(cur.pages[0].id);   // 영상(mp4) 우선, 없으면 GIF 프레임
     }
 
     private void CloseCard()
@@ -205,6 +231,8 @@ public class HelpPopupUI : MonoBehaviour
         Time.timeScale = prevTimeScale;
         cur = null;
         gifFrames = null;
+        usingVideo = false;
+        if (video != null) video.Pause();   // Stop 대신 Pause — 준비(Prepare) 상태 유지 → 같은 카드 재오픈 시 즉시 재생
         Inventory.HelpOpen = false;
     }
 
@@ -249,7 +277,26 @@ public class HelpPopupUI : MonoBehaviour
         Rect gif = new Rect(x + pad, gy, w - pad * 2f, card.yMax - gy - 46f);
         UITheme.Fill(gif, UITheme.A(UITheme.SlotBot, 0.95f));
         UITheme.Corners(gif, 16f, 2.5f);
-        if (gifFrames != null && gif.height > 40f)
+        if (usingVideo && videoRT != null && gif.height > 40f)
+        {
+            if (video != null && video.isPrepared && video.frameCount > 0)
+            {
+                // 시연 영상(mp4) — 비율 유지로 액자 안에 맞춤
+                float ar = (float)videoRT.width / Mathf.Max(1, videoRT.height);
+                float fw = gif.width - 16f, fh = fw / ar;
+                if (fh > gif.height - 16f) { fh = gif.height - 16f; fw = fh * ar; }
+                Rect fr = new Rect(gif.x + (gif.width - fw) * 0.5f, gif.y + (gif.height - fh) * 0.5f, fw, fh);
+                GUI.DrawTexture(fr, videoRT, ScaleMode.StretchToFill);
+            }
+            else
+            {
+                // 디코더 준비 중 — 로딩 표시(첫 프레임 나오기 전 잠깐)
+                UITheme.Diamond(new Vector2(gif.center.x, gif.center.y - 16f), 10f, UITheme.A(UITheme.Accent, 0.5f + 0.4f * Mathf.Sin(Time.unscaledTime * 5f)));
+                phSt.normal.textColor = UITheme.TextDim;
+                GUI.Label(new Rect(gif.x, gif.center.y - 4f, gif.width, 26f), "영상 불러오는 중…", phSt);
+            }
+        }
+        else if (gifFrames != null && gif.height > 40f)
         {
             var f = gifFrames[(int)(Time.unscaledTime * Mathf.Max(1f, gifFps)) % gifFrames.Length];
             // 비율 유지로 액자 안에 맞춤
