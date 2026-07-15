@@ -1,13 +1,13 @@
 using UnityEngine;
 
-// 예지안 장신구 효과(자동부팅·영구). 적이 공격을 시작하는 순간(Enemy.WindupStarted) 시간이 잠깐 느려져
-// 반응(가드/패링/회피) 기회를 준다. 착용 중인 장신구 중 precogSlow가 있을 때만, 쿨다운(precogCooldown, 기본 20초)마다.
-// 발동 시 플레이어 '눈'에서 붉은 빛이 번쩍이는 VFX(절차 생성 글로우 — 눈 위치는 eyeOffset으로 조정).
+// 예지안 장신구 효과(자동부팅·영구).
+//  ★발동 자체는 AutoPrecog가 통합 처리(시간 '정지', 근접=예비동작 직전 / 원거리=투사체 도달 직전).
+//    이 클래스는 ① 착용·쿨다운 상태 제공(CharmReady/Consume) ② 붉은 눈빛 VFX 담당.
+//  착용 시: 난이도·체력과 무관하게 예지가 발동(쿨다운 precogCooldown, 기본 20초마다).
+//  쉬움 난이도의 위기(반 칸) 자동 예지가 먼저 조건을 만족하면 장신구 쿨다운은 소모되지 않는다.
 public class PrecogCharm : MonoBehaviour
 {
     public static PrecogCharm Instance;
-    public float slowScale = 0.22f;     // 감속 배율
-    public float slowDuration = 1.7f;   // 실시간 지속(반응 창)
 
     [Header("발동 연출 — 붉은 눈빛")]
     public Vector2 eyeOffset = Vector2.zero;   // 자동 계산된 눈 위치에 더하는 미세조정(x는 바라보는 방향으로 반전)
@@ -26,13 +26,22 @@ public class PrecogCharm : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap() { if (Instance == null) { var go = new GameObject("PrecogCharm"); Instance = go.AddComponent<PrecogCharm>(); DontDestroyOnLoad(go); } }
 
-    void OnEnable() { Enemy.WindupStarted += OnWindup; }
-    void OnDisable() { Enemy.WindupStarted -= OnWindup; }
-
     void Update()
     {
         CooldownLeft = Mathf.Max(0f, nextReadyTime - Time.unscaledTime);
         Equipped = EquippedPrecog() != null;
+    }
+
+    // ── AutoPrecog 연동: 장신구로 예지 발동 가능? / 발동 소모(쿨다운 시작) ──
+    public static bool CharmReady
+        => Instance != null && Instance.EquippedPrecog() != null && Time.unscaledTime >= Instance.nextReadyTime;
+
+    public static void Consume()
+    {
+        if (Instance == null) return;
+        var charm = Instance.EquippedPrecog();
+        Instance.nextReadyTime = Time.unscaledTime + Mathf.Max(1f, charm != null ? charm.precogCooldown : 20f);
+        Toast.Show("예지안 — 시간이 멈춘다", 1.2f);
     }
 
     private ItemData EquippedPrecog()
@@ -44,48 +53,7 @@ public class PrecogCharm : MonoBehaviour
         return null;
     }
 
-    [Header("발동 타이밍")]
-    [Range(0f, 0.95f)] public float windupLateFraction = 0.85f;   // 예비동작이 이만큼 지난 '직전'에 발동
-    private bool armed;
-
-    private void OnWindup(Enemy e)
-    {
-        if (e == null || SlowMoFx.Active || armed) return;    // 이미 슬로우/대기 중이면 중복 방지
-        if (Time.unscaledTime < nextReadyTime) return;        // 쿨다운
-        var pc = PlayerController.Instance;
-        if (pc == null || e.TargetPlayer != pc.transform) return;   // 플레이어를 노리는 공격만
-        if (EquippedPrecog() == null) return;                 // 예지안 미착용
-        StartCoroutine(FireLate(e, pc));
-    }
-
-    // 예비동작 후반까지 기다렸다가 '맞기 직전'에 발동
-    private System.Collections.IEnumerator FireLate(Enemy e, PlayerController pc)
-    {
-        armed = true;
-        float wait = Mathf.Max(0f, e.attackWindup * windupLateFraction);
-        float t = 0f;
-        while (t < wait)
-        {
-            if (e == null || !e.IsAttacking) { armed = false; yield break; }   // 공격 취소
-            t += Time.deltaTime;
-            yield return null;
-        }
-        armed = false;
-        var charm = EquippedPrecog();
-        if (e == null || !e.IsAttacking || charm == null || SlowMoFx.Active) yield break;
-
-        SlowMoFx.BeginTimed(slowScale, slowDuration);
-        nextReadyTime = Time.unscaledTime + Mathf.Max(1f, charm.precogCooldown);
-        SpawnEyeFlash(pc);
-        Toast.Show("예지안 — 시간이 느려진다", 1.2f);
-
-        // 조기 해제: 패링 성공(그로기)·공격 종료 시 즉시 시간 복구
-        while (SlowMoFx.Active)
-        {
-            if (e == null || !e.IsAttacking) { SlowMoFx.End(); yield break; }
-            yield return null;
-        }
-    }
+    // (구) 자체 감속 발동(OnWindup/FireLate) — AutoPrecog로 통합돼 삭제됨.
 
     // 외부(튜토리얼 각성 등)에서 눈빛 연출만 재생
     public static void PlayEyeFlash(PlayerController pc)

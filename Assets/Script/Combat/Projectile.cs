@@ -23,6 +23,14 @@ public class Projectile : MonoBehaviour
     private bool reflected;                 // 반사됨 → 이제 적을 맞힌다
     private bool reflectedJust;
 
+    // ── 살아있는 투사체 레지스트리(자동 예지가 '도달 직전' 감시용) ──
+    public static readonly System.Collections.Generic.List<Projectile> All = new System.Collections.Generic.List<Projectile>();
+    public bool Reflected => reflected;                                       // 반사탄(내 것)은 예지 대상 아님
+    public Vector2 Velocity => rb != null ? rb.linearVelocity : Vector2.zero;
+    [System.NonSerialized] public bool precogSeen;                            // 이 탄에 예지가 이미 발동했나(중복 방지)
+    void OnEnable() { All.Add(this); }
+    void OnDisable() { All.Remove(this); }
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();

@@ -9,8 +9,12 @@ using UnityEngine;
 //      [놀람]   초상화가 폴짝 튀어오름(깜짝)
 //      [흔들림] 초상화+대사박스 강한 흔들림 후 잦아듦(중상·충격)
 //      [떨림]   줄이 떠 있는 내내 잘게 떨림(고통·슬픔·공포)
+//      [나]     이 줄은 '주인공'의 대사 — 왼쪽(주인공) 초상화·이름표가 밝아지고 상대는 흐려짐. 연출 태그와 조합 가능("[나][놀람]...")
+//  · 양쪽 초상화(앤디와 레일리의 관 풍): 주인공=왼쪽, 상대=오른쪽(마주보게 좌우반전). 말하지 않는 쪽은 초상화·이름표를 어둡게.
+//    주인공 초상화는 Resources/Portraits/후드.png (PlayerName과 같은 파일명) — 파일이 없으면 왼쪽엔 이름표만([나] 대사가 있을 때만) 표시.
 public class DialogueUI : MonoBehaviour
 {
+    public static string PlayerName = "후드";   // 주인공 이름표(왼쪽) + 초상화 자동 로드 파일명
     public static DialogueUI Instance { get; private set; }
     public static bool IsOpen { get; private set; }
     public static float ClosedAt = -99f;   // 마지막으로 대화가 닫힌 시각(unscaled) — 종료 입력이 상호작용에 재사용되는 것 방지
@@ -39,15 +43,25 @@ public class DialogueUI : MonoBehaviour
     private LineFx curFx;
     private float fxStart;        // 줄 시작 시각(unscaled)
     private string curText = ""; // 태그 제거된 표시용 본문
+    private bool lineIsPlayer;    // 현재 줄이 주인공([나]) 대사인가 — 밝기/이름표 전환용
+    private bool hasPlayerLines;  // 이 대화에 [나] 줄이 하나라도 있나 — 왼쪽(주인공) 자리 표시 여부
 
-    // 현재 줄의 태그를 파싱하고 타자기를 리셋
+    // 현재 줄의 태그를 파싱하고 타자기를 리셋. 태그는 순서 무관하게 여러 개 조합 가능("[나][놀람]...")
     private void StartLine()
     {
         string raw = lines[index];
         curFx = LineFx.None;
-        if (raw.StartsWith("[놀람]"))       { curFx = LineFx.Surprise; raw = raw.Substring("[놀람]".Length); }
-        else if (raw.StartsWith("[흔들림]")) { curFx = LineFx.Shake;    raw = raw.Substring("[흔들림]".Length); }
-        else if (raw.StartsWith("[떨림]"))   { curFx = LineFx.Tremble;  raw = raw.Substring("[떨림]".Length); }
+        lineIsPlayer = false;
+        bool again = true;
+        while (again && raw != null)
+        {
+            again = true;
+            if (raw.StartsWith("[나]"))          { lineIsPlayer = true;      raw = raw.Substring("[나]".Length); }
+            else if (raw.StartsWith("[놀람]"))   { curFx = LineFx.Surprise;  raw = raw.Substring("[놀람]".Length); }
+            else if (raw.StartsWith("[흔들림]")) { curFx = LineFx.Shake;     raw = raw.Substring("[흔들림]".Length); }
+            else if (raw.StartsWith("[떨림]"))   { curFx = LineFx.Tremble;   raw = raw.Substring("[떨림]".Length); }
+            else again = false;
+        }
         curText = raw;
         shown = 0f;
         fxStart = Time.unscaledTime;
@@ -132,6 +146,8 @@ public class DialogueUI : MonoBehaviour
     {
         speaker = sp; portrait = por != null ? por : AutoPortrait(sp); lines = ln; onComplete = done;
         choices = null; onChoice = null; choosing = false;   // 선택지 상태 초기화(선택지 대화는 Show가 Begin 뒤에 지정)
+        hasPlayerLines = false;
+        foreach (string l in ln) if (l != null && l.Contains("[나]")) { hasPlayerLines = true; break; }   // 연출 태그가 앞에 와도 인식
         index = 0; openTime = Time.unscaledTime;
         StartLine();
         IsOpen = true; Inventory.DialogueOpen = true;
@@ -224,8 +240,12 @@ public class DialogueUI : MonoBehaviour
         Vector2 bo = FxOffset(false);                        // [흔들림]/[떨림] — 박스
         Rect box = new Rect(bx + bo.x, by + bo.y, bw, bh);
 
-        // 큰 초상화(왼쪽·틀 없이 컷아웃) — 박스보다 먼저 그려 박스가 앞에 오게
-        DrawBigPortrait(boxBase, W, H);
+        // 양쪽 초상화(앤디와 레일리의 관 풍) — 주인공=왼쪽, 상대=오른쪽(마주보게 반전). 말하는 쪽만 밝게.
+        // 박스보다 먼저 그려 박스가 앞에 오게.
+        Sprite playerPor = AutoPortrait(PlayerName);
+        bool showPlayerSide = playerPor != null || hasPlayerLines;   // 주인공 자리: 초상화가 있거나 [나] 대사가 있을 때만
+        DrawSidePortrait(playerPor, boxBase, W, H, false, lineIsPlayer);
+        DrawSidePortrait(portrait, boxBase, W, H, true, !lineIsPlayer);
 
         // 대사 박스 — 고급 프레임(먹색 그라데 + 금테 + 안쪽 이중 헤어라인 + 코너 브래킷)
         Fill(new Rect(box.x + 4, box.y + 5, box.width, box.height), new Color(0, 0, 0, 0.35f));   // 그림자
@@ -234,12 +254,9 @@ public class DialogueUI : MonoBehaviour
         Border(new Rect(box.x + 5f, box.y + 5f, box.width - 10f, box.height - 10f), 1f, UITheme.A(UITheme.Accent, 0.20f));
         UITheme.Corners(box, 16f, 3f);
 
-        // 이름표 — 박스 안 좌상단(금테 뱃지 + 먹색 글자)
-        Vector2 nsz = nameStyle.CalcSize(new GUIContent(speaker));
-        Rect nameTag = new Rect(box.x + 22f, box.y + 14f, nsz.x + 30f, 34f);
-        Fill(nameTag, UITheme.A(UITheme.Accent, 0.95f));
-        nameStyle.normal.textColor = new Color(0.06f, 0.09f, 0.09f);
-        GUI.Label(nameTag, speaker, nameStyle);
+        // 이름표 — 주인공(좌상단) + 상대(우상단). 말하는 쪽=금테, 아닌 쪽=흐리게.
+        if (showPlayerSide) DrawNameTag(box, PlayerName, false, lineIsPlayer);
+        DrawNameTag(box, speaker, true, !lineIsPlayer);
         UITheme.Divider(box.x + 22f, box.y + 54f, box.width - 44f, 0.4f);   // 이름 아래 장식 구분선
 
         // 본문(타자기)
@@ -258,17 +275,17 @@ public class DialogueUI : MonoBehaviour
         // 선택지 목록(대사박스 오른쪽 위)
         if (choosing && choices != null) DrawChoices(box);
 
-        // 스킵 힌트(우상단) + 홀드 진행 게이지 — 전용 작은 스타일(이름표 스타일 재사용 금지: 21px 글자가 20px 상자에 깨졌음)
+        // 스킵 힌트(좌하단 — 우상단은 상대 이름표 자리) + 홀드 진행 게이지 — 전용 작은 스타일
         if (skipStyle == null)
         {
-            skipStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleRight };
+            skipStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
             skipStyle.hover.textColor = skipStyle.normal.textColor;   // 호버 색 반응 차단
         }
         skipStyle.normal.textColor = skipStyle.hover.textColor = new Color(0.60f, 0.61f, 0.65f);
-        GUI.Label(new Rect(box.xMax - 240f, box.y + 8f, 220f, 22f), "[Ctrl] 꾹 눌러 건너뛰기", skipStyle);
+        GUI.Label(new Rect(box.x + 22f, box.yMax - 32f, 220f, 22f), "[Ctrl] 꾹 눌러 건너뛰기", skipStyle);
         if (skipTimer > 0.02f)
         {
-            Rect sg = new Rect(box.xMax - 190f, box.y + 32f, 170f, 4f);
+            Rect sg = new Rect(box.x + 22f, box.yMax - 10f, 170f, 4f);
             UITheme.Fill(sg, UITheme.A(UITheme.Border, 0.4f));
             UITheme.Fill(new Rect(sg.x, sg.y, sg.width * Mathf.Clamp01(skipTimer / skipHold), sg.height), UITheme.Accent);
         }
@@ -307,32 +324,57 @@ public class DialogueUI : MonoBehaviour
         }
     }
 
-    // 왼쪽에 큰 초상화를 '틀 없이' 그린다(세로 비율 유지·바닥 정렬·컷아웃 드롭섀도).
-    private void DrawBigPortrait(Rect box, float W, float H)
+    // 한쪽 큰 초상화를 '틀 없이' 그린다(세로 비율 유지·바닥 정렬·컷아웃 드롭섀도).
+    //  rightSide=true면 오른쪽 배치 + 좌우반전(서로 마주보게). active=false면 어둡게(말하지 않는 쪽).
+    private void DrawSidePortrait(Sprite s, Rect box, float W, float H, bool rightSide, bool active)
     {
-        if (portrait == null || portrait.texture == null) return;
-        Rect tr = portrait.rect; Texture t = portrait.texture;
+        if (s == null || s.texture == null) return;
+        Rect tr = s.rect; Texture t = s.texture;
         float aspect = tr.width / Mathf.Max(1f, tr.height);
 
         float maxH = H * 0.55f;              // 초상화 높이(화면 대비) — 줄이면 더 작아짐
-        float maxW = W * 0.30f;              // 왼쪽 영역 폭 제한
+        float maxW = W * 0.30f;              // 한쪽 영역 폭 제한
         float ph = maxH, pw = ph * aspect;
         if (pw > maxW) { pw = maxW; ph = pw / aspect; }
 
-        float pLeft = W * 0.05f;
+        float px = rightSide ? W * 0.95f - pw : W * 0.05f;
         float pTop = box.yMax - ph;           // 초상화 밑 = 대사박스 밑에 맞춤
-        Vector2 po = FxOffset(true);          // [놀람]/[흔들림]/[떨림] — 초상화
-        Rect pr = new Rect(pLeft + po.x, pTop + po.y, pw, ph);
-        Rect tc = new Rect(tr.x / t.width, tr.y / t.height, tr.width / t.width, tr.height / t.height);
+        Vector2 po = active ? FxOffset(true) : Vector2.zero;   // 연출([놀람] 등)은 말하는 쪽에만
+        Rect pr = new Rect(px + po.x, pTop + po.y, pw, ph);
+        // 오른쪽은 U좌표를 뒤집어 좌우반전(왼쪽의 주인공과 마주보게)
+        Rect tc = rightSide
+            ? new Rect((tr.x + tr.width) / t.width, tr.y / t.height, -tr.width / t.width, tr.height / t.height)
+            : new Rect(tr.x / t.width, tr.y / t.height, tr.width / t.width, tr.height / t.height);
 
         Color o = GUI.color;
         // 컷아웃 드롭섀도(실루엣)
         GUI.color = new Color(0f, 0f, 0f, 0.32f);
         GUI.DrawTextureWithTexCoords(new Rect(pr.x + 8f, pr.y + 10f, pr.width, pr.height), t, tc);
-        // 실제 초상화
-        GUI.color = Color.white;
+        // 실제 초상화 — 말하지 않는 쪽은 어둡게
+        GUI.color = active ? Color.white : new Color(0.38f, 0.38f, 0.44f, 0.95f);
         GUI.DrawTextureWithTexCoords(pr, t, tc);
         GUI.color = o;
+    }
+
+    // 이름표 뱃지 — active=금테+먹색 글자(말하는 쪽) / 비활성=회색 흐림
+    private void DrawNameTag(Rect box, string name, bool rightSide, bool active)
+    {
+        if (string.IsNullOrEmpty(name)) return;
+        Vector2 nsz = nameStyle.CalcSize(new GUIContent(name));
+        float w = nsz.x + 30f;
+        float x = rightSide ? box.xMax - 22f - w : box.x + 22f;
+        Rect tag = new Rect(x, box.y + 14f, w, 34f);
+        if (active)
+        {
+            Fill(tag, UITheme.A(UITheme.Accent, 0.95f));
+            nameStyle.normal.textColor = new Color(0.06f, 0.09f, 0.09f);
+        }
+        else
+        {
+            Fill(tag, UITheme.A(UITheme.Border, 0.35f));
+            nameStyle.normal.textColor = new Color(0.52f, 0.53f, 0.58f);
+        }
+        GUI.Label(tag, name, nameStyle);
     }
 
     private void EnsureStyles()

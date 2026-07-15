@@ -149,7 +149,7 @@ public class StartMenu : MonoBehaviour
         verStyle.fontSize = Mathf.RoundToInt(sh * 0.016f);
         var prevAlign = verStyle.alignment; verStyle.alignment = TextAnchor.MiddleCenter;
         GUI.Label(new Rect(sw * 0.5f - 300f, dr.yMax - 4f, 600f, sh * 0.03f),
-            easy ? "위기의 순간, 예지(시간 감속)가 자동으로 발동합니다"
+            easy ? "위기의 순간, 예지(시간 정지)가 자동으로 발동합니다"
                  : "자동 예지 없음 — 모든 공격을 스스로 받아내야 합니다", verStyle);
         verStyle.alignment = prevAlign;
 

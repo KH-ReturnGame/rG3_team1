@@ -19,6 +19,7 @@ public class RangedEnemy : Enemy
     private bool aimLocked;
 
     public override bool IsParryableMelee => false;   // 원거리는 패링 튜토리얼 대상 아님(투사체는 발사 후 판정)
+    public override bool RangedPrecog => true;        // 예지: 예비동작이 아니라 투사체가 근접했을 때 정지
 
     protected override void Start()
     {

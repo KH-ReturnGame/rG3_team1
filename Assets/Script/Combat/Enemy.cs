@@ -92,6 +92,9 @@ public class Enemy : MonoBehaviour, IDamageable, IParryable
     protected static bool AttackHold =>
         DialogueUI.IsOpen || (PlayerController.Instance != null && PlayerController.Instance.cutsceneActive);
     public virtual bool IsParryableMelee => true;                     // 원거리는 false로 오버라이드(투사체는 패링 레슨 제외)
+    // 자동 예지(AutoPrecog)용: true면 이 공격은 '원거리'라 예비동작이 아니라 투사체가 플레이어에 근접했을 때 정지.
+    //  원거리몹은 항상 true, 보스는 볼리 패턴일 때만 true로 오버라이드.
+    public virtual bool RangedPrecog => false;
 
     void Awake()
     {

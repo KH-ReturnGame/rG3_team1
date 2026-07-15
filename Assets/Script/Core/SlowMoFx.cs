@@ -13,6 +13,7 @@ public class SlowMoFx : MonoBehaviour
     public float zoomSmooth = 0.55f;   // 줌인 부드럽기(클수록 천천히)
 
     private bool held;
+    private bool frozen;               // 완전 정지 모드(예지) — 차가운 색조 오버레이 연출
     private float endRealTime;
     private float overlay;             // 0~1 비네트 세기(부드럽게)
     private float zoomTarget = 1f;
@@ -25,22 +26,29 @@ public class SlowMoFx : MonoBehaviour
 
     public static void BeginHeld(float scale) { if (Instance != null) Instance.Begin(scale, -1f); }
     public static void BeginTimed(float scale, float realDuration) { if (Instance != null) Instance.Begin(scale, realDuration); }
+    // 완전 정지(timeScale=0)를 실시간 realDuration 동안 — 예지 '시간 멈춤'용. 입력은 살아있다.
+    public static void Freeze(float realDuration) { if (Instance != null) Instance.Begin(0f, realDuration, true); }
+    // 완전 정지를 End() 호출 전까지 유지 — 튜토리얼 원거리 각성 레슨용(투사체를 코앞에 세워두고 우클릭 대기)
+    public static void FreezeHeld() { if (Instance != null) Instance.Begin(0f, -1f, true); }
     public static void End() { if (Instance != null) Instance.Stop(); }
 
-    private void Begin(float scale, float realDuration)
+    private void Begin(float scale, float realDuration, bool freeze = false)
     {
-        float s = Mathf.Clamp(scale, 0.02f, 0.6f);
+        float s = freeze ? 0f : Mathf.Clamp(scale, 0.02f, 0.6f);
         held = realDuration < 0f;
+        frozen = freeze;
         endRealTime = Time.unscaledTime + Mathf.Max(0.1f, realDuration);
         Active = true;
         Time.timeScale = s;
         zoomTarget = zoomIn;
+        if (freeze) Juice.Flash(new Color(0.75f, 0.85f, 1f, 0.30f), 0.12f);   // '시간이 딱 멈추는' 청백 플래시
     }
 
     private void Stop()
     {
         if (!Active) return;
         Active = false;
+        frozen = false;
         Time.timeScale = 1f;
         zoomTarget = 1f;
     }
@@ -64,6 +72,12 @@ public class SlowMoFx : MonoBehaviour
         EnsureTex();
         Color prev = GUI.color;
         GUI.depth = -1800;
+        // 정지 모드: 화면 전체에 차가운 청회색 색조 — '시간이 얼어붙은' 느낌(감속과 시각적으로 구분)
+        if (frozen)
+        {
+            GUI.color = new Color(0.62f, 0.72f, 0.92f, 0.14f * overlay);
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+        }
         // 화면 가장자리만 검정으로 포커스(중앙은 깨끗) — 비네트 텍스처 알파에 농도가 들어있고, overlay로 전체 페이드
         GUI.color = new Color(1f, 1f, 1f, overlay);
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), vignette);

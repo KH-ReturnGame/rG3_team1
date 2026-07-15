@@ -24,11 +24,12 @@ public class CombatTutorial : MonoBehaviour
     // (구) 각성 회복은 폐지 — 회복은 '저스트 패링 성공 시 한 칸'(PlayerController.justParryHealHalves)으로 일원화
 
     [Header("패링 레슨")]
-    [Range(0.02f, 0.5f)] public float slowScale = 0.05f;  // 슬로우모션 배율 — '시간이 딱 멈추는 느낌'(거의 정지)
+    [Range(0.02f, 0.5f)] public float slowScale = 0.05f;  // (구) 감속 배율 — 레슨도 완전 정지로 통일돼 미사용
     public float reactSeconds = 3.2f;                     // 우클릭 대기(실시간) — 넘기면 그대로 피격
 
     [Header("예지 타이밍")]
-    [Range(0f, 0.95f)] public float windupLateFraction = 0.85f;   // 예비동작의 이 비율이 지난 '직전'(맞기 아주 임박)에 발동
+    [Range(0f, 0.95f)] public float windupLateFraction = 0.85f;   // (근접) 예비동작의 이 비율이 지난 '직전'(맞기 아주 임박)에 발동
+    public float projectileNearDist = 1.6f;   // (원거리) 투사체가 플레이어와 이 거리 안에 오면 발동 — '닿기 직전'
 
     private static CombatTutorial _inst;
 
@@ -39,7 +40,9 @@ public class CombatTutorial : MonoBehaviour
 
     // 패링 레슨 진행 상태
     private bool lessonActive;
-    private Enemy lessonEnemy;
+    private Enemy lessonEnemy;            // 근접 레슨 대상(공격이 끝나면 레슨 종료)
+    private Projectile lessonProjectile;  // 원거리 레슨 대상(사라지면 레슨 종료)
+    private bool lessonRanged;            // 이번 레슨이 원거리(투사체)인가
     private float lessonStartReal;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -70,6 +73,7 @@ public class CombatTutorial : MonoBehaviour
     private void Refresh(Scene s)
     {
         EndLesson();   // 진행 중 레슨이 있으면 시간/도움말 정리(씬 전환 안전)
+        if (guardCardPending != null) { StopCoroutine(guardCardPending); guardCardPending = null; }   // 지연 카드 취소
         inScene = s.name == TutorialSceneName;
         player = null;
         parryLessonDone = false;
@@ -99,20 +103,65 @@ public class CombatTutorial : MonoBehaviour
     {
         if (!inScene) return;
 
-        // 패링 레슨 진행 중: 우클릭 성공 / 시간초과·공격종료 처리(언스케일 시간 기준)
+        // 패링 레슨 진행 중: 우클릭 성공 / 시간초과·대상소멸 처리(언스케일 시간 기준)
         if (lessonActive)
         {
             if (Input.GetMouseButtonDown(1)) { ResolveParrySuccess(); return; }
             bool timedOut = Time.unscaledTime - lessonStartReal > reactSeconds;
-            if (lessonEnemy == null || !lessonEnemy.IsAttacking || timedOut) EndLesson(teachCard: true);
+            bool subjectGone = lessonRanged ? (lessonProjectile == null)
+                                            : (lessonEnemy == null || !lessonEnemy.IsAttacking);
+            if (subjectGone || timedOut) EndLesson(teachCard: true);
             return;
         }
+
+        // 첫 각성(원거리): 적 투사체가 코앞에 온 순간 — 시간 완전 정지 + 우클릭(튕겨내기) 유도
+        if (!parryLessonDone && !SlowMoFx.Active && pendingPrecog == null) TryRangedLesson();
 
         // (구) 몬스터 발견 → 공격 도움말은 폐지 — 독백 끝 [이동/공격] 카드(TutorialSequence)가 대체
     }
 
-    // 딸피(0.5칸) 상태에서 공격을 받은 순간(각성 레슨 종결 시점) → [1p 가드 / 2p 패링] 카드(1회)
+    // 원거리 첫 각성: 살아있는 적 투사체가 플레이어에 근접(projectileNearDist)하면 레슨 시작.
+    //  AutoPrecog(1.3)보다 살짝 먼 거리(1.6)에서 먼저 잡아 레슨이 우선권을 갖는다.
+    private void TryRangedLesson()
+    {
+        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만
+        var p = Player();
+        if (p == null) return;
+        var col = p.GetComponent<Collider2D>();
+        Vector2 target = col != null ? (Vector2)col.bounds.center : (Vector2)p.transform.position + Vector2.up * 0.6f;
+        for (int i = 0; i < Projectile.All.Count; i++)
+        {
+            var pr = Projectile.All[i];
+            if (pr == null || pr.Reflected) continue;
+            Vector2 to = target - (Vector2)pr.transform.position;
+            float dist = to.magnitude;
+            if (dist < 0.01f || dist > projectileNearDist) continue;
+            if (Vector2.Dot(pr.Velocity, to / dist) < 0.5f) continue;   // 멀어지는/빗나가는 탄 무시
+            BeginLesson(null, pr);
+            return;
+        }
+    }
+
+    // 딸피(0.5칸) 상태의 각성 레슨이 끝나면 → [1p 가드 / 2p 패링] 카드(1회).
+    //  ★패링 순간 바로 띄우지 않고, 연출("팅"·그로기·반사)이 다 끝난 뒤(guardCardDelay)에 표시.
+    public float guardCardDelay = 2f;      // 레슨 종결 후 카드까지 지연(실시간)
     private bool guardParryCardShown;
+    private Coroutine guardCardPending;
+
+    private void QueueGuardParryCard()
+    {
+        if (guardParryCardShown || guardCardPending != null) return;
+        guardCardPending = StartCoroutine(GuardCardLater());
+    }
+
+    private System.Collections.IEnumerator GuardCardLater()
+    {
+        float t = 0f;
+        while (t < guardCardDelay) { t += Time.unscaledDeltaTime; yield return null; }
+        guardCardPending = null;
+        if (inScene) ShowGuardParryCard();   // 그새 씬을 떠났으면 표시하지 않음
+    }
+
     private void ShowGuardParryCard()
     {
         if (guardParryCardShown || HelpPopupUI.Instance == null) return;
@@ -135,7 +184,7 @@ public class CombatTutorial : MonoBehaviour
     {
         if (!inScene || lessonActive || SlowMoFx.Active || pendingPrecog != null) return;
         if (parryLessonDone) return;                               // 레슨은 1회 — 이후는 AutoPrecog 몫
-        if (e == null) return;                                     // 근접·원거리 모두 첫 예지 대상(원거리 공격에도 발동 — 예비동작 중 우클릭이면 발사 전 차단·그로기)
+        if (e == null || e.RangedPrecog) return;                   // ★근접 공격만 레슨 대상 — 원거리는 '투사체 근접 정지'(AutoPrecog) 규칙을 따름(발사 순간 감속 방지)
         var p = Player();
         if (p == null || e.TargetPlayer != p.transform) return;    // 플레이어를 노리는 공격만
         if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만
@@ -157,32 +206,58 @@ public class CombatTutorial : MonoBehaviour
         pendingPrecog = null;
         if (e == null || !e.IsAttacking || SlowMoFx.Active || lessonActive || parryLessonDone) yield break;
         if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) yield break;   // 재확인(그새 회복했으면 취소)
+        BeginLesson(e, null);
+    }
 
+    // 첫 각성 레슨 시작 — 근접(e)이면 예비동작을 감속으로 붙잡고, 원거리(pr)면 투사체를 코앞에 '정지'로 세워둔다.
+    private void BeginLesson(Enemy e, Projectile pr)
+    {
+        var p = Player();
         PrecogCharm.PlayEyeFlash(p);   // 붉은 눈빛 — 잠재 기프트
 
-        // 첫 각성: 레슨(우클릭 어시스트)
         lessonActive = true;
         lessonEnemy = e;
+        lessonProjectile = pr;
+        lessonRanged = pr != null;
         lessonStartReal = Time.unscaledTime;
-        SlowMoFx.BeginHeld(slowScale);   // 시간감속 + 줌인 + 집중 연출
-        Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 느려진다", 3f);
-        if (HelpPopupUI.Instance != null)
-            HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
-                "죽음의 위기에 잠재된 기프트가 깨어났습니다. 적의 공격이 느리게 보입니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
+
+        if (lessonRanged)
+        {
+            SlowMoFx.FreezeHeld();   // 완전 정지 — 투사체가 코앞에 멈춘 채 우클릭을 기다린다
+            Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 멈춘다", 3f);
+            if (HelpPopupUI.Instance != null)
+                HelpPopupUI.Instance.ShowSticky("각성 — 튕겨내기!",
+                    "죽음의 위기에 잠재된 기프트가 깨어나 시간이 멈췄습니다!\n지금 [우클릭]으로 가드하면 날아오는 탄환을 *튕겨내* 적에게 되돌려줍니다.");
+        }
+        else
+        {
+            SlowMoFx.FreezeHeld();   // ★근접도 완전 정지 — 예지 발동은 언제나 '시간 멈춤' 연출(플래시+청회색 색조)로 통일
+            Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 멈춘다", 3f);
+            if (HelpPopupUI.Instance != null)
+                HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
+                    "죽음의 위기에 잠재된 기프트가 깨어나 시간이 멈췄습니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
+        }
     }
 
     private void ResolveParrySuccess()
     {
         SlowMoFx.End();                                            // ★ Juice보다 먼저 복구해야 히트스톱이 동작
         if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
-        var p = Player();
-        if (p != null) p.TutorialParrySuccess(lessonEnemy as IParryable);   // 그로기 + 반격 + "팅"
+        if (!lessonRanged)
+        {
+            var p = Player();
+            if (p != null) p.TutorialParrySuccess(lessonEnemy as IParryable);   // 그로기 + 반격 + "팅"
+        }
+        // 원거리: 방금 누른 우클릭으로 가드가 이미 시작됨 — 시간이 풀리면 코앞의 투사체가
+        // 저스트 패링 창 안에서 자동으로 '반사'된다(TryDeflectProjectile). 별도 연출 불필요.
         lessonActive = false;
         lessonEnemy = null;
+        lessonProjectile = null;
+        lessonRanged = false;
         parryLessonDone = true;
 
-        // 첫 패링 성공 직후: [가드/패링] 정리 카드(적이 그로기인 동안 읽기 좋게)
-        ShowGuardParryCard();
+        // 첫 패링이 '아예 끝난 뒤'에 [가드/패링] 정리 카드(연출 안 끊게 지연 표시)
+        QueueGuardParryCard();
     }
 
     // 시간초과 / 공격종료 / 씬전환 → 시간만 복구하고 도움말 닫음(공격은 그대로 진행).
@@ -194,10 +269,12 @@ public class CombatTutorial : MonoBehaviour
             SlowMoFx.End();
             if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.ForceHide();
             parryLessonDone = true;   // 한 번 발동했으면(성공/실패 무관) 소진
-            if (teachCard) ShowGuardParryCard();   // 패링 못 해서 맞았어도 가드/패링은 가르친다
+            if (teachCard) QueueGuardParryCard();   // 패링 못 해서 맞았어도 가드/패링은 가르친다(피격 연출 끝난 뒤)
         }
         lessonActive = false;
         lessonEnemy = null;
+        lessonProjectile = null;
+        lessonRanged = false;
     }
 
     // ── 첫 예지 중 '우클릭' 시각 암시 ── 스티키 배너 텍스트에 더해, 화면에 깜박이는 마우스 우클릭 아이콘을 띄운다.

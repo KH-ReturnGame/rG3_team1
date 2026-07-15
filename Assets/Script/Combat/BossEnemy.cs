@@ -32,6 +32,7 @@ public class BossEnemy : Enemy
     public float HealthFrac => Mathf.Clamp01(currentHealth / Mathf.Max(1f, maxHealth));
     public bool Phase2 => phase2;
     public bool Encountered => encountered;   // 체력바는 전투 시작 후에만 표시
+    public override bool RangedPrecog => cur == Pattern.Volley;   // 볼리(원거리)는 예지가 투사체 근접 시 발동 — 발사 순간 정지 방지
 
     private Pattern cur = Pattern.None;
     private Pattern lastPattern = Pattern.None;   // 같은 패턴 연속 방지

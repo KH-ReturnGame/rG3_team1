@@ -100744,6 +100744,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 5994272772996261918, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
+      propertyPath: attackBoxSize.x
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 9071201126727714719, guid: fa37b60d92fc1db4eb036e8260e393f4, type: 3}
       propertyPath: m_FlipX
       value: 0

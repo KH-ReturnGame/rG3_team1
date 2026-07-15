@@ -132,12 +132,19 @@ public class HelpPopupUI : MonoBehaviour
                 if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) SetPage(page - 1);
                 if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) SetPage(page + 1);
             }
-            // 아무 데나 클릭 / F / Space / Enter = 다음 페이지, 마지막 페이지면 닫기(뒤로가기는 ←/A 키)
             bool click = Input.GetMouseButtonDown(0);
-            if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || click)
+            if (click && n > 1)
+            {
+                // 다중 페이지: 화면 왼쪽 절반 클릭 = 이전 페이지, 오른쪽 절반 = 다음(마지막이면 닫기).
+                // ◀/▶ 화살표도 중앙 기준 좌/우에 있으므로 같은 규칙으로 동작.
+                if (Input.mousePosition.x < Screen.width * 0.5f) SetPage(page - 1);   // 첫 페이지면 SetPage가 무시
+                else if (page < n - 1) SetPage(page + 1);
+                else CloseCard();
+            }
+            else if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || (click && n == 1))
             {
                 if (page < n - 1) SetPage(page + 1);   // 마지막 페이지 전이면 다음 장으로
-                else CloseCard();
+                else CloseCard();                       // 단일 페이지는 아무 데나 클릭 = 닫기(기존 유지)
             }
             if (Input.GetKeyDown(KeyCode.Escape)) CloseCard();
         }
