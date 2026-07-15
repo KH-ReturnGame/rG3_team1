@@ -100,13 +100,12 @@ public class BattleArena : MonoBehaviour
                 SetDoors(true);
                 Toast.Show("적을 모두 처치하라!", 2f);
 
-                // 첫 아레나 전투: 배틀 아레나 카드(세션 1회) — startClosed(아레나 A 같은 게이트형)는 제외,
-                // '평소 열려 있다가 닫히는' 진짜 아레나(B)에서 처음 보여준다
+                // 첫 아레나 전투: 배틀 아레나 카드(세션 1회) — ★벽이 완전히 떨어져 닫힌(쿵) 직후 표시.
+                // (force: 일반 표시는 전투 억제(CombatNearby)에 걸려 전투가 끝난 뒤에야 떴었음)
                 if (!arenaHelpShown && !startClosed && HelpPopupUI.Instance != null)
                 {
                     arenaHelpShown = true;
-                    HelpPopupUI.Instance.Show("arena", "배틀 아레나",
-                        "이 구역의 적을 모두 처치할 때까지 문이 닫힙니다 — 물러날 곳은 없습니다.\n전멸시키면 문이 열리고, 때로는 보상이 나타납니다.");
+                    StartCoroutine(ShowArenaHelpAfterDoors());
                 }
             }
             return;
@@ -119,29 +118,26 @@ public class BattleArena : MonoBehaviour
             active = false;
             cleared = oneTime;
             SetDoors(false);
-            bool chestAppeared = false;
             if (onClearActivate != null)
                 foreach (var g in onClearActivate)
-                    if (g != null)
-                    {
-                        g.SetActive(true);   // 상자·다음 길 등장
-                        if (g.GetComponentInChildren<TreasureChest>(true) != null) chestAppeared = true;
-                    }
+                    if (g != null) g.SetActive(true);   // 상자·다음 길 등장
             Toast.Show("구역 클리어!", 2f);
-
-            // 보물상자 도움말: ★튜토리얼의 첫 보상 상자(포션)에서만 딱 1회
-            if (chestAppeared && !chestHelpShown && HelpPopupUI.Instance != null
-                && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == CombatTutorial.TutorialSceneName)
-            {
-                chestHelpShown = true;
-                HelpPopupUI.Instance.Show("chest", "보물상자",
-                    "전투의 보상 — 보물상자가 나타났습니다!\n가까이 가서 [F]로 열면 포션·재료·장신구 같은 전리품을 얻을 수 있습니다.");
-            }
+            // (구) 보물상자 도움말 — 폐지. 인벤토리/아이템 사용 안내는 '첫 상자 개봉' 때 TutorialFlow가 담당.
         }
     }
 
-    private static bool chestHelpShown;   // 보물상자 도움말(아레나 보상) 세션당 1회
     private static bool arenaHelpShown;   // 배틀 아레나 카드 세션당 1회
+
+    // 문 낙하 연출(doorSlide)이 끝나고 쿵 착지한 직후에 아레나 카드 표시(연출을 카드가 가리지 않게)
+    private System.Collections.IEnumerator ShowArenaHelpAfterDoors()
+    {
+        float wait = Mathf.Max(0.01f, doorSlide) + 0.15f;   // 낙하 시간 + 착지 쿵 직후
+        float t = 0f;
+        while (t < wait) { t += Time.deltaTime; yield return null; }   // 문 애니와 같은 시계(scaled)
+        if (HelpPopupUI.Instance != null)
+            HelpPopupUI.Instance.ShowPages(true, new HelpPopupUI.HelpPage("arena", "배틀 아레나",
+                "이 구역의 적을 모두 처치할 때까지 문이 닫힙니다 — 물러날 곳은 없습니다.\n전멸시키면 문이 열리고, 때로는 보상이 나타납니다."));
+    }
 
     // 문 개폐 — 닫힘: 땅속에서 스르륵 올라옴 / 열림: 스르륵 내려가고 비활성.
     private void SetDoors(bool closed)

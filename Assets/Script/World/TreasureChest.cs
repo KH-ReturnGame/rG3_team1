@@ -94,6 +94,8 @@ public class TreasureChest : MonoBehaviour, IInteractable
         SetOpenedState();
         if (sr != null && openFrames != null && openFrames.Length > 1) StartCoroutine(PlayOpenAnim());   // 뚜껑 열리는 프레임 애니
         else ApplyOpenedVisual();
+
+        TutorialFlow.OnChestOpened();   // 온보딩: 첫 상자 개봉 → [인벤토리/아이템 사용] 카드(1회)
     }
 
     // 상호작용/감지 차단(공통)

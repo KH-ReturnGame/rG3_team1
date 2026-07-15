@@ -415,11 +415,8 @@ public class PlayerController : MonoBehaviour
             }
             else   // 공중
             {
-                if (plungeArmTimer > 0)
-                {
-                    StartPlunge();   // 아래 베기 모션 중 한 번 더 → 낙하 공격
-                }
-                else if (animBusyTimer <= 0)
+                // (구) 낙하 공격(아래 베기 중 재입력 → StartPlunge) — 폐지. 공중 공격만 유지.
+                if (animBusyTimer <= 0)
                 {
                     bool down = Input.GetKey(KeyCode.S) || Input.GetAxisRaw("Vertical") < -0.1f;
                     if (down) AirDownAttack();   // S + 좌클릭 → 아래 베기(1타)
@@ -433,7 +430,7 @@ public class PlayerController : MonoBehaviour
             UseSkill();
 
         // 점프: 스페이스 탭=누르는 즉시 일반 점프 / 공중=즉시 2단 점프
-        // 아래(S)+스페이스: '원웨이 플랫폼 위'면 아래로 하강, 일반 지형이면 차지 높은 점프 (더블탭 하강은 폐지)
+        // 아래(S)+스페이스: '원웨이 플랫폼 위'면 아래로 하강만 유지. (구) 차지 높은 점프(S+Space 홀드)는 폐지.
         if (Input.GetKeyDown(KeyCode.Space) && !isGuarding && !isChargingJump)
         {
             bool holdDown = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || Input.GetAxisRaw("Vertical") < -0.1f;
@@ -448,35 +445,7 @@ public class PlayerController : MonoBehaviour
             }
             else if (currentJumps > 0)
             {
-                if (isGrounded && holdDown)
-                {
-                    isChargingJump = true;   // 차지 높은 점프 시작(뗄 때 발사)
-                    jumpHoldTimer = 0f;
-                    animBusyTimer = 0;       // 공격 캔슬하고 웅크림
-                    comboStep = 0;
-                }
-                else
-                {
-                    Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
-                }
-            }
-        }
-
-        if (isChargingJump)
-        {
-            if (!isGrounded)
-            {
-                isChargingJump = false;  // 차지 중 바닥에서 벗어나면 취소
-            }
-            else
-            {
-                if (Input.GetKey(KeyCode.Space)) jumpHoldTimer += Time.deltaTime;
-                if (Input.GetKeyUp(KeyCode.Space))
-                {
-                    bool high = jumpHoldTimer >= chargeJumpTime;   // 충분히 충전해야만 높은 점프
-                    isChargingJump = false;
-                    Jump(high ? chargeJumpForce : jumpForce);      // 덜 눌렀으면 일반 점프
-                }
+                Jump(jumpForce);         // 일반/공중 점프 — 누르는 즉시 발사(핑 없음)
             }
         }
 
@@ -777,7 +746,7 @@ public class PlayerController : MonoBehaviour
         {
             platformHelpShown = true;
             HelpPopupUI.Instance.ShowOnce("platform", "통과형 발판",
-                "밑에서 점프하면 그대로 뚫고 올라설 수 있는 발판입니다.\n발판 위에서 [S]+[Space]를 누르면 아래로 내려갑니다.\n높은 곳은 *2단 점프*나 [S]+[Space] 점프 차징으로 올라가 보세요.");
+                "밑에서 점프하면 그대로 뚫고 올라설 수 있는 발판입니다.\n발판 위에서 [S]+[Space]를 누르면 아래로 내려갑니다.\n높은 곳은 *2단 점프*로 올라가 보세요.");
         }
     }
     private static bool platformHelpShown;   // 세션 1회 가드(실제 중복 방지는 ShowOnce의 Seen)

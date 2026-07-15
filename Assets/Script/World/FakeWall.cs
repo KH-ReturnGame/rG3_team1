@@ -68,7 +68,7 @@ public class FakeWall : MonoBehaviour
         {
             helpShown = true;
             HelpPopupUI.Instance.Show("fake_wall", "비밀 통로",
-                "눈에 보이는 것이 전부가 아닙니다 — 이 벽은 *통과할 수 있는 가짜 벽*이었습니다.\n수상해 보이는 벽은 직접 걸어 들어가 보세요. 숨겨진 보물이 기다릴지도 모릅니다.");
+                "눈에 보이는 것이 전부가 아닙니다, 이 벽은 *통과할 수 있는 가짜 벽*이었습니다.\n수상해 보이는 벽은 직접 들어가 보세요. 숨겨진 보물이 기다릴지도 모릅니다.");
         }
 
         if (Mathf.Abs(cur - target) < 0.005f) return;
