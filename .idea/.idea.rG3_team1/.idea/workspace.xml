@@ -11,7 +11,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="564d375b-1bd6-4970-93ac-16269894f562" name="변경" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.rG3_team1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/StartingArea.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/StartingArea.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/TutorialScene.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Script/Core/CombatTutorial.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/CombatTutorial.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Script/Core/TutorialSequence.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Script/Core/TutorialSequence.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -202,7 +206,7 @@
       <workItem from="1783293515955" duration="620000" />
       <workItem from="1783777137824" duration="6299000" />
       <workItem from="1783953569324" duration="1193000" />
-      <workItem from="1784078841273" duration="429000" />
+      <workItem from="1784078841273" duration="2323000" />
     </task>
     <servers />
   </component>

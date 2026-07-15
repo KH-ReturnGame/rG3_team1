@@ -47,7 +47,7 @@ public class TutorialSequence : MonoBehaviour
                 approacher.detectRange = 40f;     // 스폰 즉시 플레이어에게 걸어옴
                 approacher.detectHeight = 8f;
                 approacher.firstAttackDelay = 0f;
-                approacher.attackDamage = Mathf.Min(approacher.attackDamage, 0.5f);   // 튜토 공격력 상한(런타임 스폰이라 직접)
+                approacher.attackDamage = Mathf.Min(approacher.attackDamage, 1f);   // 튜토 공격력 상한 1칸(런타임 스폰이라 직접)
                 approacher.ArmAttack(999f);        // 발도 전엔 절대 공격 안 함
             }
         }
@@ -80,12 +80,13 @@ public class TutorialSequence : MonoBehaviour
             if (Letterbox.Instance != null) Letterbox.Instance.Show(0.15f);
         }
 
-        // 대사가 끝난 지금에서야 검은 바가 걷히며 발도 → 전투 개시
+        // 대사가 끝난 지금에서야 검은 바가 걷히며 발도. 공격은 아직 봉인 — [이동/공격] 카드를 닫아야 개시.
         if (Letterbox.Instance != null) Letterbox.Instance.Hide(1.2f);
         pc.CutsceneDrawSword();
         yield return new WaitForSeconds(0.4f);
         pc.cutsceneActive = false;
-        if (approacher != null) approacher.ArmAttack(1.4f);   // 공격 개시(살짝 여유 — 자세 잡을 시간)
+        foreach (var en in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+            if (en != null) en.ArmAttack(99999f);              // 카드를 닫기 전까진 모든 몬스터 공격 금지
 
         // 독백 끝 → [1p 이동 / 2p 공격] 도움말(적이 다가오는 중이라 force — 전투 억제 무시, 시간 정지로 읽을 틈 확보)
         yield return new WaitForSeconds(0.15f);
@@ -94,9 +95,16 @@ public class TutorialSequence : MonoBehaviour
                 new HelpPopupUI.HelpPage("move", "이동",
                     "[A] · [D] (또는 방향키)로 좌우로 이동합니다.\n[Space]로 점프 — 공중에서 한 번 더 누르면 *2단 점프*입니다.\n[Shift] 대시 중에는 잠시 무적이 되어 공격을 피할 수 있습니다."),
                 new HelpPopupUI.HelpPage("attack", "공격",
-                    "[좌클릭]으로 검을 휘둘러 적을 공격합니다. 연속으로 누르면 콤보가 이어지고, 마지막 일격이 가장 강력합니다.\n" +
-                    "[Q]를 누르면 넓게 베는 횡베기 스킬을 사용합니다(쿨타임 있음).\n" +
-                    "공중 [좌클릭]은 공중 베기, [S]와 함께 누르면 낙하 공격이 됩니다."));
+                    "[좌클릭]으로 검을 휘둘러 적을 공격합니다.\n" +
+                    "[Q]를 누르면 강력한 횡베기 스킬을 사용합니다.\n"
+                    ));
+
+        // 카드가 떠서 닫힐 때까지 대기(카드는 시간 정지 상태 — 실시간 기준) → 그 뒤에야 공격 허용
+        float openGuard = 3f;
+        while (!HelpPopupUI.CardOpen && openGuard > 0f) { openGuard -= Time.unscaledDeltaTime; yield return null; }
+        while (HelpPopupUI.CardOpen) yield return null;
+        foreach (var en in FindObjectsByType<Enemy>(FindObjectsSortMode.None))
+            if (en != null) en.ArmAttack(1.2f);                // 카드 닫힘 → 잠깐 여유 후 전투 개시
 
         // (구) 아레나 클리어 → 포션 안내 카드는 폐지 — 포션을 '주울 때' TutorialFlow.OnItemAcquired가 인벤토리 카드를 띄운다
     }

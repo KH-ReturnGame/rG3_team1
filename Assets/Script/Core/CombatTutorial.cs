@@ -20,7 +20,7 @@ public class CombatTutorial : MonoBehaviour
     public float enemyFirstAttackDelay = 3f;   // 튜토리얼 적이 플레이어를 발견한 뒤 첫 공격까지 더 기다림(읽을 시간)
 
     [Header("튜토리얼 밸런스")]
-    public float enemyDamageCap = 0.5f;   // 튜토 적 공격력 상한(하트) — 반칸씩만 깎여 체력 곡선이 완만
+    public float enemyDamageCap = 1f;     // 튜토 적 공격력 상한(하트) — 한 칸씩(요청으로 0.5→1 버프)
     // (구) 각성 회복은 폐지 — 회복은 '저스트 패링 성공 시 한 칸'(PlayerController.justParryHealHalves)으로 일원화
 
     [Header("패링 레슨")]
@@ -159,7 +159,7 @@ public class CombatTutorial : MonoBehaviour
         float t = 0f;
         while (t < guardCardDelay) { t += Time.unscaledDeltaTime; yield return null; }
         guardCardPending = null;
-        if (inScene) ShowGuardParryCard();   // 그새 씬을 떠났으면 표시하지 않음
+        if (inScene && !GameOverUI.Showing) ShowGuardParryCard();   // 씬을 떠났거나 게임오버 중이면 표시하지 않음
     }
 
     private void ShowGuardParryCard()
@@ -171,7 +171,7 @@ public class CombatTutorial : MonoBehaviour
                 "[우클릭]을 누르고 있으면 가드 자세를 취합니다.\n가드 중에는 받는 피해가 줄어들지만, 움직임이 느려집니다.\n위험할 때는 우선 가드부터 — 살아남는 것이 먼저입니다."),
             new HelpPopupUI.HelpPage("parry", "패링",
                 "적의 공격이 닿기 '직전' 완벽한 타이밍의 [우클릭] 가드는 *패링*이 됩니다.\n" +
-                "*저스트 패링*에 성공하면 적이 *그로기*(기절)에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 반 칸 회복합니다.\n" +
+                "*저스트 패링*에 성공하면 적이 *그로기*에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 반 칸 회복합니다.\n" +
                 "그로기 상태의 적은 치명타를 받습니다 — 반격의 순간을 노리세요!"));
     }
 

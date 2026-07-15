@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class GameOverUI : MonoBehaviour
 {
     public static GameOverUI Instance;
+    public static bool Showing => Instance != null && Instance.showing;   // 게임오버 중인지(도움말 카드 억제 등)
 
     public float fadeTime = 1.1f;      // 암전·타이포 페이드 인
     public float inputDelay = 0.8f;    // 이 시간 전엔 클릭 무시(연타 오클릭 방지)
@@ -41,6 +42,7 @@ public class GameOverUI : MonoBehaviour
         AudioManager.Sfx("gameover");
         AudioManager.Bgm("");    // 배경음 정지
         SlowMoFx.End();          // 예지 슬로우 중 사망 대비 — 시간 상태 정리 후 정지
+        if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.CloseAllCards();   // 열린/대기 중 도움말 정리(재시작 후 시간 정지 잔류 방지)
         Time.timeScale = 0f;
     }
 

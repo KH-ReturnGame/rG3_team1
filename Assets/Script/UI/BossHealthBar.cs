@@ -42,7 +42,7 @@ public class BossHealthBar : MonoBehaviour
         float sw = UIScale.W, sh = UIScale.H;
 
         float w = Mathf.Min(sw * 0.56f, 860f), h = Mathf.Clamp(sh * 0.020f, 14f, 24f);
-        float x = (sw - w) * 0.5f, y = sh - sh * 0.085f;
+        float x = (sw - w) * 0.5f, y = sh - sh * 0.165f;   // 핫바(하단) 바로 위 — 겹침 방지로 0.085→0.165
 
         // 이름 + 페이즈2 표식
         nameSt.fontSize = Mathf.RoundToInt(sh * 0.022f);

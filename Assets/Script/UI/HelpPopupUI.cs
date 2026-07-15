@@ -97,6 +97,20 @@ public class HelpPopupUI : MonoBehaviour
     public void ShowSticky(string t, string b) { stickyTitle = t; stickyBody = b; stickyRich = Rich(b); stickyAt = Time.unscaledTime; }
     public void ForceHide() { stickyTitle = null; stickyBody = null; }
 
+    // 모달 카드·대기열·배너 전부 정리(시간은 건드리지 않음 — 호출자가 결정). 게임오버·씬 전환용.
+    public void CloseAllCards() { cur = null; queue.Clear(); stickyTitle = null; stickyBody = null; }
+
+    // ★씬이 바뀌면 카드/대기열 강제 정리 — 카드가 열린 채 씬을 넘어가면(사망→재시작 등)
+    //   Update가 timeScale을 0으로 계속 재고정해 새 씬(인트로 컷씬 등)이 영영 멈추는 사고 방지.
+    void OnEnable() { UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded; }
+    void OnDisable() { UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded; }
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene s, UnityEngine.SceneManagement.LoadSceneMode m)
+    {
+        bool hadCard = cur != null;
+        CloseAllCards();
+        if (hadCard) Time.timeScale = 1f;   // 카드가 잡아두던 정지 해제(이전 씬의 복원값은 무의미)
+    }
+
     public static bool CardOpen => Instance != null && Instance.cur != null;
     public static bool ManualOpen => CardOpen;   // (구 이름 호환 — MenuUI의 ESC 게이트가 사용)
     public bool IsManualOpen => cur != null;

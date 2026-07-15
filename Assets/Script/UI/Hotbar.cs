@@ -72,6 +72,7 @@ public class Hotbar : MonoBehaviour
     void OnGUI()
     {
         if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;   // 타이틀에선 숨김(게임오버→타이틀 잔상 방지)
         if (!showBar || Inventory.Instance == null || hotkeySlots <= 0) return;
         EnsureStyles();
         UIScale.Apply();
