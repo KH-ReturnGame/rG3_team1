@@ -70,7 +70,7 @@ public class HelpTrigger : MonoBehaviour
                 break;
             case HelpTopic.Combat:
                 title = "전투 시스템";
-                body = "좌클릭으로 검을 휘둘러 연속 공격(콤보)을 이어갈 수 있습니다. 콤보의 마지막 일격은 더 강력합니다.\n공중에서의 좌클릭은 공중 베기, 아래키(S)와 함께 누르면 강하게 내리꽂는 낙하 공격이 됩니다.\nQ를 누르면 넓게 베는 횡베기 스킬을 쓸 수 있습니다(쿨타임 있음). 대시(Shift) 중에는 잠시 무적이 되어 공격을 피할 수 있습니다.";
+                body = "좌클릭으로 검을 휘둘러 공격할 수 있습니다.\nQ를 누르면 넓게 베는 횡베기 스킬을 쓸 수 있습니다. 대시(Shift) 중에는 잠시 무적이 되어 공격을 피할 수 있습니다.";
                 break;
             case HelpTopic.Hotkeys:
                 title = "단축키";

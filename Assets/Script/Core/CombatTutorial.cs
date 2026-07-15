@@ -232,7 +232,7 @@ public class CombatTutorial : MonoBehaviour
         else
         {
             SlowMoFx.FreezeHeld();   // ★근접도 완전 정지 — 예지 발동은 언제나 '시간 멈춤' 연출(플래시+청회색 색조)로 통일
-            Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 멈춘다", 3f);
+            Toast.Show("시간 정지됨", 3f);
             if (HelpPopupUI.Instance != null)
                 HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
                     "죽음의 위기에 잠재된 기프트가 깨어나 시간이 멈췄습니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
