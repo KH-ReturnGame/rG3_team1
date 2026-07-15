@@ -37,7 +37,7 @@ public class AutoPrecog : MonoBehaviour
         if (SlowMoFx.Active || Time.unscaledTime < nextReady) return false;
         if (PlayerController.Instance == null) return false;
         bool crisis = Difficulty.AutoPrecog
-            && GameManager.Instance != null && GameManager.Instance.CurrentHalf <= 1;   // 쉬움 + 반 칸 위기(무료)
+            && GameManager.Instance != null && GameManager.Instance.CurrentHalf <= 2;   // 쉬움 + 체력 1칸 이하 위기(무료) — 몹 공격력 1칸 기준 '다음 타에 사망'
         bool charm = PrecogCharm.CharmReady;                                            // 예지안(난이도 무관, 쿨다운)
         if (!crisis && !charm) return false;
         viaCharm = !crisis;   // 위기 발동이 우선 — 겹치면 장신구 쿨다운은 아끼기

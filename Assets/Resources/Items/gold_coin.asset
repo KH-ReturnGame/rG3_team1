@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: gold_coin
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: gold_coin
-  itemName: "\uAE08\uD654"
+  itemName: "\uAE08 \uC8FC\uD654"
   icon: {fileID: 21300000, guid: b25fecb543fcaee42a973d312729dc2c, type: 3}
   maxStack: 99
-  description: "\uAE08 \uB3D9\uC804. \uC0C1\uC810\uC5D0 \uD314\uC544 \uACE8\uB4DC\uB85C
-    \uBC14\uAFBC\uB2E4."
+  description: "\uAE08 \uB3D9\uC804. \uC0C1\uC810\uC5D0 \uB9E4\uC6B0 \uBE44\uC2F8\uAC8C
+    \uD314 \uC218 \uC788\uB2E4."
+  gridW: 1
+  gridH: 1
   kind: 3
   healHearts: 0
   restoreStamina: 0
@@ -25,11 +27,14 @@ MonoBehaviour:
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
+  cooldownSeconds: 0
   maxJumpBonus: 0
   maxHeartBonus: 0
   maxStaminaBonus: 0
   staminaRegenBonus: 0
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 200
   sellAtFullValue: 1

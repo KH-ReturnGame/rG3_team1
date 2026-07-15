@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: silver_coin
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: silver_coin
-  itemName: "\uC740\uD654"
+  itemName: "\uC740 \uC8FC\uD654"
   icon: {fileID: 21300000, guid: ddb96026bcd916b46b9df837a826e559, type: 3}
   maxStack: 99
-  description: "\uC740 \uB3D9\uC804. \uC0C1\uC810\uC5D0 \uD314\uC544 \uACE8\uB4DC\uB85C
-    \uBC14\uAFBC\uB2E4."
+  description: "\uC740 \uB3D9\uC804. \uC0C1\uC810\uC5D0 \uB354 \uBE44\uC2F8\uAC8C
+    \uD314 \uC218 \uC788\uB2E4."
+  gridW: 1
+  gridH: 1
   kind: 3
   healHearts: 0
   restoreStamina: 0
@@ -25,11 +27,14 @@ MonoBehaviour:
   tempAttackMult: 0
   tempDamageReduction: 0
   buffDuration: 0
+  cooldownSeconds: 0
   maxJumpBonus: 0
   maxHeartBonus: 0
   maxStaminaBonus: 0
   staminaRegenBonus: 0
   attackBonus: 0
+  precogSlow: 0
+  precogCooldown: 20
   sellValue: 0
   baseValue: 50
   sellAtFullValue: 1

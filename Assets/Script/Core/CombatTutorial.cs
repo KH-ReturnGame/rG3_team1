@@ -124,7 +124,7 @@ public class CombatTutorial : MonoBehaviour
     //  AutoPrecog(1.3)보다 살짝 먼 거리(1.6)에서 먼저 잡아 레슨이 우선권을 갖는다.
     private void TryRangedLesson()
     {
-        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만
+        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 2) return;   // 체력 1칸 이하(튜토 몹 공격력 1칸 = 다음 타에 사망)에서 발동
         var p = Player();
         if (p == null) return;
         var col = p.GetComponent<Collider2D>();
@@ -168,15 +168,15 @@ public class CombatTutorial : MonoBehaviour
         guardParryCardShown = true;
         HelpPopupUI.Instance.ShowPages(true,
             new HelpPopupUI.HelpPage("guard", "가드",
-                "[우클릭]을 누르고 있으면 가드 자세를 취합니다.\n가드 중에는 받는 피해가 줄어들지만, 움직임이 느려집니다.\n위험할 때는 우선 가드부터 — 살아남는 것이 먼저입니다."),
+                "[우클릭]을 누르고 있으면 가드 자세를 취합니다.\n가드 중에는 받는 피해가 줄어들지만, 움직임이 느려집니다."),
             new HelpPopupUI.HelpPage("parry", "패링",
-                "적의 공격이 닿기 '직전' 완벽한 타이밍의 [우클릭] 가드는 *패링*이 됩니다.\n" +
-                "*저스트 패링*에 성공하면 적이 *그로기*에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 반 칸 회복합니다.\n" +
-                "그로기 상태의 적은 치명타를 받습니다 — 반격의 순간을 노리세요!"));
+                "적의 공격이 닿기 직전 타이밍의 [우클릭] 가드는 *패링*이 됩니다.\n" +
+                "*저스트 패링*에 성공하면 적이 *기절* 상태에 빠지고, [Q] 스킬 쿨타임이 초기화되며, 체력을 반 칸 회복합니다.\n" +
+                "*기절* 상태의 적은 치명타를 받습니다"));
     }
 
     // 적이 예비동작에 진입 → '첫 각성 레슨' 판정(★튜토리얼 씬 한정, 스토리 연출이라 난이도 무관).
-    //  체력이 반 칸(위기)일 때 근접 공격 '직전'에 1회 — 각성 연출 + 패링 레슨(우클릭 어시스트).
+    //  체력 1칸 이하(몹 공격력 1칸 = 다음 타에 사망)일 때 근접 공격 '직전'에 1회 — 각성 연출 + 패링 레슨(우클릭 어시스트).
     //  이후의 반복 자동 예지는 난이도 시스템(AutoPrecog, 쉬움 전용)이 전 씬에서 담당한다.
     private Coroutine pendingPrecog;
 
@@ -187,7 +187,7 @@ public class CombatTutorial : MonoBehaviour
         if (e == null || e.RangedPrecog) return;                   // ★근접 공격만 레슨 대상 — 원거리는 '투사체 근접 정지'(AutoPrecog) 규칙을 따름(발사 순간 감속 방지)
         var p = Player();
         if (p == null || e.TargetPlayer != p.transform) return;    // 플레이어를 노리는 공격만
-        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) return;   // 반 칸 위기에서만
+        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 2) return;   // 체력 1칸 이하 = 다음 타격이 치명적 → 각성
 
         pendingPrecog = StartCoroutine(TriggerPrecogLate(e, p));
     }
@@ -205,7 +205,7 @@ public class CombatTutorial : MonoBehaviour
         }
         pendingPrecog = null;
         if (e == null || !e.IsAttacking || SlowMoFx.Active || lessonActive || parryLessonDone) yield break;
-        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 1) yield break;   // 재확인(그새 회복했으면 취소)
+        if (GameManager.Instance == null || GameManager.Instance.CurrentHalf > 2) yield break;   // 재확인(그새 회복했으면 취소)
         BeginLesson(e, null);
     }
 
@@ -224,18 +224,16 @@ public class CombatTutorial : MonoBehaviour
         if (lessonRanged)
         {
             SlowMoFx.FreezeHeld();   // 완전 정지 — 투사체가 코앞에 멈춘 채 우클릭을 기다린다
-            Toast.Show("몸 속 깊은 곳에서 무언가 깨어난다 — 세상이 멈춘다", 3f);
+            Toast.Show("시간 정지됨", 3f);
             if (HelpPopupUI.Instance != null)
-                HelpPopupUI.Instance.ShowSticky("각성 — 튕겨내기!",
-                    "죽음의 위기에 잠재된 기프트가 깨어나 시간이 멈췄습니다!\n지금 [우클릭]으로 가드하면 날아오는 탄환을 *튕겨내* 적에게 되돌려줍니다.");
+                ;
         }
         else
         {
             SlowMoFx.FreezeHeld();   // ★근접도 완전 정지 — 예지 발동은 언제나 '시간 멈춤' 연출(플래시+청회색 색조)로 통일
             Toast.Show("시간 정지됨", 3f);
             if (HelpPopupUI.Instance != null)
-                HelpPopupUI.Instance.ShowSticky("각성 — 패링!",
-                    "죽음의 위기에 잠재된 기프트가 깨어나 시간이 멈췄습니다!\n지금 [우클릭]으로 가드하면 *패링*이 발동해 적을 기절시키고 반격할 수 있습니다.");
+                ;
         }
     }
 
