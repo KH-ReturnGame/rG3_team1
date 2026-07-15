@@ -275,7 +275,7 @@ MonoBehaviour:
   swordJumpRiseState: SwordJumpRise
   swordJumpFallState: SwordJumpFall
   guardState: SwordGuard
-  parrySuccessState: SwordStandingSlash
+  parrySuccessState: SwordGuardImpact
   fallMargin: 6
   fallDamage: 1
   dropThroughTime: 0.35

@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: 786b7a59a39c8494c9b7da16fa387045
+guid: cf85e6d82ee64754f9482e89e9f48f36
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 130937146736531036
-    second: Run_06_0
-  - first:
-      213: -1494938752074404950
-    second: Run_06_1
+      213: -7362187600280036032
+    second: Dash_00_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -116,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Run_06_0
+      name: Dash_00_0
       rect:
         serializedVersion: 2
-        x: 214
-        y: 264
-        width: 1095
-        height: 1359
+        x: 18
+        y: 3
+        width: 173
+        height: 253
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -131,30 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c56522724ae21d100800000000000000
-      internalID: 130937146736531036
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Run_06_1
-      rect:
-        serializedVersion: 2
-        x: 1391
-        y: 568
-        width: 8
-        height: 7
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: aaba3a12029e04be0800000000000000
-      internalID: -1494938752074404950
+      spriteID: 04dd583526144d990800000000000000
+      internalID: -7362187600280036032
       vertices: []
       indices: 
       edges: []
@@ -173,8 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Run_06_0: 130937146736531036
-      Run_06_1: -1494938752074404950
+      Dash_00_0: -7362187600280036032
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

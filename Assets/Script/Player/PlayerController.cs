@@ -146,7 +146,7 @@ public class PlayerController : MonoBehaviour
     public string swordJumpRiseState = "SwordJumpRise";
     public string swordJumpFallState = "SwordJumpFall";
     public string guardState = "SwordGuard";
-    public string parrySuccessState = "SwordStandingSlash";   // 패링 성공 시 반격 베기(리포스트). 인스펙터에서 교체 가능
+    public string parrySuccessState = "SwordGuardImpact";   // 패링 성공(저스트/일반) 시 재생 — 신캐릭터 패링 스윙(NC_Parry 프레임). 인스펙터에서 교체 가능
 
     private string currentAnimState = "";
     private float animBusyTimer;   // >0이면 1회성 모션(공격/발도 등) 재생 중 → 이동 애니로 안 바뀌고 새 행동도 잠금
