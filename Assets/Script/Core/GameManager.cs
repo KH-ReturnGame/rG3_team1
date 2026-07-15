@@ -24,7 +24,7 @@ public class GameManager : MonoBehaviour
     public float PotionCooldownLeft(ItemData it) { if (it == null) return 0f; float end; return potionCdEnd.TryGetValue(PotionKey(it), out end) ? Mathf.Max(0f, end - Time.time) : 0f; }
     public bool IsPotionReady(ItemData it) => PotionCooldownLeft(it) <= 0f;
     // 아이템별 쿨타임(ItemData.cooldownSeconds > 0이면 그 값, 아니면 전역 기본값)
-    public void StartPotionCooldown(ItemData it) { if (it != null) potionCdEnd[PotionKey(it)] = Time.time + (it.cooldownSeconds > 0f ? it.cooldownSeconds : potionCooldown); }
+    public void StartPotionCooldown(ItemData it) { if (it != null) { potionCdEnd[PotionKey(it)] = Time.time + (it.cooldownSeconds > 0f ? it.cooldownSeconds : potionCooldown); TutorialFlow.OnPotionUsed(); } }   // 첫 소모품 사용 → 아이템 도움말(1회)
 
     // 영구 스탯 업그레이드(상점 골드 소모처). maxHearts에 반영 → 세이브로 유지.
     public void UpgradeMaxHearts(int amt) { maxHearts += amt; currentHalf += amt * 2; OnStatsChanged?.Invoke(); }

@@ -144,7 +144,7 @@ public class CombatTutorial : MonoBehaviour
 
     // 딸피(0.5칸) 상태의 각성 레슨이 끝나면 → [1p 가드 / 2p 패링] 카드(1회).
     //  ★패링 순간 바로 띄우지 않고, 연출("팅"·그로기·반사)이 다 끝난 뒤(guardCardDelay)에 표시.
-    public float guardCardDelay = 2f;      // 레슨 종결 후 카드까지 지연(실시간)
+    public float guardCardDelay = 0.1f;    // 레슨 종결 후 카드까지 지연(실시간) — 패링 직후 거의 바로
     private bool guardParryCardShown;
     private Coroutine guardCardPending;
 

@@ -381,6 +381,8 @@ public class BossEnemy : Enemy
                             heavyPaused = true;             // 멈칫 — 여기서 패링을 지르면 늦거나 빠름
                             stateTimer = 0.5f;
                             if (redGlow != null) { redGlow.enabled = true; redGlow.color = new Color(1f, 0.8f, 0.2f, 0.4f); }   // 노란 기 — 강타 예고
+                            // ★강타 범위 경고: 보스 '주위 양쪽' 타격 범위를 깜박이는 빨간 박스로 표시(멈칫 0.5초 동안)
+                            SpawnWarnBox(transform.position, (attackRange + 1.2f) * 2f, (attackHeight + 0.4f) * 2f, 0.5f);
                             break;
                         }
                         if (redGlow != null && cur == Pattern.Combo3) redGlow.enabled = false;

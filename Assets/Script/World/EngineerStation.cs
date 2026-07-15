@@ -11,10 +11,9 @@ public class EngineerStation : MonoBehaviour, IInteractable
     public void Interact()
     {
         if (QuestManager.Instance != null) QuestManager.Instance.ReportVisit("engineer");   // 마을 둘러보기 진행
-        // (구) 최초 대화에서 미니맵 모듈 지급 → 폐지(미니맵은 기본 제공)
-        var npc = GetComponent<NpcDialogue>();
-        if (npc != null && npc.HasLines) npc.Run(OpenEngineer);
-        else OpenEngineer();
+        // ★대화 → 창 체인이 입력 타이밍에 따라 간헐적으로 깨지는 고질병 → 대화를 생략하고 즉시 강화창을 연다(축제 안정성).
+        //   (구) npc.Run(OpenEngineer) 대사 경유 방식은 폐지 — NpcDialogue 대사는 남아있지만 사용 안 함.
+        OpenEngineer();
     }
 
     private void OpenEngineer() { if (InventoryUI.Instance != null) InventoryUI.Instance.OpenEngineer(); }

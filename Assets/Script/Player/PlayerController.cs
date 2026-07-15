@@ -292,6 +292,10 @@ public class PlayerController : MonoBehaviour
         if (dashCooldownTimer > 0f) dashCooldownTimer -= Time.deltaTime;     // 대시/가드 쿨타임은 항상 진행
         if (guardCooldownTimer > 0f) guardCooldownTimer -= Time.deltaTime;
 
+        // 컷씬/대사창이 대시 도중에 열리면 대시를 즉시 종료 — 아래 조기 리턴들이 dashTimer 감소를
+        // 건너뛰어 대시 속도가 무한 유지되던 버그 방지
+        if (isDashing && (cutsceneActive || Inventory.DialogueOpen)) EndDash();
+
         if (cutsceneActive) { horizontalInput = 0f; CheckGrounded(); return; }   // 컷씬 중: 입력·자동애니 잠금 + 잔여 이동입력 제거(걷기 애니 누수 방지)
 
         if (isDashing)
