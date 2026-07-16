@@ -1,22 +1,10 @@
 fileFormatVersion: 2
-guid: 6da97626e1c3cc84e91799e2f73c20a4
+guid: 5294bdd581c7bf84c994c8fb3f1ba623
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3001391620326819689
-    second: Air_Slash_04_0
-  - first:
-      213: 7175255138876541693
-    second: Air_Slash_04_1
-  - first:
-      213: -189536905128236541
-    second: Air_Slash_04_2
-  - first:
-      213: 1222675031672468391
-    second: Air_Slash_04_3
-  - first:
-      213: -4938359274228692157
-    second: Air_Slash_04_4
+      213: -2884608495505325276
+    second: Bat_00_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -61,9 +49,9 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
-  alignment: 9
-  spritePivot: {x: 0.492, y: 0.32080078}
-  spritePixelsToUnits: 760
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 875
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -125,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Air_Slash_04_0
+      name: Bat_00_0
       rect:
         serializedVersion: 2
-        x: 381
-        y: 198
-        width: 1026
-        height: 943
+        x: 3
+        y: 130
+        width: 1000
+        height: 575
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -140,96 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 798f59e293ae856d0800000000000000
-      internalID: -3001391620326819689
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Air_Slash_04_1
-      rect:
-        serializedVersion: 2
-        x: 1510
-        y: 909
-        width: 149
-        height: 55
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: dfa488d5880a39360800000000000000
-      internalID: 7175255138876541693
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Air_Slash_04_2
-      rect:
-        serializedVersion: 2
-        x: 1718
-        y: 897
-        width: 85
-        height: 47
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 30a21026031ae5df0800000000000000
-      internalID: -189536905128236541
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Air_Slash_04_3
-      rect:
-        serializedVersion: 2
-        x: 1819
-        y: 851
-        width: 40
-        height: 41
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 7a3b39a9670d7f010800000000000000
-      internalID: 1222675031672468391
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Air_Slash_04_4
-      rect:
-        serializedVersion: 2
-        x: 135
-        y: 173
-        width: 13
-        height: 13
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 34bc756976c677bb0800000000000000
-      internalID: -4938359274228692157
+      spriteID: 423c45d4bdfc7f7d0800000000000000
+      internalID: -2884608495505325276
       vertices: []
       indices: 
       edges: []
@@ -248,11 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Air_Slash_04_0: -3001391620326819689
-      Air_Slash_04_1: 7175255138876541693
-      Air_Slash_04_2: -189536905128236541
-      Air_Slash_04_3: 1222675031672468391
-      Air_Slash_04_4: -4938359274228692157
+      Bat_00_0: -2884608495505325276
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

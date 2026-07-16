@@ -1,22 +1,28 @@
 fileFormatVersion: 2
-guid: 6da97626e1c3cc84e91799e2f73c20a4
+guid: d20b93bedfbb2cc47ad910bf0a2a60e1
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3001391620326819689
-    second: Air_Slash_04_0
+      213: 4387451220815026529
+    second: Archer_Attack_02_0
   - first:
-      213: 7175255138876541693
-    second: Air_Slash_04_1
+      213: 5270457096716740542
+    second: Archer_Attack_02_1
   - first:
-      213: -189536905128236541
-    second: Air_Slash_04_2
+      213: 1126152103786954269
+    second: Archer_Attack_02_2
   - first:
-      213: 1222675031672468391
-    second: Air_Slash_04_3
+      213: -1428176667182015388
+    second: Archer_Attack_02_3
   - first:
-      213: -4938359274228692157
-    second: Air_Slash_04_4
+      213: -6423087616472097321
+    second: Archer_Attack_02_4
+  - first:
+      213: 508580037222900742
+    second: Archer_Attack_02_5
+  - first:
+      213: -4314989406206500111
+    second: Archer_Attack_02_6
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -61,9 +67,9 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
-  alignment: 9
-  spritePivot: {x: 0.492, y: 0.32080078}
-  spritePixelsToUnits: 760
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 1240
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -125,13 +131,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Air_Slash_04_0
+      name: Archer_Attack_02_0
       rect:
         serializedVersion: 2
-        x: 381
-        y: 198
-        width: 1026
-        height: 943
+        x: 154
+        y: 497
+        width: 1022
+        height: 1452
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -140,20 +146,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 798f59e293ae856d0800000000000000
-      internalID: -3001391620326819689
+      spriteID: 169980eb3ab53ec30800000000000000
+      internalID: 4387451220815026529
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_1
+      name: Archer_Attack_02_1
       rect:
         serializedVersion: 2
-        x: 1510
-        y: 909
+        x: 1096
+        y: 1530
         width: 149
-        height: 55
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -162,20 +168,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dfa488d5880a39360800000000000000
-      internalID: 7175255138876541693
+      spriteID: eb7ecbd2ecc642940800000000000000
+      internalID: 5270457096716740542
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_2
+      name: Archer_Attack_02_2
       rect:
         serializedVersion: 2
-        x: 1718
-        y: 897
-        width: 85
-        height: 47
+        x: 123
+        y: 411
+        width: 79
+        height: 83
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -184,20 +190,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 30a21026031ae5df0800000000000000
-      internalID: -189536905128236541
+      spriteID: d1eb74d2f55e0af00800000000000000
+      internalID: 1126152103786954269
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_3
+      name: Archer_Attack_02_3
       rect:
         serializedVersion: 2
-        x: 1819
-        y: 851
-        width: 40
-        height: 41
+        x: 709
+        y: 0
+        width: 378
+        height: 479
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -206,20 +212,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7a3b39a9670d7f010800000000000000
-      internalID: 1222675031672468391
+      spriteID: 46c5d1453e81e2ce0800000000000000
+      internalID: -1428176667182015388
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_4
+      name: Archer_Attack_02_4
       rect:
         serializedVersion: 2
-        x: 135
-        y: 173
-        width: 13
-        height: 13
+        x: 793
+        y: 460
+        width: 109
+        height: 98
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -228,8 +234,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 34bc756976c677bb0800000000000000
-      internalID: -4938359274228692157
+      spriteID: 7dd58f208db9cd6a0800000000000000
+      internalID: -6423087616472097321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Archer_Attack_02_5
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 148
+        width: 201
+        height: 270
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 604a68a69d6de0700800000000000000
+      internalID: 508580037222900742
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Archer_Attack_02_6
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 3
+        width: 315
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f2ec713ff31e14c0800000000000000
+      internalID: -4314989406206500111
       vertices: []
       indices: 
       edges: []
@@ -248,11 +298,13 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Air_Slash_04_0: -3001391620326819689
-      Air_Slash_04_1: 7175255138876541693
-      Air_Slash_04_2: -189536905128236541
-      Air_Slash_04_3: 1222675031672468391
-      Air_Slash_04_4: -4938359274228692157
+      Archer_Attack_02_0: 4387451220815026529
+      Archer_Attack_02_1: 5270457096716740542
+      Archer_Attack_02_2: 1126152103786954269
+      Archer_Attack_02_3: -1428176667182015388
+      Archer_Attack_02_4: -6423087616472097321
+      Archer_Attack_02_5: 508580037222900742
+      Archer_Attack_02_6: -4314989406206500111
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

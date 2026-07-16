@@ -18,7 +18,7 @@ public class IntroCutscene : MonoBehaviour
     [Header("애니 클립명")]
     public string sprawlState = "GroundSlam";   // 쓰러진 자세(클립)
     [Range(0f, 1f)] public float sprawlFrame = 0.62f;   // 클립의 이 지점에서 정지 = GroundSlam07 스프라이트 한 장 고정
-    public string wakeState = "Crouch";         // 일어나는 모션
+    public string wakeState = "Idle";           // 일어나는 모션(앉는 모션이 어색해 Idle로)
 
     [Header("독백")]
     [TextArea] public string speakerName = "???";

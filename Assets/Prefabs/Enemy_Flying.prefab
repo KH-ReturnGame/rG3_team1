@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7219183508400556603}
   - component: {fileID: 1446833400098446732}
   - component: {fileID: 6284460924934371365}
+  - component: {fileID: 3747838395096541050}
   m_Layer: 8
   m_Name: Enemy_Flying
   m_TagString: Untagged
@@ -84,7 +85,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 3
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: a8dd0b456715c674eae4d64c16596f36, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 5294bdd581c7bf84c994c8fb3f1ba623, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -214,3 +215,33 @@ MonoBehaviour:
   contactRange: 0.85
   bobAmplitude: 0.4
   bobSpeed: 2.5
+  wanderRadius: 3.5
+  flapHz: 9
+  flutterAmp: 1
+  hoverHeight: 2.5
+  diveRecover: 0.35
+  overshoot: 2.5
+  stunTime: 0.8
+  leashRange: 14
+--- !u!95 &3747838395096541050
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5421041888295758262}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 33ed0ec054d18a74b9a6132108dc6942, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

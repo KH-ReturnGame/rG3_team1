@@ -1,22 +1,25 @@
 fileFormatVersion: 2
-guid: 6da97626e1c3cc84e91799e2f73c20a4
+guid: 0e80425bf7bae0f4695695dce4a40143
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3001391620326819689
-    second: Air_Slash_04_0
+      213: 7722021452815930040
+    second: Archer_Idle_00_0
   - first:
-      213: 7175255138876541693
-    second: Air_Slash_04_1
+      213: -3170673332121272476
+    second: Archer_Idle_00_1
   - first:
-      213: -189536905128236541
-    second: Air_Slash_04_2
+      213: -3009655492907724239
+    second: Archer_Idle_00_2
   - first:
-      213: 1222675031672468391
-    second: Air_Slash_04_3
+      213: 7708029637765571435
+    second: Archer_Idle_00_3
   - first:
-      213: -4938359274228692157
-    second: Air_Slash_04_4
+      213: 580029202128076735
+    second: Archer_Idle_00_4
+  - first:
+      213: -4349413342915468323
+    second: Archer_Idle_00_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -61,9 +64,9 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
-  alignment: 9
-  spritePivot: {x: 0.492, y: 0.32080078}
-  spritePixelsToUnits: 760
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 1240
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -125,13 +128,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Air_Slash_04_0
+      name: Archer_Idle_00_0
       rect:
         serializedVersion: 2
-        x: 381
-        y: 198
-        width: 1026
-        height: 943
+        x: 29
+        y: 501
+        width: 1024
+        height: 1414
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -140,20 +143,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 798f59e293ae856d0800000000000000
-      internalID: -3001391620326819689
+      spriteID: 8b21a0b29912a2b60800000000000000
+      internalID: 7722021452815930040
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_1
+      name: Archer_Idle_00_1
       rect:
         serializedVersion: 2
-        x: 1510
-        y: 909
-        width: 149
-        height: 55
+        x: 793
+        y: 460
+        width: 109
+        height: 98
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -162,20 +165,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dfa488d5880a39360800000000000000
-      internalID: 7175255138876541693
+      spriteID: 46f7b1447618ff3d0800000000000000
+      internalID: -3170673332121272476
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_2
+      name: Archer_Idle_00_2
       rect:
         serializedVersion: 2
-        x: 1718
-        y: 897
-        width: 85
-        height: 47
+        x: 63
+        y: 148
+        width: 201
+        height: 270
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -184,20 +187,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 30a21026031ae5df0800000000000000
-      internalID: -189536905128236541
+      spriteID: 1329ee8664e8b36d0800000000000000
+      internalID: -3009655492907724239
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_3
+      name: Archer_Idle_00_3
       rect:
         serializedVersion: 2
-        x: 1819
-        y: 851
-        width: 40
-        height: 41
+        x: 123
+        y: 411
+        width: 79
+        height: 83
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -206,20 +209,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7a3b39a9670d7f010800000000000000
-      internalID: 1222675031672468391
+      spriteID: b63233ddd1c68fa60800000000000000
+      internalID: 7708029637765571435
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Air_Slash_04_4
+      name: Archer_Idle_00_4
       rect:
         serializedVersion: 2
-        x: 135
-        y: 173
-        width: 13
-        height: 13
+        x: 709
+        y: 0
+        width: 378
+        height: 479
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -228,8 +231,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 34bc756976c677bb0800000000000000
-      internalID: -4938359274228692157
+      spriteID: fbf72387c7dac0800800000000000000
+      internalID: 580029202128076735
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Archer_Idle_00_5
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 3
+        width: 315
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd3ed2adb97c3a3c0800000000000000
+      internalID: -4349413342915468323
       vertices: []
       indices: 
       edges: []
@@ -248,11 +273,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Air_Slash_04_0: -3001391620326819689
-      Air_Slash_04_1: 7175255138876541693
-      Air_Slash_04_2: -189536905128236541
-      Air_Slash_04_3: 1222675031672468391
-      Air_Slash_04_4: -4938359274228692157
+      Archer_Idle_00_0: 7722021452815930040
+      Archer_Idle_00_1: -3170673332121272476
+      Archer_Idle_00_2: -3009655492907724239
+      Archer_Idle_00_3: 7708029637765571435
+      Archer_Idle_00_4: 580029202128076735
+      Archer_Idle_00_5: -4349413342915468323
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

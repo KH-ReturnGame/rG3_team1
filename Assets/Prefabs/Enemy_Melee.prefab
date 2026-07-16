@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3656714433717869504}
   - component: {fileID: 3782823307357992853}
   - component: {fileID: 3729243189143462223}
+  - component: {fileID: 499285172139500091}
   m_Layer: 8
   m_Name: Enemy_Melee
   m_TagString: Untagged
@@ -84,7 +85,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 3
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 4af9c5ad5751c514da6b88db6bea56d5, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 23473890eebb60d4187d55d777c75b25, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -132,13 +133,13 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1.3125}
+    oldSize: {x: 1.370283, y: 0.75}
     newSize: {x: 1, y: 1.2}
     adaptiveTilingThreshold: 0.5
     drawMode: 1
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 1.2}
+  m_Size: {x: 1.3, y: 0.75}
   m_EdgeRadius: 0
 --- !u!50 &3782823307357992853
 Rigidbody2D:
@@ -218,3 +219,25 @@ MonoBehaviour:
   questKillId: 
   FaceForward: 1
   InvertSprite: 0
+--- !u!95 &499285172139500091
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103463829659848265}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8b4564086d98dc3449c03ad74db37554, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
