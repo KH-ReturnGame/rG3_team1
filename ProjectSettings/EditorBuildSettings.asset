@@ -17,20 +17,5 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Metroidvania.unity
     guid: d8c9a61c8d64c9641b908ffbbb4647e4
-  - enabled: 0
-    path: Assets/Scenes/RealStage1.unity
-    guid: f5de2705a6fdc3d48ba272eb48a196b6
-  - enabled: 0
-    path: Assets/Scenes/Stage1.unity
-    guid: d4e5f26eaea359b42b76518890fbb5bd
-  - enabled: 0
-    path: Assets/Scenes/Stage2.unity
-    guid: 8037ee5b73a76b9479b63e7eb1cf54e8
-  - enabled: 0
-    path: Assets/Scenes/Stage3.unity
-    guid: beb9c08088506a742982a80960ad443e
-  - enabled: 0
-    path: Assets/Scenes/MainMap.unity
-    guid: 19ac1a928473baa4e99ece94832beb53
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

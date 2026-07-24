@@ -8,6 +8,11 @@ using UnityEngine.SceneManagement;
 // 진행 중 씬 이동 시 자동 저장.
 public static class SaveSystem
 {
+    // ★세이브 구조 버전 — SaveSlotData의 구조(필드 의미/단위/이름)를 바꿀 때마다 +1 하고,
+    //   Migrate()에 "이전 버전 → 새 버전" 단계를 추가할 것. (CODE_GUIDE '세이브 구조 변경 절차' 참고)
+    //   출시 후 유저 세이브가 깨지지 않게 하는 안전장치다.
+    public const int SaveVersion = 1;
+
     public const int SlotCount = 3;
     public static int CurrentSlot = -1;
 
@@ -23,12 +28,49 @@ public static class SaveSystem
     public static SaveSlotData Read(int slot)
     {
         if (!Exists(slot)) return null;
-        try { return JsonUtility.FromJson<SaveSlotData>(File.ReadAllText(PathFor(slot))); }
+        try
+        {
+            var data = JsonUtility.FromJson<SaveSlotData>(File.ReadAllText(PathFor(slot)));
+            if (data != null)
+            {
+                if (data.version < SaveVersion) Migrate(slot, data);   // 구버전 → 현재 구조로(메모리상)
+                else if (data.version > SaveVersion)
+                    Debug.LogWarning($"[SaveSystem] 슬롯 {slot} 세이브가 더 새 버전(v{data.version} > v{SaveVersion}) — 최신 빌드로 만든 세이브? 가능한 만큼 로드");
+            }
+            return data;
+        }
         catch { return null; }
+    }
+
+    // 구버전 세이브를 현재 구조로 끌어올린다. 파일은 다음 저장(Write) 때 새 버전으로 기록됨.
+    // '순차 통과' 구조: v0 세이브도 0→1→2→… 단계를 차례로 거쳐 최신이 된다(중간 버전 건너뛰기 없음).
+    private static void Migrate(int slot, SaveSlotData d)
+    {
+        BackupOnce(slot, d.version);   // 업그레이드 전 원본 1회 백업(사고 시 복구용)
+
+        if (d.version <= 0)
+        {
+            // v0(경황제 데모) → v1: 버전 체계 도입. 필드 구조 변화 없음.
+            d.version = 1;
+        }
+        // ★다음 구조 변경 시 여기에 추가:
+        // if (d.version == 1) { /* 필드 이동/변환 */ d.version = 2; }
+    }
+
+    // 마이그레이션 직전 원본을 save_{slot}.v{구버전}.bak.json 으로 1회 보존 — 출시 후 세이브 사고 복구용
+    private static void BackupOnce(int slot, int oldVersion)
+    {
+        try
+        {
+            string bak = Path.Combine(Application.persistentDataPath, $"save_{slot}.v{oldVersion}.bak.json");
+            if (!File.Exists(bak)) File.Copy(PathFor(slot), bak);
+        }
+        catch { /* 백업 실패는 로드를 막지 않는다 */ }
     }
 
     public static void Write(int slot, SaveSlotData data)
     {
+        data.version = SaveVersion;   // 항상 현재 구조 버전으로 기록
         data.lastPlayed = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         File.WriteAllText(PathFor(slot), JsonUtility.ToJson(data, true));
     }

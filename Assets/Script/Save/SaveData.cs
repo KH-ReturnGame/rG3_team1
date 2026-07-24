@@ -28,6 +28,7 @@ public class SavedHelp   // 본 도움말(핸드북 다시보기 기록)
 [System.Serializable]
 public class SaveSlotData
 {
+    public int version;                // ★세이브 구조 버전(SaveSystem.SaveVersion이 기록). 0 = 버전 체계 도입 전(경황제 데모 세이브)
     public string saveName = "새 게임";
     public string lastPlayed = "";
     public string sceneName = "";      // 저장 당시 씬(불러오면 이 씬으로)
