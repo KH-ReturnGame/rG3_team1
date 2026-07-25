@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aee84b6005ac47141b77b0c7abf17344, type: 3}
+  m_Name: bound_hood
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  id: bound_hood
+  itemName: "\uB0A1\uC740 \uD6C4\uB4DC"
+  icon: {fileID: 21300000, guid: 190eb99f96cc1124487e86154115a765, type: 3}
+  maxStack: 1
+  description: "\uC5B4\uB514\uC120\uAC00 \uAD74\uB7EC\uB5A8\uC5B4\uC9C4 \uB0A1\uC740
+    \uD6C4\uB4DC. \uD3C9\uBC94\uD574 \uBCF4\uC774\uB294\uB370, \uB4F1\uAE09\uC774
+    \uC774\uC0C1\uD558\uB9AC\uB9CC\uCE58 \uB192\uB2E4.\n\u2026\uD55C\uBC88 \uAC78\uCE58\uC790
+    \uB5A8\uC5B4\uC9C0\uC9C8 \uC54A\uB294\uB2E4. \uB9C8\uCE58 \uC0B4\uC544\uC788\uB294
+    \uAC83\uCC98\uB7FC."
+  gridW: 2
+  gridH: 2
+  kind: 2
+  healHearts: 0
+  restoreStamina: 0
+  escapeToHub: 0
+  tempAttackMult: 0
+  tempDamageReduction: 0
+  buffDuration: 0
+  cooldownSeconds: 0
+  maxJumpBonus: 0
+  maxHeartBonus: 1
+  maxStaminaBonus: 0
+  staminaRegenBonus: 0
+  attackBonus: 2
+  precogSlow: 0
+  precogCooldown: 20
+  bound: 1
+  sellValue: 0
+  baseValue: 0
+  sellAtFullValue: 0
+  rarity: 4

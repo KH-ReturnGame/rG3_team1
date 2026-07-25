@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -430,8 +430,13 @@ public class PlayerController : MonoBehaviour
         }
 
         // 스킬 Q (검을 들었을 때만)
-        if (Input.GetKeyDown(KeyCode.Q) && isSwordDrawn && !isGuarding && animBusyTimer <= 0 && skillCooldownTimer <= 0 && !isChargingJump)
-            UseSkill();
+        // 스킬 슬롯 Q/E/R — 코어가 장착돼 있으면 코어 스킬, 없으면 Q는 기본 횡베기(폴백)
+        if (isSwordDrawn && !isGuarding && animBusyTimer <= 0 && !isChargingJump)
+        {
+            if (Input.GetKeyDown(KeyCode.Q)) { if (!TryCoreSkill(CoreData.Slot.Q) && skillCooldownTimer <= 0) UseSkill(); }
+            else if (Input.GetKeyDown(KeyCode.E)) TryCoreSkill(CoreData.Slot.E);
+            else if (Input.GetKeyDown(KeyCode.R)) TryCoreSkill(CoreData.Slot.R);   // R = 인벤 열렸을 때만 회전 → 전투 중엔 빈 키
+        }
 
         // 점프: 스페이스 탭=누르는 즉시 일반 점프 / 공중=즉시 2단 점프
         // 아래(S)+스페이스: '원웨이 플랫폼 위'면 아래로 하강만 유지. (구) 차지 높은 점프(S+Space 홀드)는 폐지.
@@ -570,6 +575,24 @@ public class PlayerController : MonoBehaviour
         comboStep = 0;   // 스킬 쓰면 콤보 끊김
         PlayStateForced(skillState);
         PerformAttack(attackDamage * skillDamageMultiplier, skillRangeMultiplier);
+    }
+
+    // [코어] 스킬 사용 시도 — 장착 코어가 그 슬롯을 열어줬고 쿨타임이 끝났으면 발동. 성공하면 true.
+    //  골격 단계: 위력/범위/모션만 코어 데이터로 구동(전용 이펙트·특수 판정은 다음 단계).
+    private bool TryCoreSkill(CoreData.Slot slot)
+    {
+        var cs = CoreSystem.Instance;
+        if (cs == null) return false;
+        var sk = cs.TryUse(slot);
+        if (sk == null) return false;
+
+        string state = string.IsNullOrEmpty(sk.animState) ? skillState : sk.animState;
+        animBusyTimer = ClipLength(state);
+        comboStep = 0;
+        PlayStateForced(state);
+        PerformAttack(attackDamage * sk.damageMultiplier * cs.Specialization, sk.rangeMultiplier);
+        if (slot == CoreData.Slot.Q) skillCooldownTimer = skillCooldown;   // 기본 Q와 쿨 표시 동기화
+        return true;
     }
 
     private void PerformAttack(float damage, float rangeMultiplier)
@@ -811,6 +834,7 @@ public class PlayerController : MonoBehaviour
         PlayStateForced(parrySuccessState);
         animBusyTimer = ClipLength(parrySuccessState);
         skillCooldownTimer = 0f;          // 패링 성공 → Q스킬 즉시 초기화
+        if (CoreSystem.Instance != null) CoreSystem.Instance.ResetCooldowns();   // 코어 스킬(Q/E/R)도 초기화
         isGuarding = false;
         isParrying = false;
         guardCooldownTimer = guardCooldown;   // 같은 프레임의 우클릭이 일반 가드로 중복 처리되는 것 방지
@@ -828,6 +852,7 @@ public class PlayerController : MonoBehaviour
         PlayStateForced(parrySuccessState);     // 반격 모션(인스펙터에서 교체 가능)
         animBusyTimer = ClipLength(parrySuccessState);
         skillCooldownTimer = 0f;                // Q스킬 즉시 초기화
+        if (CoreSystem.Instance != null) CoreSystem.Instance.ResetCooldowns();   // 코어 스킬도 초기화
         if (justParryHealHalves > 0 && GameManager.Instance != null) GameManager.Instance.HealHalves(justParryHealHalves);
         isParrying = false;                     // 이번 윈도우 소진 — 후속타는 체인이 받는다
         guardParried = true;                    // 가드 쿨타임 면제(즉시 재가드 가능)
@@ -860,7 +885,7 @@ public class PlayerController : MonoBehaviour
 
         PlayStateForced(parrySuccessState);
         animBusyTimer = ClipLength(parrySuccessState) * (just ? 1f : 0.5f);
-        if (just) skillCooldownTimer = 0f;
+        if (just) { skillCooldownTimer = 0f; if (CoreSystem.Instance != null) CoreSystem.Instance.ResetCooldowns(); }
         if (just && justParryHealHalves > 0 && GameManager.Instance != null) GameManager.Instance.HealHalves(justParryHealHalves);   // 저스트 반사도 회복
         isParrying = false;
         guardParried = true;

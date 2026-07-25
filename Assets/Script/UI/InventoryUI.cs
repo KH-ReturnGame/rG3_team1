@@ -403,7 +403,8 @@ public class InventoryUI : MonoBehaviour
         var acts = new System.Collections.Generic.List<System.Action>();
         if (usable) { labels.Add("사용"); acts.Add(CtxUse); }
         if (usable) for (int k = 0; k < hkCount; k++) { int kk = k; labels.Add((k + 1) + "번 슬롯에 등록"); acts.Add(() => CtxRegister(kk)); }
-        labels.Add("버리기"); acts.Add(CtxDrop);
+        if (!item.bound) { labels.Add("버리기"); acts.Add(CtxDrop); }   // 귀속 아이템은 버릴 수 없음
+        if (item.bound) { labels.Add("귀속 — 버릴 수 없음"); acts.Add(() => { }); }
 
         float mw = 210f, rowH = 32f, mpad = 6f, headR = 30f;
         float mh = headR + labels.Count * rowH + mpad * 2f + 4f;
@@ -602,6 +603,7 @@ public class InventoryUI : MonoBehaviour
         {
             EqCellAt(m, eqLeft, eqTop, cell, out int cx, out int cy);
             var e = eq.EntryAt(cx, cy);
+            if (e != null && e.item != null && e.item.bound) { Toast.Show(e.item.itemName + "은(는) 귀속되어 떨어지지 않는다.", 1.5f); return; }   // 귀속 = 해제 불가
             if (e != null) { heldItem = e.item; heldCount = 1; heldRot = e.rot; eq.Remove(e); Inventory.Instance.RaiseChanged(); }
             return;
         }

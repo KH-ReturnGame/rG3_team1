@@ -42,6 +42,9 @@ public class ItemData : ScriptableObject
     public bool precogSlow = false;        // 예지안: 적 공격 직전 시간 감속(쿨다운, PrecogCharm이 처리)
     public float precogCooldown = 20f;     // 발동 쿨다운(초)
 
+    [Header("귀속 (Bound)")]
+    public bool bound = false;             // true면 착용 해제·버리기 불가(스토리 귀속 아이템 — 후드 등). 융합 연출 후 자동 장착.
+
     [Header("판매 / 가치")]
     public int sellValue = 0;                // (구) 골동품 판매가
     public int baseValue = 0;                // 상점 가치. 판매 = 80% / 되사기 = 100%

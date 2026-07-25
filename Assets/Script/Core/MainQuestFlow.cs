@@ -41,16 +41,21 @@ public class MainQuestFlow : MonoBehaviour
         switch (scene)
         {
             case "TutorialScene":
-                qm.AcceptById("mq_awaken");
+                qm.AcceptById("mq_awaken");           // [스토리] 시작
+                // [망토] mq_hood_bond는 튜토 후반 HoodEncounter가 조우 시 수주(씬 도착이 아니라 이벤트)
                 break;
             case "StartingArea":
-                qm.CompleteForce("mq_awaken");        // 불빛(마을)에 도착
+                qm.CompleteForce("mq_awaken");        // [스토리] 불빛(마을)에 도착
+                // [망토] 마을에서 감정 시도 — 후드를 얻었을 때만(CompleteById=수주 중일 때만) 진행
+                //   ※임시: 마을 도착으로 완료. 추후 엔지니어/여울 '감정 실패' 대화가 이 완료를 대체.
+                qm.CompleteById("mq_hood_bond");
+                qm.AcceptById("mq_hood_appraise");
                 break;
             case "Metroidvania":
-                qm.CompleteForce("guide_village");    // 우물로 하강 완료
+                qm.CompleteForce("guide_village");    // [스토리] 우물로 하강 완료
                 qm.AcceptById("mq_descend");
                 break;
-            // 보스 단계(mq_descend 완료 → mq_boss 수주)는 BossEnemy가 첫 어그로 때 직접 진행
+            // 보스 조우(BossEnemy 첫 어그로): [스토리] mq_descend 완료 + [망토] mq_hood_appraise 완료 → mq_boss 수주
         }
     }
 }

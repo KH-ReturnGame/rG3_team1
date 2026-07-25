@@ -173,6 +173,8 @@ public static class SaveSystem
         data.gameMode = (int)GameMode.Current;
         data.playTime = TimeAttack.PlayTime;
         data.timeAttackDone = TimeAttack.Done;
+        if (CoreSystem.Instance != null)
+        { data.cores = CoreSystem.Instance.SaveIds(); data.equippedCore = CoreSystem.Instance.SaveEquippedId(); data.subCores = CoreSystem.Instance.SaveSubIds(); }
     }
 
     private static void Apply(SaveSlotData data)
@@ -215,6 +217,7 @@ public static class SaveSystem
         TreasureChest.LoadOpened(data.openedChests);   // 씬 상자 비주얼(열림)도 함께 갱신
         GameMode.Current = (GameMode.Mode)Mathf.Clamp(data.gameMode, 0, 2);
         TimeAttack.Load(data.playTime, data.timeAttackDone);
+        if (CoreSystem.Instance != null) CoreSystem.Instance.LoadIds(data.cores, data.equippedCore, data.subCores);
     }
 
     // 게임 시작 시 1회 씬 로드 콜백 등록

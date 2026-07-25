@@ -3,12 +3,14 @@ using UnityEngine;
 
 public enum QuestCategory { Main, Gather, Combat }   // 주요 / 수집 / 전투
 public enum QuestGoal { Gather, Kill }               // 채집 / 처치
+public enum QuestTrack { Story, Hood }               // 메인 퀘스트 2트랙: 스토리(세계·마을) / 망토(후드 정체)
 
 [System.Serializable]
 public class Quest
 {
     public string id;
     public QuestCategory category;
+    public QuestTrack track = QuestTrack.Story;   // Main 퀘스트일 때만 의미(트래커 2트랙 분리)
     public string giver;
     public string title;
     [TextArea] public string description;
@@ -71,28 +73,42 @@ public class QuestManager : MonoBehaviour
     {
         available.Clear();
 
-        // ══ 메인 퀘스트 체인(튜토 → 마을 → 심층 탐사 → 첫 보스) — MainQuestFlow가 씬 도착으로 수주/완료 ══
-        // prereq로 묶여 있어 순서가 보장된다. autoAccept=게시판 미표시+달성 즉시 완료.
-        available.Add(new Quest { id = "mq_awaken", category = QuestCategory.Main, giver = "???", title = "낯선 어둠 속에서",
+        // ══ 메인 퀘스트 — 2트랙 병행(MainQuestFlow가 씬 도착으로 수주/완료) ══
+        //  [스토리 트랙] 생존·마을·세계: 눈을 뜨다 → 낯선 지하 마을 → 지하로(맵 탐험까지)
+        //  [망토 트랙]  후드의 정체: 떨어지지 않는 망토(튜토 조우) → 감정 불가 → 굶주린 흡수체(첫 보스)
+        //  prereq는 각 트랙 안에서만 걸어 순서 보장. autoAccept=게시판 미표시+달성 즉시 완료.
+
+        // ── 스토리 트랙 ──
+        available.Add(new Quest { id = "mq_awaken", category = QuestCategory.Main, track = QuestTrack.Story, giver = "???", title = "낯선 어둠 속에서",
             description = "높은 곳에서 떨어졌다. 몸은 부서질 듯 아프고, 기억은 흐릿하다.\n무너진 통로 어딘가에서 불빛이 새어 나온다 — 일단 이곳을 빠져나가야 한다.",
             autoAccept = true, objectiveOverride = "무너진 통로를 빠져나가 불빛을 찾아라", pathDoorScene = "StartingArea",
             goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, xpReward = 40 });
 
-        // 길잡이(마을 진입 시 자동 수주) — 다친 주인공이 마을을 둘러보며 정보를 모은다(방문형 목표 4곳)
-        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, giver = "여울", title = "낯선 지하 마을", prereqId = "mq_awaken",
+        available.Add(new Quest { id = "guide_village", category = QuestCategory.Main, track = QuestTrack.Story, giver = "여울", title = "낯선 지하 마을", prereqId = "mq_awaken",
             description = "누군가 쓰러진 나를 이 지하 마을로 옮겨 주었다. 이름도, 어디서 왔는지도 기억나지 않는다.\n우선 몸을 추스르며 마을을 둘러보자 — 엔지니어, 상인, 제작대, 게시판. 무언가 단서가 있을지도.",
             autoAccept = true, pathToDescend = true, pathDoorScene = "Metroidvania",
             goal = QuestGoal.Gather, targetId = "__guide__", targetCount = 4,
             visitIds = new List<string> { "engineer", "shop", "craft", "board" }, xpReward = 30 });
 
-        available.Add(new Quest { id = "mq_descend", category = QuestCategory.Main, giver = "여울", title = "심층을 향해", prereqId = "guide_village",
-            description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부의 지배자를 찾아라.",
-            autoAccept = true, objectiveOverride = "지하 탐사 구역을 탐험해 심층부의 지배자를 찾아라", pathToBoss = true,
+        available.Add(new Quest { id = "mq_descend", category = QuestCategory.Main, track = QuestTrack.Story, giver = "여울", title = "심층을 향해", prereqId = "guide_village",
+            description = "우물 아래로 펼쳐진 광대한 지하 세계.\n이 어둠 어딘가에 기억의 단서가 — 그리고 그보다 위험한 무언가가 기다린다.\n탐사 구역을 헤쳐 심층부를 탐험하라.",
+            autoAccept = true, objectiveOverride = "지하 탐사 구역을 탐험하라", pathToBoss = true,
             goal = QuestGoal.Gather, targetId = "__mq__", targetCount = 1, rewardGold = 300, xpReward = 120 });
 
-        available.Add(new Quest { id = "mq_boss", category = QuestCategory.Main, giver = "???", title = "첫 번째 위협", prereqId = "mq_descend",
-            description = "심층부의 공기가 무겁다. 이곳의 지배자가 앞을 가로막는다.\n살아남고 싶다면 — 쓰러뜨려라.",
-            autoAccept = true, goal = QuestGoal.Kill, targetId = "boss_first", targetName = "심층부의 지배자", targetCount = 1, pathToBoss = true,
+        // ── 망토 트랙 ──
+        available.Add(new Quest { id = "mq_hood_bond", category = QuestCategory.Main, track = QuestTrack.Hood, giver = "???", title = "떨어지지 않는 망토",
+            description = "감정하려던 낡은 후드가 살아있는 듯 달라붙어 — 몸에 귀속되어 버렸다. 떼어낼 수가 없다.\n대체 이게 뭘까. 마을로 돌아가 아는 사람에게 물어보자.",
+            objectiveOverride = "마을로 돌아가 후드의 정체를 알아보라", pathDoorScene = "StartingArea",
+            goal = QuestGoal.Gather, targetId = "__hood__", targetCount = 1, xpReward = 30 });
+
+        available.Add(new Quest { id = "mq_hood_appraise", category = QuestCategory.Main, track = QuestTrack.Hood, giver = "여울", title = "감정 불가", prereqId = "mq_hood_bond",
+            description = "엔지니어도, 여울의 감지도 — 아무도 이 후드를 읽어내지 못했다. 정체불명.\n\"이런 건 처음 봐요. …더 깊은 곳의 강한 것들이라면, 뭔가 반응할지도.\"",
+            autoAccept = true, objectiveOverride = "심층부의 강자를 쓰러뜨려 후드의 실마리를 찾아라", pathToBoss = true,
+            goal = QuestGoal.Gather, targetId = "__hood__", targetCount = 1, xpReward = 60 });
+
+        available.Add(new Quest { id = "mq_boss", category = QuestCategory.Main, track = QuestTrack.Hood, giver = "???", title = "굶주린 흡수체", prereqId = "mq_hood_appraise",
+            description = "심층부의 공기가 무겁다. 닥치는 대로 삼키는 거대한 무언가가 앞을 가로막는다.\n후드가 — 처음으로, 희미하게 반응한다.",
+            autoAccept = true, goal = QuestGoal.Kill, targetId = "boss_first", targetName = "굶주린 흡수체", targetCount = 1, pathToBoss = true,
             rewardGold = 1000, xpReward = 300 });
         // 주요 연계: 첫 걸음 → 더 깊은 곳으로
         available.Add(new Quest { id = "main_first", category = QuestCategory.Main, giver = "지저 마을", title = "지저로의 첫 걸음",
@@ -133,10 +149,21 @@ public class QuestManager : MonoBehaviour
     public Quest GetTracked()
     {
         if (tracked != null && accepted.Contains(tracked)) return tracked;
-        foreach (var q in accepted) if (q.category == QuestCategory.Main) return q;   // 주요 우선
+        // 기본 초점: 망토 트랙 우선(스토리와 병행 시 후드 서사가 능동 목표), 없으면 스토리, 없으면 첫 수주
+        var hood = GetActiveMain(QuestTrack.Hood);
+        if (hood != null) return hood;
+        var story = GetActiveMain(QuestTrack.Story);
+        if (story != null) return story;
         return accepted.Count > 0 ? accepted[0] : null;
     }
     public void SetTracked(Quest q) { tracked = q; Changed(); }
+
+    // 지정 트랙에서 현재 수주 중인 메인 퀘스트 하나(트래커 2트랙 표시용). 없으면 null.
+    public Quest GetActiveMain(QuestTrack track)
+    {
+        foreach (var q in accepted) if (q.category == QuestCategory.Main && q.track == track) return q;
+        return null;
+    }
 
     public Quest Find(string id) => available.Find(x => x.id == id);
 

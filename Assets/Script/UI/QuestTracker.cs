@@ -9,18 +9,37 @@ public class QuestTracker : MonoBehaviour
     public static bool PathActive { get; private set; }
     public KeyCode pathKey = KeyCode.V;
 
+    private int pathIdx = -1;   // 길찾기 초점 트랙 인덱스(-1=꺼짐). [V]로 트랙을 순환하며 길찾기.
+
     private Texture2D white;
-    private GUIStyle iconStyle, titleStyle, objStyle, hintStyle, arrowStyle, distStyle;
+    private GUIStyle iconStyle, titleStyle, objStyle, hintStyle, arrowStyle, distStyle, tagStyle;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap() { if (Instance == null) { var go = new GameObject("QuestTracker"); Instance = go.AddComponent<QuestTracker>(); DontDestroyOnLoad(go); } }
+
+    // 현재 표시할 추적 퀘스트 목록: 스토리 트랙, 망토 트랙 순(둘 다 병행 표시). 메인이 없으면 사이드 하나.
+    private static readonly System.Collections.Generic.List<Quest> _list = new System.Collections.Generic.List<Quest>();
+    private System.Collections.Generic.List<Quest> ActiveList()
+    {
+        _list.Clear();
+        var qm = QuestManager.Instance;
+        if (qm == null) return _list;
+        var story = qm.GetActiveMain(QuestTrack.Story); if (story != null) _list.Add(story);
+        var hood  = qm.GetActiveMain(QuestTrack.Hood);  if (hood != null)  _list.Add(hood);
+        if (_list.Count == 0) { var t = qm.GetTracked(); if (t != null) _list.Add(t); }   // 사이드 퀘스트만 있을 때
+        return _list;
+    }
 
     void Update()
     {
         if (Input.GetKeyDown(pathKey) && !Inventory.IsUIOpen)
         {
-            var q = QuestManager.Instance != null ? QuestManager.Instance.GetTracked() : null;
-            if (q != null) PathActive = !PathActive;
+            var list = ActiveList();
+            if (list.Count == 0) { PathActive = false; pathIdx = -1; return; }
+            pathIdx++;                                    // [V]: 트랙 순환 → 마지막 다음엔 꺼짐
+            if (pathIdx >= list.Count) pathIdx = -1;
+            PathActive = pathIdx >= 0;
+            if (PathActive && QuestManager.Instance != null) QuestManager.Instance.SetTracked(list[pathIdx]);
         }
     }
 
@@ -78,56 +97,80 @@ public class QuestTracker : MonoBehaviour
         if (Letterbox.Covering) return;   // 컷씬(레터박스) 중엔 HUD 숨김
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "StartScene") return;
         if (Inventory.IsUIOpen) return;
-        var qm = QuestManager.Instance;
-        var q = qm != null ? qm.GetTracked() : null;
-        if (q == null) { PathActive = false; return; }
+        var list = ActiveList();
+        if (list.Count == 0) { PathActive = false; pathIdx = -1; return; }
+        if (pathIdx >= list.Count) { pathIdx = -1; PathActive = false; }   // 트랙이 완료돼 줄면 초점 리셋
         EnsureStyles();
 
         float pad = 10f, w = 300f;
-        float x = 14f, y = Screen.height * 0.40f;
-
-        // 배경 패널(살짝 어둡게, 왼쪽 시안 띠) — 아래로 넉넉히(비활성 시에도 [V] 길찾기 안내가 배경 안에 들어오게)
-        float h = PathActive ? 128f : 92f;
-        Fill(new Rect(x, y, w, h), UITheme.A(UITheme.BgSolid, 0.62f));
-        Fill(new Rect(x, y, 3f, h), UITheme.A(UITheme.Accent, 0.95f));
-
-        // 제목 (◆ + 이름)
+        float x = 14f, y = Screen.height * 0.34f;
         Color gold = new Color(1f, 0.86f, 0.45f);
-        iconStyle.normal.textColor = gold;
-        GUI.Label(new Rect(x + pad, y + 8f, 18f, 22f), "◆", iconStyle);
-        titleStyle.normal.textColor = gold;
-        GUI.Label(new Rect(x + pad + 20f, y + 7f, w - pad - 26f, 24f), q.title, titleStyle);
+        float cursor = y;
 
-        // 목표
-        objStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
-        GUI.Label(new Rect(x + pad + 4f, y + 34f, w - pad - 10f, 22f), q.ObjectiveText(), objStyle);
-
-        // [V] 길찾기 힌트 — 아래로 여유 있게 배치(배경 안)
-        hintStyle.normal.textColor = PathActive ? new Color(0.45f, 0.95f, 1f) : new Color(0.68f, 0.82f, 0.94f);
-        GUI.Label(new Rect(x + pad + 4f, y + 58f, w - pad - 10f, 22f), PathActive ? "[V] 길찾기 끄기" : "[V] 버튼을 눌러서 길찾기", hintStyle);
-
-        // 길찾기: 방향 화살표 + 거리
-        if (PathActive)
+        for (int i = 0; i < list.Count; i++)
         {
-            Vector2 tp;
-            var pc = PlayerController.Instance;
-            if (pc != null && TryGetPathTarget(out tp))
+            var q = list[i];
+            bool focused = PathActive && pathIdx == i;
+            bool hasPathRow = focused;
+            float ph = 58f + (hasPathRow ? 40f : 0f);
+
+            // 패널(초점=밝은 금테, 비초점=은은)
+            Fill(new Rect(x, cursor, w, ph), UITheme.A(UITheme.BgSolid, focused ? 0.72f : 0.55f));
+            Fill(new Rect(x, cursor, 3f, ph), UITheme.A(UITheme.Accent, focused ? 1f : 0.6f));
+
+            // 트랙 태그 칩([스토리]/[망토]) — 메인 퀘스트만
+            float titleX = x + pad;
+            if (q.category == QuestCategory.Main)
             {
-                Vector2 dir = tp - (Vector2)pc.transform.position;
-                float dist = dir.magnitude;
-                Rect ar = new Rect(x + pad, y + 86f, 38f, 38f);
-                Fill(ar, UITheme.A(UITheme.Accent, 0.18f));
-                arrowStyle.normal.textColor = new Color(0.45f, 0.95f, 1f);
-                GUI.Label(ar, ArrowFor(dir), arrowStyle);
-                distStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
-                GUI.Label(new Rect(ar.xMax + 8f, y + 86f, w - 60f, 38f), Mathf.RoundToInt(dist) + "m", distStyle);
+                bool hoodT = q.track == QuestTrack.Hood;
+                string tag = hoodT ? "망토" : "스토리";
+                Color tc = hoodT ? new Color(0.95f, 0.55f, 0.35f) : new Color(0.55f, 0.78f, 1f);
+                float tw = tagStyle.CalcSize(new GUIContent(tag)).x + 12f;
+                Rect tr = new Rect(x + pad, cursor + 8f, tw, 18f);
+                Fill(tr, UITheme.A(tc, 0.20f));
+                Fill(new Rect(tr.x, tr.y, 2f, tr.height), UITheme.A(tc, 0.9f));
+                tagStyle.normal.textColor = tc;
+                GUI.Label(new Rect(tr.x + 6f, tr.y - 1f, tw, 20f), tag, tagStyle);
+                titleX = tr.xMax + 8f;
             }
-            else
+
+            // 제목
+            titleStyle.normal.textColor = focused ? gold : new Color(0.9f, 0.82f, 0.55f);
+            GUI.Label(new Rect(titleX, cursor + 6f, x + w - titleX - 6f, 22f), q.title, titleStyle);
+
+            // 목표
+            objStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
+            GUI.Label(new Rect(x + pad + 4f, cursor + 32f, w - pad - 10f, 22f), q.ObjectiveText(), objStyle);
+
+            // 초점 트랙의 길찾기 행
+            if (hasPathRow)
             {
-                distStyle.normal.textColor = new Color(0.6f, 0.7f, 0.8f);
-                GUI.Label(new Rect(x + pad, y + 90f, w - pad, 24f), "이 구역엔 목표가 없습니다", distStyle);
+                Vector2 tp; var pc = PlayerController.Instance;
+                if (pc != null && TryGetPathTarget(out tp))
+                {
+                    Vector2 dir = tp - (Vector2)pc.transform.position;
+                    Rect ar = new Rect(x + pad, cursor + 56f, 34f, 34f);
+                    Fill(ar, UITheme.A(UITheme.Accent, 0.18f));
+                    arrowStyle.normal.textColor = new Color(0.45f, 0.95f, 1f);
+                    GUI.Label(ar, ArrowFor(dir), arrowStyle);
+                    distStyle.normal.textColor = new Color(0.86f, 0.92f, 1f);
+                    GUI.Label(new Rect(ar.xMax + 8f, cursor + 56f, w - 60f, 34f), Mathf.RoundToInt(dir.magnitude) + "m", distStyle);
+                }
+                else
+                {
+                    distStyle.normal.textColor = new Color(0.6f, 0.7f, 0.8f);
+                    GUI.Label(new Rect(x + pad, cursor + 60f, w - pad, 24f), "이 구역엔 목표가 없습니다", distStyle);
+                }
             }
+            cursor += ph + 6f;
         }
+
+        // [V] 안내(패널 묶음 아래 한 줄)
+        hintStyle.normal.textColor = PathActive ? new Color(0.45f, 0.95f, 1f) : new Color(0.68f, 0.82f, 0.94f);
+        string hint = list.Count > 1
+            ? (PathActive ? "[V] 다음 목표 길찾기 / 끄기" : "[V] 길찾기 (트랙 전환)")
+            : (PathActive ? "[V] 길찾기 끄기" : "[V] 버튼을 눌러서 길찾기");
+        GUI.Label(new Rect(x + pad + 4f, cursor + 2f, w, 22f), hint, hintStyle);
     }
 
     private void EnsureStyles()
@@ -138,8 +181,9 @@ public class QuestTracker : MonoBehaviour
         titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
         objStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = false };
         hintStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold };
-        arrowStyle = new GUIStyle(GUI.skin.label) { fontSize = 28, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        arrowStyle = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         distStyle = new GUIStyle(GUI.skin.label) { fontSize = 17, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+        tagStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
     }
 
     private void Fill(Rect r, Color c) { Color o = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = o; }

@@ -107,6 +107,8 @@ public class Equipment : MonoBehaviour
             if (s == null || s.item == null) continue;
             jump += s.item.maxJumpBonus; heart += s.item.maxHeartBonus; atk += s.item.attackBonus;
         }
+        // [코어] 패시브 합산(메인+서브) — 장신구와 같은 경로로 흘려보낸다
+        if (CoreSystem.Instance != null) { heart += CoreSystem.Instance.PassiveHearts; atk += CoreSystem.Instance.PassiveAttack; }
         MaxJumpBonus = jump;
         if (GameManager.Instance != null) GameManager.Instance.SetEquipBonuses(heart, atk);
         if (PlayerController.Instance != null) PlayerController.Instance.ApplyEquipment();

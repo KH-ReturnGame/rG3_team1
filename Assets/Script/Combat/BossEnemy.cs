@@ -174,13 +174,14 @@ public class BossEnemy : Enemy
     {
         if (player == null) { SetMove(0); return; }
 
-        // 첫 조우: 메인퀘 진행(심층을 향해 완료 → 첫 번째 위협 수주) + 보스 BGM
+        // 첫 조우: 양 트랙 진행([스토리]심층을 향해 완료 / [망토]감정 불가 완료 → 굶주린 흡수체 수주) + 보스 BGM
         if (!encountered)
         {
             encountered = true;
             if (QuestManager.Instance != null)
             {
-                QuestManager.Instance.CompleteForce("mq_descend");
+                QuestManager.Instance.CompleteForce("mq_descend");        // 스토리 트랙 1차 완결(맵 탐험)
+                QuestManager.Instance.CompleteForce("mq_hood_appraise");  // 망토 트랙 진행 — 먼저 완료해야 mq_boss 선행 충족
                 QuestManager.Instance.AcceptById("mq_boss");
             }
             AudioManager.Bgm("boss", 0.8f);
@@ -607,7 +608,21 @@ public class BossEnemy : Enemy
         Juice.Shake(0.6f, 0.5f);
         AudioManager.Sfx("boss_die");
         AudioManager.Bgm("stage", 2f);                          // 보스 BGM → 탐사 곡으로 복귀
+        DropCore();                                             // ★[코어] 드랍 — 흡수 능력 각성
         base.Die();   // 전리품 + questKillId("boss_first") 보고 → 메인퀘 완료
+    }
+
+    [Header("[코어] 드랍")]
+    public CoreData coreDrop;          // 이 보스가 남기는 코어(비우면 id로 자동 조회)
+    public string coreDropId = "core_devourer";
+
+    // 코어 흡수: 캐논상 '주인공만 추출 가능' — 줍는 절차 없이 처치 순간 후드가 빨아들인다.
+    private void DropCore()
+    {
+        var core = coreDrop != null ? coreDrop : CoreDatabase.Get(coreDropId);
+        if (core == null || CoreSystem.Instance == null) return;
+        if (CoreSystem.Instance.Has(core)) return;
+        CoreSystem.Instance.Absorb(core);   // 연출은 CoreAbsorbFx가 OnAbsorbed 구독해 처리
     }
 
     // 붉은 강공격 텔레그래프용 글로우(절차 생성 — 아트 오면 교체)

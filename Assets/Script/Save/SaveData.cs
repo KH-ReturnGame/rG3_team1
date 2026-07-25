@@ -54,4 +54,7 @@ public class SaveSlotData
     public int gameMode;         // 0=일반 1=트레져헌터 2=스피드런 (GameMode.Mode)
     public float playTime;       // 타임어택 누적 플레이 시간(초)
     public bool timeAttackDone;  // 타임어택 목표 달성 여부
+    public List<string> cores = new List<string>();      // 흡수한 [코어] id 목록
+    public string equippedCore = "";                     // 메인 코어 id(스킬+패시브)
+    public List<string> subCores = new List<string>();   // 서브 코어 id(패시브 전용)
 }

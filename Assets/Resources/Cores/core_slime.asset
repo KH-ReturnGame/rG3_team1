@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67f6c2bb94231f949832349e682fafa4, type: 3}
+  m_Name: core_slime
+  m_EditorClassIdentifier: Assembly-CSharp::CoreData
+  id: core_slime
+  coreName: "\uC810\uC131\uC758 \uCF54\uC5B4"
+  sourceName: "\uC2AC\uB77C\uC784"
+  icon: {fileID: 0}
+  description: "\uBB34\uB974\uACE0 \uB048\uC9C8\uAE34 \uAC83\uC758 \uADFC\uBCF8.
+    \uB2E8 \uD558\uB098\uC758 \uC7AC\uC8FC\uC5D0 \uBAA8\uB4E0 \uAC83\uC774 \uBAB0\uB824
+    \uC788\uB2E4."
+  grade: 0
+  tint: {r: 0.25, g: 0.9, b: 0.8, a: 1}
+  skillQ:
+    skillName: "\uC810\uCC29 \uBD84\uCD9C"
+    desc: "\uB048\uC801\uD55C \uC0B0\uC131 \uBD84\uCD9C \u2014 \uC881\uC9C0\uB9CC
+      \uB9E4\uC6B0 \uC544\uD504\uB2E4."
+    cooldown: 4
+    damageMultiplier: 2.2
+    rangeMultiplier: 1.3
+    animState: 
+  skillE:
+    skillName: 
+    desc: 
+    cooldown: 6
+    damageMultiplier: 1.5
+    rangeMultiplier: 1.6
+    animState: 
+  skillR:
+    skillName: 
+    desc: 
+    cooldown: 6
+    damageMultiplier: 1.5
+    rangeMultiplier: 1.6
+    animState: 
+  specialization: 1.7
+  attackBonus: 0
+  maxHeartBonus: 0
