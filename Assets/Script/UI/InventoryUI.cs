@@ -196,10 +196,14 @@ public class InventoryUI : MonoBehaviour
             var eq = Equipment.Instance;
             Equipment.Worn hoverWorn = null;
 
-            // 3×3 빈 칸 — 테두리 없이 은은한 채움만(칸 사이 간격으로만 구분)
+            // 3×3 빈 칸 — 어두운 패널 위에서 '칸'으로 읽히도록 옅은 테두리까지(없으면 그냥 검은 여백처럼 보였음)
             for (int cy = 0; cy < Equipment.GridH; cy++)
                 for (int cx = 0; cx < Equipment.GridW; cx++)
-                    UITheme.Fill(EqCellRect(eqLeft, eqTop, eqCell, cx, cy), UITheme.A(UITheme.SlotBot, 0.45f));
+                {
+                    Rect ec = EqCellRect(eqLeft, eqTop, eqCell, cx, cy);
+                    UITheme.FillV(ec, UITheme.A(UITheme.SlotTop, 0.8f), UITheme.A(UITheme.SlotBot, 0.8f));
+                    UITheme.Border2(ec, 1f, UITheme.A(UITheme.Border, 0.45f));
+                }
 
             // 착용 중인 장신구(발자국)
             if (eq != null)
@@ -432,7 +436,7 @@ public class InventoryUI : MonoBehaviour
                 UITheme.Fill(row, UITheme.A(UITheme.Accent, 0.14f));
                 UITheme.Fill(new Rect(row.x, row.y + 5f, 3f, row.height - 10f), UITheme.Accent);   // 좌측 금바
             }
-            ctxStyle.normal.textColor = (labels[i] == "버리기") ? UITheme.Danger : (hv ? Color.white : UITheme.Text);
+            ctxStyle.normal.textColor = (labels[i] == "버리기") ? UITheme.Danger : UITheme.Text;   // 색=의미(호버로 안 바뀜)
             GUI.Label(new Rect(row.x + 14f, row.y, row.width - 16f, row.height), labels[i], ctxStyle);
             if (GUI.Button(row, GUIContent.none, GUIStyle.none)) { acts[i](); ctxEntry = null; }
         }
@@ -561,6 +565,9 @@ public class InventoryUI : MonoBehaviour
     }
 
     // B 없이도 닫기(X 버튼) — 들고 있던 아이템은 되돌림
+    // 외부(게임오버 등)에서 강제로 닫기 — 들고 있던 아이템은 되돌린다
+    public void ForceClose() { Close(); }
+
     private void Close()
     {
         open = false;
@@ -867,33 +874,50 @@ public class InventoryUI : MonoBehaviour
         Rect right = new Rect(area.x + half + 10f, area.y, area.width - half - 10f, area.height);
 
         // ── 왼쪽: 장착 슬롯 ──
-        float slotH = 62f, gap = 8f;
-        GUI.Label(new Rect(left.x, left.y, left.width, 20f), "장착", hoodStat);
-        Rect mainR = new Rect(left.x, left.y + 22f, left.width, slotH);
-        DrawCoreSlot(mainR, cs.Main, "메인 — 스킬 + 패시브", true, mp);
+        //  ★설계(할로우나이트 부적/나인솔즈 옥 참고): 역할을 문장으로 설명하지 않고 '구조'로 보여준다.
+        //   각인 슬롯 = 크고 Q·E·R 키 배지가 붙음(=스킬을 준다는 뜻이 시각적으로 자명)
+        //   공명 슬롯 = 작고 키 배지 없음 + 실제 패시브 수치를 표기(쓸모 있는 정보로 대체)
+        float mainH = 66f, subH = 46f, gap = 8f;
+        hoodStat.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(left.x, left.y, left.width, 20f), "각인", hoodStat);
+        hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
+        Rect mainR = new Rect(left.x, left.y + 22f, left.width, mainH);
+        DrawCoreSlot(mainR, cs.Main, null, true, mp);
         if (md && mainR.Contains(mp) && cs.Main != null) { cs.EquipMain(null); Event.current.Use(); }   // 클릭=해제
 
+        float subTop = mainR.yMax + 28f;   // 소제목('공명')이 각인 슬롯과 겹치지 않게 확보
+        hoodStat.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(left.x, subTop - 20f, left.width, 20f), "공명", hoodStat);
+        hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
         for (int i = 0; i < CoreSystem.SubSlots; i++)
         {
             var sub = i < cs.Subs.Count ? cs.Subs[i] : null;
-            Rect sr = new Rect(left.x, mainR.yMax + gap + i * (slotH + gap), left.width, slotH);
-            DrawCoreSlot(sr, sub, "서브 " + (i + 1) + " — 패시브만", false, mp);
+            Rect sr = new Rect(left.x, subTop + i * (subH + gap), left.width, subH);
+            DrawCoreSlot(sr, sub, null, false, mp);
             if (md && sr.Contains(mp) && sub != null) { cs.UnequipSub(sub); Event.current.Use(); }
         }
 
         // 합산 패시브 요약
-        float sumY = mainR.yMax + gap + CoreSystem.SubSlots * (slotH + gap) + 4f;
-        if (sumY < left.yMax - 40f)
-        {
-            Rect sum = new Rect(left.x, sumY, left.width, 34f);
-            UITheme.FillV(sum, UITheme.A(UITheme.PanelTop, 0.6f), UITheme.A(UITheme.PanelBot, 0.6f));
-            UITheme.Border2(sum, 1f, UITheme.A(UITheme.Accent, 0.4f));
-            string ptxt = "패시브 합계   공격 +" + cs.PassiveAttack.ToString("0.#") + "   체력 +" + cs.PassiveHearts;
-            GUI.Label(sum, ptxt, tabStyle);
-        }
+        float sumY = subTop + CoreSystem.SubSlots * (subH + gap) + 4f;
+        Rect sum = new Rect(left.x, sumY, left.width, 34f);
+        UITheme.FillV(sum, UITheme.A(UITheme.PanelTop, 0.6f), UITheme.A(UITheme.PanelBot, 0.6f));
+        UITheme.Border2(sum, 1f, UITheme.A(UITheme.Accent, 0.4f));
+        bool anyPassive = cs.PassiveAttack > 0f || cs.PassiveHearts > 0;
+        tabStyle.normal.textColor = anyPassive ? UITheme.Text : new Color(0.55f, 0.58f, 0.62f);
+        GUI.Label(sum, "패시브 합계   공격 +" + cs.PassiveAttack.ToString("0.#") + "   체력 +" + cs.PassiveHearts, tabStyle);
+        tabStyle.normal.textColor = UITheme.Text;
+
+        // ── 아래 빈 공간: 메인 코어의 스킬 상세(Q/E/R) — 코어 교체 판단에 필요한 정보 ──
+        float skY = sum.yMax + 12f;
+        if (skY < area.yMax - 40f) DrawCoreSkills(new Rect(area.x, skY, area.width, area.yMax - skY), cs);
 
         // ── 오른쪽: 보유 코어 목록 ──
-        GUI.Label(new Rect(right.x, right.y, right.width, 20f), "보유 코어   (좌클릭 메인 · 우클릭 서브)", hoodStat);
+        hoodStat.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(right.x, right.y, right.width, 20f), "보유 코어", hoodStat);
+        tabStyle.normal.textColor = new Color(0.62f, 0.66f, 0.72f);
+        GUI.Label(new Rect(right.x + 66f, right.y + 1f, right.width - 66f, 20f), "좌클릭 메인 · 우클릭 서브", tabStyle);
+        tabStyle.normal.textColor = UITheme.Text;
+        hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
         float rowH = 44f, ry = right.y + 22f;
         if (cs.Collected.Count == 0)
         {
@@ -920,8 +944,9 @@ public class InventoryUI : MonoBehaviour
             GUI.Label(new Rect(r.x + rowH, r.y + 4f, r.width - rowH - 8f, 20f), c.coreName, hoodStat);
             hoodStat.normal.textColor = new Color(0.78f, 0.80f, 0.85f);
             string slots = c.SlotCount == 3 ? "Q·E·R" : (c.SlotCount == 2 ? "Q·E" : "Q");
-            GUI.Label(new Rect(r.x + rowH, r.y + 22f, r.width - rowH - 8f, 18f),
-                c.GradeLabel() + " · " + slots + " · 특화 ×" + c.specialization.ToString("0.#"), hoodStat);
+            string pas = PassiveText(c);
+            GUI.Label(new Rect(r.x + rowH, r.y + 22f, r.width - rowH - 56f, 18f),
+                c.GradeLabel() + " · " + slots + " · ×" + c.specialization.ToString("0.#") + (string.IsNullOrEmpty(pas) ? "" : "   " + pas), hoodStat);
             hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
 
             // 상태 배지
@@ -945,30 +970,136 @@ public class InventoryUI : MonoBehaviour
         }
     }
 
-    // 장착 슬롯 한 칸(메인/서브 공용)
-    private void DrawCoreSlot(Rect r, CoreData core, string label, bool isMain, Vector2 mp)
+    // 메인 코어가 주는 스킬 3종(Q/E/R) 상세 — 잠긴 슬롯은 등급 안내로 흐리게
+    private void DrawCoreSkills(Rect area, CoreSystem cs)
+    {
+        hoodStat.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(area.x, area.y, area.width * 0.3f, 20f), "각인 스킬", hoodStat);
+        hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
+        // 규칙 설명은 여기 한 줄로만(슬롯마다 반복하지 않는다)
+        var pa2 = tabStyle.alignment; tabStyle.alignment = TextAnchor.MiddleRight;
+        tabStyle.normal.textColor = new Color(0.58f, 0.62f, 0.68f);
+        GUI.Label(new Rect(area.x, area.y, area.width, 20f), "각인한 코어만 스킬을 준다 · 공명은 상시 효과만", tabStyle);
+        tabStyle.alignment = pa2; tabStyle.normal.textColor = UITheme.Text;
+
+        // 가로 3열(세로로 쌓으면 카드가 납작해져 글자가 겹침)
+        float top = area.y + 24f;
+        float colGap = 8f;
+        float cardW = (area.width - colGap * 2f) / 3f;
+        float cardH = Mathf.Max(64f, area.yMax - top);
+        string[] keys = { "Q", "E", "R" };
+        for (int i = 0; i < 3; i++)
+        {
+            var slot = (CoreData.Slot)i;
+            Rect r = new Rect(area.x + i * (cardW + colGap), top, cardW, cardH);
+            bool unlocked = cs.SlotUnlocked(slot);
+            var sk = unlocked ? cs.SkillAt(slot) : null;
+
+            UITheme.FillV(r, UITheme.A(UITheme.SlotTop, unlocked ? 0.95f : 0.5f), UITheme.A(UITheme.SlotBot, unlocked ? 1f : 0.5f));
+            UITheme.Border2(r, 1f, UITheme.A(unlocked ? UITheme.Accent : UITheme.Border, unlocked ? 0.65f : 0.3f));
+
+            // 키 배지(좌상단)
+            float ks = 24f;
+            Rect kb = new Rect(r.x + 8f, r.y + 7f, ks, ks);
+            UITheme.Fill(kb, UITheme.A(unlocked ? UITheme.Accent : UITheme.Border, unlocked ? 0.85f : 0.25f));
+            hotkeyNumStyle.fontSize = 14;
+            hotkeyNumStyle.normal.textColor = unlocked ? new Color(0.10f, 0.06f, 0.02f) : new Color(0.45f, 0.47f, 0.5f);
+            GUI.Label(kb, keys[i], hotkeyNumStyle);
+            hotkeyNumStyle.fontSize = 13;
+
+            float tx = kb.xMax + 8f, tw = r.xMax - tx - 8f;
+            if (unlocked)
+            {
+                hoodStat.normal.textColor = UITheme.Text;
+                GUI.Label(new Rect(tx, r.y + 6f, tw, 22f), sk.skillName, hoodStat);
+                // 설명(줄바꿈) — 카드 폭에 맞춰 감쌈
+                tipDescStyle.fontSize = 13;
+                tipDescStyle.normal.textColor = new Color(0.72f, 0.76f, 0.82f);
+                GUI.Label(new Rect(r.x + 8f, r.y + 34f, r.width - 16f, cardH - 58f), sk.desc, tipDescStyle);
+                tipDescStyle.fontSize = 15; tipDescStyle.normal.textColor = UITheme.Text;
+                // 수치(하단 고정): 위력(특화 반영) · 쿨타임
+                float power = sk.damageMultiplier * cs.Specialization;
+                tabStyle.normal.textColor = UITheme.A(UITheme.Gold, 0.95f);
+                GUI.Label(new Rect(r.x + 8f, r.yMax - 22f, r.width - 16f, 18f),
+                    "×" + power.ToString("0.0") + "   " + sk.cooldown.ToString("0.#") + "초", tabStyle);
+                tabStyle.normal.textColor = UITheme.Text;
+            }
+            else
+            {
+                tipDescStyle.fontSize = 13;
+                tipDescStyle.normal.textColor = new Color(0.50f, 0.53f, 0.58f);
+                string why = cs.Main == null ? "메인 코어를 장착하면 열립니다"
+                           : (i == 1 ? "정예 이상 코어에서 열립니다" : "보스 코어에서 열립니다");
+                GUI.Label(new Rect(r.x + 8f, r.y + 34f, r.width - 16f, cardH - 42f), why, tipDescStyle);
+                tipDescStyle.fontSize = 15; tipDescStyle.normal.textColor = UITheme.Text;
+            }
+        }
+    }
+
+    // 장착 슬롯 한 칸(각인=크게+키배지 / 공명=작게+패시브 수치)
+    private void DrawCoreSlot(Rect r, CoreData core, string _unused, bool isMain, Vector2 mp)
     {
         Color gc = core != null ? core.GradeColor() : UITheme.Border;
         UITheme.FillV(r, UITheme.SlotTop, UITheme.SlotBot);
-        UITheme.Border2(r, isMain ? 2f : 1.2f, UITheme.A(core != null ? gc : UITheme.Border, core != null ? 0.9f : 0.45f));
+        UITheme.Border2(r, isMain ? 2f : 1.2f, UITheme.A(core != null ? gc : UITheme.Border, core != null ? 0.9f : 0.4f));
         if (isMain && core != null) UITheme.Corners(r, 12f, 2f);
 
-        tabStyle.normal.textColor = new Color(0.62f, 0.66f, 0.72f);
-        GUI.Label(new Rect(r.x + 8f, r.y + 3f, r.width - 16f, 16f), label, tabStyle);
-
+        float ic = isMain ? 38f : 28f;
         if (core == null)
         {
-            GUI.Label(new Rect(r.x, r.y + 18f, r.width, r.height - 18f), "— 비어 있음 —", tabStyle);
+            // 빈 칸: 자리 표시 다이아 + 담담한 안내(문장 대신 기호로)
+            UITheme.Diamond(new Vector2(r.x + 8f + ic * 0.5f, r.center.y), isMain ? 9f : 7f, UITheme.A(UITheme.Border, 0.5f));
+            tabStyle.normal.textColor = new Color(0.50f, 0.53f, 0.58f);
+            GUI.Label(new Rect(r.x + 8f + ic + 10f, r.y, r.width - ic - 26f, r.height), "비어 있음", tabStyle);
+            tabStyle.normal.textColor = UITheme.Text;
             return;
         }
-        if (core.icon != null) GUI.DrawTexture(new Rect(r.x + 8f, r.y + 20f, 34f, 34f), core.icon.texture, ScaleMode.ScaleToFit);
-        hoodStat.normal.textColor = gc;
-        GUI.Label(new Rect(r.x + 48f, r.y + 20f, r.width - 56f, 20f), core.coreName, hoodStat);
-        hoodStat.normal.textColor = new Color(0.78f, 0.80f, 0.85f);
-        string detail = isMain
-            ? (core.SlotCount == 3 ? "[Q] [E] [R]" : (core.SlotCount == 2 ? "[Q] [E]" : "[Q]")) + "  특화 ×" + core.specialization.ToString("0.#")
-            : "패시브 전용";
-        GUI.Label(new Rect(r.x + 48f, r.y + 40f, r.width - 56f, 18f), detail, hoodStat);
-        hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
+
+        if (core.icon != null) GUI.DrawTexture(new Rect(r.x + 8f, r.center.y - ic * 0.5f, ic, ic), core.icon.texture, ScaleMode.ScaleToFit);
+        float tx = r.x + 8f + ic + 10f, tw = r.xMax - tx - 8f;
+
+        if (isMain)
+        {
+            hoodStat.normal.textColor = gc;
+            GUI.Label(new Rect(tx, r.y + 8f, tw, 22f), core.coreName, hoodStat);
+            hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
+            // 이 코어가 여는 키를 '배지'로 — 각인 슬롯이 스킬을 준다는 사실이 구조로 읽힘
+            string[] keys = { "Q", "E", "R" };
+            float kb = 20f, kx = tx;
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = i < core.SlotCount && core.SkillOf((CoreData.Slot)i).IsDefined;
+                Rect k = new Rect(kx + i * (kb + 5f), r.yMax - kb - 8f, kb, kb);
+                UITheme.Fill(k, UITheme.A(on ? UITheme.Accent : UITheme.Border, on ? 0.85f : 0.18f));
+                hotkeyNumStyle.normal.textColor = on ? new Color(0.10f, 0.06f, 0.02f) : new Color(0.42f, 0.44f, 0.47f);
+                GUI.Label(k, keys[i], hotkeyNumStyle);
+            }
+            // 특화 배수는 우측 정렬로 분리(수치는 수치끼리)
+            var pa = tabStyle.alignment; tabStyle.alignment = TextAnchor.MiddleRight;
+            tabStyle.normal.textColor = UITheme.A(UITheme.Gold, 0.9f);
+            GUI.Label(new Rect(tx, r.yMax - 28f, tw, 20f), "특화 ×" + core.specialization.ToString("0.#"), tabStyle);
+            tabStyle.alignment = pa; tabStyle.normal.textColor = UITheme.Text;
+        }
+        else
+        {
+            hoodStat.normal.textColor = gc;
+            GUI.Label(new Rect(tx, r.y + 4f, tw, 20f), core.coreName, hoodStat);
+            hoodStat.normal.textColor = new Color(0.92f, 0.94f, 1f);
+            // '패시브 전용' 같은 설명 대신 실제로 얻는 수치를 보여준다
+            string eff = PassiveText(core);
+            tabStyle.normal.textColor = string.IsNullOrEmpty(eff) ? new Color(0.52f, 0.55f, 0.60f) : UITheme.A(UITheme.Good, 0.95f);
+            GUI.Label(new Rect(tx, r.y + 23f, tw, 18f), string.IsNullOrEmpty(eff) ? "효과 없음" : eff, tabStyle);
+            tabStyle.normal.textColor = UITheme.Text;
+        }
+    }
+
+    // 코어의 상시 효과를 짧은 수치 문자열로("공격 +2  체력 +1")
+    private string PassiveText(CoreData c)
+    {
+        if (c == null) return "";
+        var parts = new System.Collections.Generic.List<string>();
+        if (c.attackBonus > 0f) parts.Add("공격 +" + c.attackBonus.ToString("0.#"));
+        if (c.maxHeartBonus > 0) parts.Add("체력 +" + c.maxHeartBonus);
+        return string.Join("  ", parts.ToArray());
     }
 }

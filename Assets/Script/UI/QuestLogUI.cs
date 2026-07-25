@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // 진행 중 의뢰 로그 (자동부팅·영구). 일반 화면에서 J로 토글.
 //  - 왼쪽: 수주한 의뢰 목록 / 오른쪽: 선택 의뢰 상세 + 포기 버튼.
@@ -49,7 +49,7 @@ public class QuestLogUI : MonoBehaviour
             detObj.normal.textColor = keep;   // 아래 목표 텍스트 색 오염 방지
         }
         Rect cb = new Rect(p.xMax - 48f, p.y + 12f, 34f, 34f);
-        Fill(cb, new Color(0.6f, 0.2f, 0.18f)); Border(cb, 2f, UITheme.Accent); GUI.Label(cb, "X", closeS);
+        UITheme.Button(cb, "✕", closeS, m, false, 2);
         if (click && cb.Contains(m)) { Close(); Event.current.Use(); return; }
 
         float listX = p.x + 20f, listY = p.y + 60f, listW = p.width * 0.40f, listH = p.height - 80f;
@@ -100,16 +100,13 @@ public class QuestLogUI : MonoBehaviour
         // 추적 버튼 (트래커 HUD가 따라갈 퀘스트 지정)
         bool isTracked = qm != null && qm.GetTracked() == selected;
         Rect tb = new Rect(p.xMax - 370f, p.yMax - 64f, 180f, 46f);
-        Fill(tb, isTracked ? new Color(0.14f, 0.30f, 0.20f) : UITheme.Lighten(UITheme.Panel, 0.06f));
-        Border(tb, 2f, isTracked ? new Color(0.50f, 0.95f, 0.60f) : UITheme.Accent);
-        GUI.Label(tb, isTracked ? "✓ 추적 중" : "이 퀘스트 추적", btn);
-        if (click && tb.Contains(m) && !isTracked) { qm.SetTracked(selected); Event.current.Use(); }
+        if (UITheme.Button(tb, isTracked ? "✓ 추적 중" : "이 퀘스트 추적", btn, m, click, 1, isTracked) && !isTracked)
+        { qm.SetTracked(selected); Event.current.Use(); }
 
         // 포기 버튼
         Rect gb = new Rect(p.xMax - 170f, p.yMax - 64f, 150f, 46f);
-        Fill(gb, new Color(0.6f, 0.22f, 0.2f)); Border(gb, 2f, UITheme.Accent);
-        GUI.Label(gb, "퀘스트 포기", btn);
-        if (click && gb.Contains(m)) { QuestManager.Instance.Abandon(selected); selected = null; Event.current.Use(); }
+        if (UITheme.Button(gb, "퀘스트 포기", btn, m, click, 2))
+        { QuestManager.Instance.Abandon(selected); selected = null; Event.current.Use(); }
     }
 
     private void Fill(Rect r, Color c) { var p = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = p; }

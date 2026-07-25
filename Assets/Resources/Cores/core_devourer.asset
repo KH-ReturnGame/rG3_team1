@@ -42,5 +42,5 @@ MonoBehaviour:
     rangeMultiplier: 3.5
     animState: 
   specialization: 1
-  attackBonus: 0
+  attackBonus: 2
   maxHeartBonus: 0

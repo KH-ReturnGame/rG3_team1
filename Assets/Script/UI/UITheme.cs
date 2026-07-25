@@ -147,6 +147,40 @@ public static class UITheme
         Border2(r, hover ? thickness + 0.5f : thickness, hover ? Lighten(border, 0.22f) : border);
     }
 
+    // ══ 공통 호버 규칙 ══
+    //  원칙: **텍스트 색은 호버로 바뀌지 않는다.** 글자색은 '의미'(희귀도·위험·비활성)를 나타내는 축이라
+    //  포인터 위치까지 색으로 표현하면 의미가 흐려지고 화면이 번쩍인다. 호버는 '배경'으로만 알린다.
+    //  선택/장착 같은 '상태'는 테두리(Accent)로 — 호버보다 상태가 더 강하게 보이도록.
+    public static void HoverRow(Rect r, bool hover, bool accentBar = true)
+    {
+        if (!hover) return;
+        Fill(r, A(Color.white, 0.05f));                                   // 아주 옅은 배경 틴트
+        if (accentBar) Fill(new Rect(r.x, r.y + r.height * 0.22f, 2.5f, r.height * 0.56f), A(Accent, 0.9f));   // 왼쪽 강조 바
+    }
+
+    // ══ 공용 버튼 ══ 전 UI가 같은 모양을 쓰도록(기본 Unity 버튼·손으로 칠한 단색 블록 금지).
+    //  먹색 그라데 + 금테 + 코너 브래킷. 호버는 배경만 밝힘(공통 호버 규칙), 눌린 상태(on)는 테두리로.
+    //  kind: 0=보통 / 1=긍정(진행 중·활성) / 2=위험(파괴적 동작)
+    public static bool Button(Rect r, string label, GUIStyle style, Vector2 mouse, bool click, int kind = 0, bool on = false)
+    {
+        bool hover = r.Contains(mouse);
+        Color edge = kind == 2 ? Danger : (kind == 1 ? Good : Accent);
+        Color topC = kind == 2 ? new Color(0.22f, 0.075f, 0.07f) : (kind == 1 && on ? new Color(0.08f, 0.20f, 0.14f) : PanelTop);
+        Color botC = kind == 2 ? new Color(0.13f, 0.045f, 0.04f) : (kind == 1 && on ? new Color(0.05f, 0.13f, 0.10f) : PanelBot);
+        FillV(r, topC, botC);
+        if (hover) Fill(r, A(Color.white, 0.06f));
+        Border2(r, on ? 2f : 1.4f, A(edge, on ? 1f : (hover ? 0.95f : 0.7f)));
+        Corners(r, Mathf.Min(12f, r.width * 0.25f), 2f);
+        if (style != null)
+        {
+            var prev = style.normal.textColor;
+            style.normal.textColor = kind == 2 ? new Color(1f, 0.72f, 0.68f) : (on ? Lighten(Good, 0.15f) : Text);
+            GUI.Label(r, label, style);
+            style.normal.textColor = prev;
+        }
+        return hover && click;
+    }
+
     // 아이템 희귀도 테두리(등급별 차등) — 등급이 오를수록 장식이 한 겹씩 쌓인다.
     //  Common: 옅은 링만(조용하게) / Uncommon: 링+대각 캡 / Rare: +4코너 캡+글로우
     //  Epic: +안쪽 이중 링+상단 다이아 / Legendary: +숨쉬는 펄스 글로우+하단 다이아

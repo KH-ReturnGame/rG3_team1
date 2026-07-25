@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // ESC 일시정지 메뉴 (구 좌상단 '메뉴' 버튼을 대체 — 클래스명 유지로 기존 HUD 배선 그대로).
 //  ESC → 시간 정지 + 어두운 오버레이 + 메뉴: 계속하기 / 레포트 기록(저장) / 타이틀로 / 게임 종료.
@@ -154,7 +154,7 @@ public class MenuUI : MonoBehaviour
         bool dhv = dr.Contains(m);
         setLabelSt.normal.textColor = new Color(0.80f, 0.81f, 0.78f);
         GUI.Label(new Rect(dr.x, dr.y, w * 0.4f, rh), "난이도", setLabelSt);
-        setValSt.normal.textColor = dhv ? Color.white : (easy ? new Color(0.85f, 0.88f, 0.80f) : UITheme.Danger);
+        setValSt.normal.textColor = easy ? new Color(0.85f, 0.88f, 0.80f) : UITheme.Danger;
         var pa = setValSt.alignment; setValSt.alignment = TextAnchor.MiddleRight;
         GUI.Label(new Rect(dr.x, dr.y, w, rh), "‹  " + Difficulty.Label + "  ›", setValSt);
         setValSt.alignment = pa;
@@ -168,7 +168,7 @@ public class MenuUI : MonoBehaviour
         Rect back = new Rect(sw * 0.5f - 100f, vy, 200f, rowH * 0.8f);
         bool bhv = back.Contains(m);
         itemStyle.fontSize = Mathf.RoundToInt(sh * 0.026f);
-        itemStyle.normal.textColor = bhv ? Color.white : new Color(0.74f, 0.75f, 0.78f);
+        itemStyle.normal.textColor = new Color(0.86f, 0.87f, 0.90f);
         if (bhv) UITheme.Fill(new Rect(back.x + 24f, back.y + back.height * 0.22f, 4f, back.height * 0.56f), UITheme.Accent);
         GUI.Label(back, "←  뒤로", itemStyle);
         if (bhv && click) { page = 0; Event.current.Use(); }

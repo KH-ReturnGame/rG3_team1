@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // 상점 UI(자동부팅·영구). ShopStation에 F로 열림. 탭으로 구매/판매 분리.
@@ -91,7 +91,7 @@ public class ShopUI : MonoBehaviour
         ItemData hover = (tab == 0) ? DrawBuy(x, panelW, gap, gy, ss, pad, m, click)
                                     : DrawSell(x, panelW, gap, gy, ss, pad, m, click);
 
-        if (GUI.Button(new Rect(x + w - 130f, y + h - 46f, 110f, 34f), "닫기")) { Close(); return; }
+        if (UITheme.Button(new Rect(x + w - 130f, y + h - 46f, 110f, 34f), "닫기", tabOff, m, click)) { Close(); return; }
 
         if (hover != null) DrawTip(hover, m);
         if (held != null)

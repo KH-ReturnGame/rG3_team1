@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // 모험 핸드북 — 나인 솔즈 메뉴 오마주(풀스크린 + 장식 프레임).
@@ -59,6 +59,9 @@ public class HandbookUI : MonoBehaviour
         Inventory.HandbookUIOpen = open;
     }
 
+    // 외부(게임오버 등)에서 강제로 닫기
+    public void ForceClose() { open = false; Inventory.HandbookUIOpen = false; }
+
     // 열 때: 지금 갖고 있는 아이템들도 '발견'으로 기록
     private void OnOpen()
     {
@@ -107,7 +110,7 @@ public class HandbookUI : MonoBehaviour
                 Fill(new Rect(tr.x + tabW * 0.12f, tr.y, tabW * 0.76f, 1f), UITheme.A(UITheme.Accent, hv ? 0.8f : 0.4f));       // 위 헤어라인
                 Fill(new Rect(tr.x + tabW * 0.12f, tr.yMax - 1f, tabW * 0.76f, 1f), UITheme.A(UITheme.Accent, hv ? 0.5f : 0.2f));
             }
-            tabSt.normal.textColor = on ? new Color(0.97f, 0.95f, 0.88f) : (hv ? UITheme.Text : UITheme.TextDim);
+            tabSt.normal.textColor = on ? new Color(0.97f, 0.95f, 0.88f) : UITheme.TextDim;   // 선택만 강조 — 호버는 배경으로
             GUI.Label(tr, tabs[i], tabSt);
             if (click && hv) { tab = i; sel = 0; scroll = Vector2.zero; Event.current.Use(); }
         }

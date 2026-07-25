@@ -131,7 +131,9 @@ public class StatUI : MonoBehaviour
         }
 
         // ── 4) 얇은 XP 게이지(눈금 + 브래킷 프레임) ──
-        float gaugeW = Mathf.Max(maxHearts * (segW + segGap) + segW * 2.5f, sh * 0.26f);
+        // 하트 줄 폭에 맞춤(+살짝 여유) — 하트가 적을 때 게이지만 길게 뻗어 균형이 깨지던 것 수정
+        float heartsW = maxHearts * (segW + segGap) - segGap;
+        float gaugeW = Mathf.Max(heartsW + segW * 0.8f, sh * 0.15f);
         Rect gauge = new Rect(hx, hy + segH + 10f, gaugeW, 8f);
         UITheme.Fill(gauge, Ink);
         float xpFrac = gm.XpToNext > 0 ? Mathf.Clamp01(gm.xp / (float)gm.XpToNext) : 0f;
@@ -207,7 +209,8 @@ public class StatUI : MonoBehaviour
             // (d) 진행 핍 — 쿨 중엔 차오르고, 준비되면 전부 밝게 맥동
             float frac = pc.skillCooldown > 0f ? 1f - Mathf.Clamp01(pc.SkillCooldownLeft / pc.skillCooldown) : 1f;
             int pips = 5, lit = Mathf.FloorToInt(frac * pips + 0.0001f);
-            float pw = qs * 0.42f, ph = qs * 0.30f, pGap = 5f;
+            // 기울어진 핍은 간격이 좁으면 서로 이어져 한 덩어리로 보임 — 폭↓·간격↑로 낱개가 또렷하게
+            float pw = qs * 0.34f, ph = qs * 0.28f, pGap = qs * 0.16f;
             float px = q.xMax + 12f, py = q.center.y - ph * 0.5f;
             for (int i = 0; i < pips; i++)
             {
@@ -219,20 +222,20 @@ public class StatUI : MonoBehaviour
                 GUI.color = prev;
             }
 
-            // 장식: 핍 아래 꺾인 금선(── ╱ ──) — 레퍼런스 하단 장식 모티프
-            Color qc = UITheme.A(Gold, 0.5f);
-            float oy2 = py + ph + 9f;
-            UITheme.Fill(new Rect(px - 2f, oy2, pw * 2.4f, 2f), qc);
-            Line45(new Vector2(px - 2f + pw * 2.4f, oy2 + 1f), 11f, qc);
-            UITheme.Fill(new Rect(px - 2f + pw * 2.4f + 8f, oy2 - 8f, pw * 1.4f, 2f), qc);
-            UITheme.Diamond(new Vector2(px - 2f + pw * 2.4f + 8f + pw * 1.4f + 4f, oy2 - 7f), 5f, qc);
+            // 장식: 핍 아래 꺾인 금선(── ╱ ──) — 핍과 겹치지 않게 충분히 내림
+            Color qc = UITheme.A(Gold, 0.45f);
+            float oy2 = py + ph + 14f;
+            float decoW = pips * (pw + pGap) - pGap;
+            UITheme.Fill(new Rect(px, oy2, decoW * 0.55f, 2f), qc);
+            Line45(new Vector2(px + decoW * 0.55f, oy2 + 1f), 10f, qc);
+            UITheme.Diamond(new Vector2(px + decoW * 0.55f + 14f, oy2 - 6f), 4.5f, qc);
 
             // ── [코어] E·R 스킬 배지 — 메인 코어가 해금한 슬롯만 표시(핍 오른쪽) ──
             var cs = CoreSystem.Instance;
             if (cs != null)
             {
                 float es = qs * 0.74f;
-                float ex0 = px + 5f * (pw + pGap) + 14f;
+                float ex0 = px + pips * (pw + pGap) + 10f;
                 float ey = q.center.y - es * 0.5f;
                 int shown = 0;
                 for (int i = 1; i <= 2; i++)   // 1=E, 2=R (Q는 위 기존 배지가 담당)

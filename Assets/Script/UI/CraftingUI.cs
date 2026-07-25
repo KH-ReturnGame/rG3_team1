@@ -256,7 +256,7 @@ public class CraftingUI : MonoBehaviour
         bool hv = enabled && r.Contains(m);
         if (enabled)
         {
-            if (hv) UITheme.Glow(r, UITheme.Accent, 4f, 0.25f);
+            // (호버 글로우 제거 — 아래 배경 틴트만으로 알림. 강조는 '선택 상태'의 몫)
             UITheme.FillV(r, UITheme.Lighten(UITheme.Accent, hv ? 0.10f : 0.03f), UITheme.AccentDim);
             UITheme.Border2(r, 1.5f, UITheme.Lighten(UITheme.Accent, 0.2f));
         }

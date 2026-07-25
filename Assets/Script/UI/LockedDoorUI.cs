@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // 잠긴 문 해제 UI(자동부팅·영구) — 열쇠를 소지품에서 '직접' 집어 열쇠 구멍에 꽂는다.
@@ -47,7 +47,7 @@ public class LockedDoorUI : MonoBehaviour
         Inventory.LockUIOpen = true;
     }
 
-    private void Close()
+    public void Close()
     {
         ReturnHeld();
         door = null;

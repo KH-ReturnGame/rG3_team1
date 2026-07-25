@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // 의뢰 게시판 UI (자동부팅·영구). QuestBoard에 F로 열림.
@@ -97,8 +97,8 @@ public class QuestBoardUI : MonoBehaviour
 
         if (maxScroll > 0f)
         {
-            if (GUI.Button(new Rect(cardArea.x - 4f, cardArea.center.y - 26f, 30f, 52f), "◀")) scrollX = Mathf.Clamp(scrollX - (cardW + gap), 0f, maxScroll);
-            if (GUI.Button(new Rect(cardArea.xMax - 26f, cardArea.center.y - 26f, 30f, 52f), "▶")) scrollX = Mathf.Clamp(scrollX + (cardW + gap), 0f, maxScroll);
+            if (UITheme.Button(new Rect(cardArea.x - 4f, cardArea.center.y - 26f, 30f, 52f), "◀", btn, m, click)) scrollX = Mathf.Clamp(scrollX - (cardW + gap), 0f, maxScroll);
+            if (UITheme.Button(new Rect(cardArea.xMax - 26f, cardArea.center.y - 26f, 30f, 52f), "▶", btn, m, click)) scrollX = Mathf.Clamp(scrollX + (cardW + gap), 0f, maxScroll);
         }
 
         // 하단 상세

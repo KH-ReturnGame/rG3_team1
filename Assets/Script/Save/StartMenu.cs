@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // StartScene 시작 메뉴 (OnGUI) — 타이틀 연출 포함.
 //  배경: 어두운 그라데 + 지하 폐허 실루엣 + 아래에서 올라오는 잔불(ember) + 비네트.
@@ -106,14 +106,13 @@ public class StartMenu : MonoBehaviour
         {
             Rect r = new Rect(sw * 0.5f - 180f, y + i * (rowH + gap), 360f, rowH);
             bool hv = r.Contains(m);
+            // 호버는 '강조 바 + ▸'로만 알린다 — 글자색·글로우는 건드리지 않음(색=의미)
+            SetCol(menuStyle, new Color(0.86f, 0.87f, 0.90f));
             if (hv)
             {
-                UITheme.Glow(r, UITheme.Accent, 8f, 0.18f);
-                UITheme.Fill(new Rect(r.x + 34f, r.y + rowH * 0.22f, 4f, rowH * 0.56f), UITheme.Accent);   // 좌측 오렌지 바
-                SetCol(menuStyle, Color.white);
+                UITheme.Fill(new Rect(r.x + 34f, r.y + rowH * 0.22f, 4f, rowH * 0.56f), UITheme.Accent);
                 GUI.Label(new Rect(r.x + 46f, r.y, 30f, rowH), "▸", menuStyle);
             }
-            else SetCol(menuStyle, new Color(0.72f, 0.73f, 0.76f));
             GUI.Label(r, items[i], menuStyle);
 
             if (hv && click)
@@ -133,7 +132,7 @@ public class StartMenu : MonoBehaviour
 
         smallStyle.fontSize = Mathf.RoundToInt(sh * 0.023f);
         var align0 = smallStyle.alignment; smallStyle.alignment = TextAnchor.MiddleLeft;
-        Color dim = dhv ? Color.white : new Color(0.60f, 0.61f, 0.65f);
+        Color dim = new Color(0.72f, 0.73f, 0.77f);
         Color val = easy ? new Color(0.85f, 0.88f, 0.80f) : new Color(0.90f, 0.32f, 0.28f);
         string s1 = "난이도   ‹ ", s2 = Difficulty.Label, s3 = " ›";
         float w1 = smallStyle.CalcSize(new GUIContent(s1)).x;
@@ -179,7 +178,7 @@ public class StartMenu : MonoBehaviour
             bool mhv = mr.Contains(m);
             smallStyle.fontSize = Mathf.RoundToInt(sh * 0.023f);
             var a0 = smallStyle.alignment; smallStyle.alignment = TextAnchor.MiddleCenter;
-            Color mdim = mhv ? Color.white : new Color(0.62f, 0.63f, 0.67f);
+            Color mdim = new Color(0.72f, 0.73f, 0.77f);
             Color mval = selectedMode == GameMode.Mode.Normal ? new Color(0.85f, 0.88f, 0.80f) : new Color(0.96f, 0.80f, 0.34f);
             string ms1 = "모드   ‹ ", ms2 = GameMode.Label(selectedMode), ms3 = " ›";
             float mw1 = smallStyle.CalcSize(new GUIContent(ms1)).x;
@@ -237,14 +236,14 @@ public class StartMenu : MonoBehaviour
                 if (empty)
                 {
                     slotStyle.normal.textColor = newGameMode
-                        ? (hv ? Color.white : new Color(0.72f, 0.73f, 0.76f))
+                        ? new Color(0.80f, 0.81f, 0.84f)
                         : new Color(0.38f, 0.39f, 0.43f);
                     GUI.Label(new Rect(r.x + 18f, r.y, r.width - 36f, rowH), "슬롯 " + (i + 1) + "    " + (newGameMode ? "새 게임 시작" : "비어있음"), slotStyle);
                     if (newGameMode && hv && click) { SaveSystem.NewGame(i, startScene, selectedMode); Event.current.Use(); }
                 }
                 else
                 {
-                    slotStyle.normal.textColor = hv ? Color.white : UITheme.Text;
+                    slotStyle.normal.textColor = UITheme.Text;
                     GUI.Label(new Rect(r.x + 18f, r.y + rowH * 0.10f, r.width - 120f, rowH * 0.5f), "슬롯 " + (i + 1) + "    " + data.sceneName, slotStyle);
                     GUI.Label(new Rect(r.x + 18f, r.y + rowH * 0.54f, r.width - 120f, rowH * 0.4f), data.lastPlayed + (newGameMode ? "  ·  선택하면 덮어쓰기" : ""), slotSub);
 
@@ -272,7 +271,7 @@ public class StartMenu : MonoBehaviour
     private bool TextBtn(Rect r, string label, Color c, Vector2 m, bool click)
     {
         bool hv = r.Contains(m);
-        smallStyle.normal.textColor = hv ? UITheme.Lighten(c, 0.25f) : c;
+        smallStyle.normal.textColor = c;
         GUI.Label(r, label, smallStyle);
         if (hv) UITheme.Fill(new Rect(r.x + r.width * 0.5f - 16f, r.yMax - r.height * 0.18f, 32f, 1.5f), UITheme.A(c, 0.8f));   // 밑줄
         return hv && click;

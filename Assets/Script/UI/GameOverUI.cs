@@ -43,7 +43,20 @@ public class GameOverUI : MonoBehaviour
         AudioManager.Bgm("");    // 배경음 정지
         SlowMoFx.End();          // 예지 슬로우 중 사망 대비 — 시간 상태 정리 후 정지
         if (HelpPopupUI.Instance != null) HelpPopupUI.Instance.CloseAllCards();   // 열린/대기 중 도움말 정리(재시작 후 시간 정지 잔류 방지)
+        CloseOpenWindows();      // ★열려 있던 창(인벤·퀘스트·상점·제작·핸드북)을 닫는다 — 게임오버 위에 겹쳐 보이던 문제
         Time.timeScale = 0f;
+    }
+
+    // 사망 시 모든 창을 닫아 게임오버 화면만 남긴다(입력 잠금 플래그도 함께 해제).
+    private void CloseOpenWindows()
+    {
+        if (InventoryUI.Instance != null) InventoryUI.Instance.ForceClose();
+        if (QuestLogUI.Instance != null) QuestLogUI.Instance.Close();
+        if (QuestBoardUI.Instance != null) QuestBoardUI.Instance.Close();
+        if (ShopUI.Instance != null) ShopUI.Instance.Close();
+        if (CraftingUI.Instance != null) CraftingUI.Instance.Close();
+        if (HandbookUI.Instance != null) HandbookUI.Instance.ForceClose();
+        if (LockedDoorUI.Instance != null) LockedDoorUI.Instance.Close();
     }
 
     void OnGUI()
