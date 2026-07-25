@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 // 플레이어 HUD — 나인 솔즈(九日) 레이아웃 오마주.
 //  좌상단: 팔각 메달리온(초상화 자리 — 지금은 붉은 후드 실루엣) + 아래 매달린 골드 배지
@@ -226,6 +226,37 @@ public class StatUI : MonoBehaviour
             Line45(new Vector2(px - 2f + pw * 2.4f, oy2 + 1f), 11f, qc);
             UITheme.Fill(new Rect(px - 2f + pw * 2.4f + 8f, oy2 - 8f, pw * 1.4f, 2f), qc);
             UITheme.Diamond(new Vector2(px - 2f + pw * 2.4f + 8f + pw * 1.4f + 4f, oy2 - 7f), 5f, qc);
+
+            // ── [코어] E·R 스킬 배지 — 메인 코어가 해금한 슬롯만 표시(핍 오른쪽) ──
+            var cs = CoreSystem.Instance;
+            if (cs != null)
+            {
+                float es = qs * 0.74f;
+                float ex0 = px + 5f * (pw + pGap) + 14f;
+                float ey = q.center.y - es * 0.5f;
+                int shown = 0;
+                for (int i = 1; i <= 2; i++)   // 1=E, 2=R (Q는 위 기존 배지가 담당)
+                {
+                    var slot = (CoreData.Slot)i;
+                    if (!cs.SlotUnlocked(slot)) continue;
+                    Rect br = new Rect(ex0 + shown * (es + 10f), ey, es, es);
+                    float cfrac = cs.CooldownFrac(slot);
+                    bool ready = cfrac >= 1f;
+                    float pulse = ready ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4.5f) : 0f;
+
+                    if (ready) UITheme.Glow(br, PipBlue, 6f + 4f * pulse, 0.14f + 0.12f * pulse);
+                    GUI.DrawTexture(br, BadgeTex());
+                    if (!ready)   // 쿨 중: 아래에서 차오르는 어두운 마스크
+                    {
+                        float h = br.height * (1f - cfrac);
+                        UITheme.Fill(new Rect(br.x, br.y, br.width, h), new Color(0f, 0f, 0f, 0.55f));
+                    }
+                    glyphStyle.fontSize = Mathf.RoundToInt(es * 0.46f);
+                    glyphStyle.normal.textColor = ready ? UITheme.Lighten(Gold, 0.22f * pulse) : UITheme.A(Gold, 0.55f);
+                    GUI.Label(br, i == 1 ? "E" : "R", glyphStyle);
+                    shown++;
+                }
+            }
         }
 
         // ── 7) 우하단: 예지 눈(착용 시) ──

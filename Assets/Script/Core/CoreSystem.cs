@@ -77,6 +77,7 @@ public class CoreSystem : MonoBehaviour
         if (core != null && subs.Remove(core)) { ApplyPassives(); OnChanged?.Invoke(); }
     }
 
+    public bool IsSub(CoreData core) => core != null && subs.Contains(core);
     public bool IsEquipped(CoreData core) => core != null && (core == Main || subs.Contains(core));
     public int FreeSubSlots => Mathf.Max(0, SubSlots - subs.Count);
 
@@ -98,6 +99,14 @@ public class CoreSystem : MonoBehaviour
         return cdEnd.TryGetValue(s, out end) ? Mathf.Max(0f, end - Time.time) : 0f;
     }
     public bool IsReady(CoreData.Slot s) => SlotUnlocked(s) && CooldownLeft(s) <= 0f;
+
+    // HUD용 충전 비율(0=방금 씀, 1=준비 완료)
+    public float CooldownFrac(CoreData.Slot s)
+    {
+        if (!SlotUnlocked(s)) return 0f;
+        float total = Mathf.Max(0.1f, Main.SkillOf(s).cooldown);
+        return Mathf.Clamp01(1f - CooldownLeft(s) / total);
+    }
 
     // 스킬 사용 시도 — 쓸 수 있으면 쿨타임을 걸고 스킬 정보를 돌려준다(실제 판정/연출은 호출자).
     public CoreSkill TryUse(CoreData.Slot s)
