@@ -590,7 +590,12 @@ public class PlayerController : MonoBehaviour
         animBusyTimer = ClipLength(state);
         comboStep = 0;
         PlayStateForced(state);
-        PerformAttack(attackDamage * sk.damageMultiplier * cs.Specialization, sk.rangeMultiplier);
+
+        // 실제 동작은 종류(kind)별로 CoreSkillRunner가 수행 — 없으면 기본 베기로 폴백
+        float power = attackDamage * sk.damageMultiplier * cs.Specialization;
+        if (CoreSkillRunner.Instance != null) CoreSkillRunner.Instance.Run(sk, power, sk.rangeMultiplier);
+        else PerformAttack(power, sk.rangeMultiplier);
+
         if (slot == CoreData.Slot.Q) skillCooldownTimer = skillCooldown;   // 기본 Q와 쿨 표시 동기화
         return true;
     }
@@ -601,6 +606,22 @@ public class PlayerController : MonoBehaviour
         GetAttackBox(rangeMultiplier, out Vector2 center, out Vector2 size);
         PerformAreaDamage(center, size, damage);
     }
+
+    // ── 코어 스킬용 공개 훅(CoreSkillRunner가 사용) ──
+    public int FacingDir => facingDir;
+    public float DamageScale => GameManager.Instance != null ? GameManager.Instance.AttackMultiplier : 1f;
+    public void AreaDamageAhead(float damage, float rangeMultiplier)
+    {
+        GetAttackBox(rangeMultiplier, out Vector2 c, out Vector2 s);
+        PerformAreaDamage(c, s, damage);
+    }
+    public Bounds AttackBoxAhead(float rangeMultiplier)
+    {
+        GetAttackBox(rangeMultiplier, out Vector2 c, out Vector2 s);
+        return new Bounds(c, s);
+    }
+    public void ForceMoveX(float vx) { if (rb != null) rb.linearVelocity = new Vector2(vx, rb.linearVelocity.y); }
+    public void SetInvincible(float seconds) { hitInvincibleTimer = Mathf.Max(hitInvincibleTimer, seconds); }
 
     // 지정한 사각형 범위 안의 적에게 데미지(낙하 공격 착지 충격 등에 사용)
     private void PerformAreaDamage(Vector2 center, Vector2 size, float damage)

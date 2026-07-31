@@ -106,7 +106,8 @@ public class InventoryUI : MonoBehaviour
         curSlot = (refPx - pad) / cols - pad;
         float titleH = 36f;
         float catH = 28f;
-        float eqCell = curSlot * 0.92f;                                  // 장신구 3×3 그리드 칸
+        // 장신구 칸: 배낭 칸보다 살짝 작게(3×3이라 위계상 자연스럽고, 아래 '착용 효과' 공간도 확보)
+        float eqCell = curSlot * 0.82f;
         float eqGridPx = Equipment.GridW * (eqCell + pad) + pad;
         float eqGridPy = Equipment.GridH * (eqCell + pad) + pad;
         float gridW = cols * (curSlot + pad) + pad;
@@ -191,7 +192,11 @@ public class InventoryUI : MonoBehaviour
             Rect leftPane = new Rect(leftX, bodyY, leftW, bodyH);
             UITheme.FillV(leftPane, UITheme.A(UITheme.SlotBot, 0.55f), UITheme.A(UITheme.SlotBot, 0.85f));
             UITheme.Border2(leftPane, 1f, UITheme.A(UITheme.Border, 0.5f));
+            // 소제목 — 오른쪽 카테고리 탭과 같은 무게가 되도록 금색으로(회색이라 좌우 균형이 무너져 보였음)
+            var prevTS = tabSelStyle.normal.textColor;
+            tabSelStyle.normal.textColor = UITheme.A(UITheme.Accent, 0.95f);
             GUI.Label(new Rect(leftX + 8f, bodyY + 2f, leftW - 16f, 20f), "장신구", tabSelStyle);
+            tabSelStyle.normal.textColor = prevTS;
 
             var eq = Equipment.Instance;
             Equipment.Worn hoverWorn = null;
@@ -203,6 +208,8 @@ public class InventoryUI : MonoBehaviour
                     Rect ec = EqCellRect(eqLeft, eqTop, eqCell, cx, cy);
                     UITheme.FillV(ec, UITheme.A(UITheme.SlotTop, 0.8f), UITheme.A(UITheme.SlotBot, 0.8f));
                     UITheme.Border2(ec, 1f, UITheme.A(UITheme.Border, 0.45f));
+                    // 빈 칸이라는 걸 알리는 옅은 ◇ — '여기에 착용한다'는 암시(맨 검은 칸은 미완성처럼 보였음)
+                    UITheme.Diamond(ec.center, eqCell * 0.13f, UITheme.A(UITheme.Border, 0.30f));
                 }
 
             // 착용 중인 장신구(발자국)
@@ -228,6 +235,10 @@ public class InventoryUI : MonoBehaviour
                 UITheme.Fill(gr, UITheme.A(okp ? cOk : cBad, 0.30f));
                 UITheme.Border2(gr, 2f, UITheme.A(okp ? cOk : cBad, 0.85f));
             }
+
+            // ── 착용 효과 요약 ── 그리드 아래 빈 공간이 그냥 검은 여백이라 창이 미완성처럼 보였던 자리.
+            //    실제로 쓸모 있는 정보(착용으로 붙은 보너스)를 채워 좌우 무게를 맞춘다.
+            DrawEquipSummary(new Rect(leftX + 6f, eqRect.yMax + 10f, leftW - 12f, leftPane.yMax - 36f - (eqRect.yMax + 10f)));
 
             // 금화 행(왼쪽 구역 하단)
             int gold = GameManager.Instance != null ? GameManager.Instance.Gold : 0;
@@ -574,6 +585,64 @@ public class InventoryUI : MonoBehaviour
         ReturnHeld();
         hoodUpgrade = false;
         Inventory.InvUIOpen = false;
+    }
+
+    // 장신구 그리드 아래: 착용으로 붙은 보너스 요약(비어 있으면 담담한 안내)
+    private void DrawEquipSummary(Rect area)
+    {
+        if (area.height < 40f) return;
+        var eq = Equipment.Instance;
+        var gm = GameManager.Instance;
+
+        tabStyle.normal.textColor = UITheme.A(UITheme.Accent, 0.9f);
+        GUI.Label(new Rect(area.x + 2f, area.y, area.width, 18f), "착용 효과", tabStyle);
+        tabStyle.normal.textColor = UITheme.Text;
+
+        Rect body = new Rect(area.x, area.y + 20f, area.width, area.height - 20f);
+        UITheme.FillV(body, UITheme.A(UITheme.PanelTop, 0.55f), UITheme.A(UITheme.PanelBot, 0.55f));
+        UITheme.Border2(body, 1f, UITheme.A(UITheme.Border, 0.4f));
+
+        // 착용 장신구 보너스 합산(코어 몫은 제외 — 여기 칸은 '장신구' 구역)
+        int jump = 0, heart = 0; float atk = 0f; int count = 0;
+        if (eq != null)
+            foreach (var w in eq.worn)
+            {
+                if (w == null || w.item == null) continue;
+                count++;
+                jump += w.item.maxJumpBonus; heart += w.item.maxHeartBonus; atk += w.item.attackBonus;
+            }
+
+        if (count == 0)
+        {
+            tabStyle.normal.textColor = new Color(0.52f, 0.55f, 0.60f);
+            GUI.Label(body, "장신구를 위 칸에 넣으면\n효과가 여기에 표시됩니다", tabStyle);
+            tabStyle.normal.textColor = UITheme.Text;
+            return;
+        }
+
+        float ry = body.y + 5f, rh = 18f;
+        System.Action<string, string> row = (name, val) =>
+        {
+            if (ry + rh > body.yMax - 4f) return;
+            tabStyle.normal.textColor = new Color(0.74f, 0.78f, 0.84f);
+            var pa = tabStyle.alignment; tabStyle.alignment = TextAnchor.MiddleLeft;
+            GUI.Label(new Rect(body.x + 10f, ry, body.width - 20f, rh), name, tabStyle);
+            tabStyle.alignment = TextAnchor.MiddleRight;
+            tabStyle.normal.textColor = UITheme.A(UITheme.Good, 0.95f);
+            GUI.Label(new Rect(body.x + 10f, ry, body.width - 20f, rh), val, tabStyle);
+            tabStyle.alignment = pa; tabStyle.normal.textColor = UITheme.Text;
+            ry += rh;
+        };
+        row("착용", count + " / " + (Equipment.GridW * Equipment.GridH) + " 칸");
+        if (atk > 0f) row("공격력", "+" + atk.ToString("0.#"));
+        if (heart > 0) row("최대 체력", "+" + heart);
+        if (jump > 0) row("점프", "+" + jump);
+        if (gm != null && ry + rh <= body.yMax - 4f)
+        {
+            UITheme.Fill(new Rect(body.x + 10f, ry + 3f, body.width - 20f, 1f), UITheme.A(UITheme.Border, 0.4f));
+            ry += 6f;
+            row("현재 공격 배수", "×" + gm.AttackMultiplier.ToString("0.00"));
+        }
     }
 
     // ── 장신구 3×3 그리드 (왼쪽 구역) ──
@@ -1022,6 +1091,11 @@ public class InventoryUI : MonoBehaviour
                 tabStyle.normal.textColor = UITheme.A(UITheme.Gold, 0.95f);
                 GUI.Label(new Rect(r.x + 8f, r.yMax - 22f, r.width - 16f, 18f),
                     "×" + power.ToString("0.0") + "   " + sk.cooldown.ToString("0.#") + "초", tabStyle);
+                // 스킬 유형 칩(베기/돌진/원거리/충격파/강화) — 오른쪽 정렬
+                var pa3 = tabStyle.alignment; tabStyle.alignment = TextAnchor.MiddleRight;
+                tabStyle.normal.textColor = new Color(0.62f, 0.72f, 0.85f);
+                GUI.Label(new Rect(r.x + 8f, r.yMax - 22f, r.width - 16f, 18f), sk.KindLabel(), tabStyle);
+                tabStyle.alignment = pa3;
                 tabStyle.normal.textColor = UITheme.Text;
             }
             else

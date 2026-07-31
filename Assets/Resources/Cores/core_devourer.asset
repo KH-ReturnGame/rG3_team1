@@ -23,24 +23,62 @@ MonoBehaviour:
   skillQ:
     skillName: "\uC0BC\uD0A4\uB294 \uC77C\uACA9"
     desc: "\uC804\uBC29\uC744 \uD06C\uAC8C \uBCA0\uC5B4 \uC0BC\uD0A8\uB2E4."
+    kind: 0
     cooldown: 5
     damageMultiplier: 2
     rangeMultiplier: 2
     animState: 
+    dashDistance: 6
+    dashTime: 0.22
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 14
+    projectileCount: 1
+    spreadDegrees: 0
+    waveSteps: 3
+    waveStepDistance: 2.6
+    waveStepInterval: 0.09
+    buffAttackMult: 0.5
+    buffDuration: 6
   skillE:
     skillName: "\uD3EC\uC2DD\uC758 \uD30C\uB3D9"
-    desc: "\uC8FC\uBCC0\uC744 \uD6D1\uB294 \uCDA9\uACA9\uD30C."
+    desc: "\uBC14\uB2E5\uC744 \uD0C0\uACE0 \uC88C\uC6B0\uB85C \uD37C\uC9C0\uB294
+      \uCDA9\uACA9\uD30C."
+    kind: 3
     cooldown: 9
     damageMultiplier: 1.6
-    rangeMultiplier: 3
+    rangeMultiplier: 1.6
     animState: 
+    dashDistance: 6
+    dashTime: 0.22
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 14
+    projectileCount: 1
+    spreadDegrees: 0
+    waveSteps: 3
+    waveStepDistance: 2.6
+    waveStepInterval: 0.09
+    buffAttackMult: 0.5
+    buffDuration: 6
   skillR:
     skillName: "\uAD76\uC8FC\uB9B0 \uD3EC\uD6A8"
-    desc: "\uAD11\uC5ED \uAC15\uD0C0 \u2014 \uD6C4\uB4DC\uAC00 \uBD89\uAC8C \uB2EC\uC544\uC624\uB978\uB2E4."
+    desc: "\uC7A0\uC2DC \uAD76\uC8FC\uB9BC\uC774 \uD3ED\uC8FC\uD574 \uACF5\uACA9\uB825\uC774
+      \uC624\uB978\uB2E4."
+    kind: 4
     cooldown: 20
-    damageMultiplier: 3.5
-    rangeMultiplier: 3.5
+    damageMultiplier: 1.5
+    rangeMultiplier: 1.6
     animState: 
+    dashDistance: 6
+    dashTime: 0.22
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 14
+    projectileCount: 1
+    spreadDegrees: 0
+    waveSteps: 3
+    waveStepDistance: 2.6
+    waveStepInterval: 0.09
+    buffAttackMult: 0.6
+    buffDuration: 8
   specialization: 1
   attackBonus: 2
   maxHeartBonus: 0

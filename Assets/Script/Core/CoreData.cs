@@ -58,15 +58,58 @@ public class CoreData : ScriptableObject
     }
 }
 
-// 코어가 제공하는 스킬 하나(골격 — 실제 연출/판정은 다음 단계에서 CoreSkillRunner가 해석)
+// 코어가 제공하는 스킬 하나. kind에 따라 CoreSkillRunner가 실제 동작을 실행한다.
 [System.Serializable]
 public class CoreSkill
 {
+    // 스킬 유형 — 코어마다 '느낌'이 달라지는 축
+    public enum Kind
+    {
+        Slash,       // 전방 광역 베기(기본)
+        Dash,        // 앞으로 돌진하며 관통 피해(돌진 중 무적)
+        Projectile,  // 투사체 발사
+        Shockwave,   // 바닥을 따라 좌우로 퍼지는 충격파
+        Buff,        // 일정 시간 자기 강화(공격 배수)
+    }
+
     public string skillName = "";
     [TextArea] public string desc = "";
+    public Kind kind = Kind.Slash;
     public float cooldown = 6f;
     public float damageMultiplier = 1.5f;   // 플레이어 공격력 대비
     public float rangeMultiplier = 1.6f;
     public string animState = "";           // 비우면 플레이어 기본 스킬 모션(skillState)
+
+    [Header("Dash 전용")]
+    public float dashDistance = 6f;
+    public float dashTime = 0.22f;
+
+    [Header("Projectile 전용")]
+    public GameObject projectilePrefab;     // 비우면 절차 생성 탄으로 대체
+    public float projectileSpeed = 14f;
+    public int projectileCount = 1;
+    public float spreadDegrees = 0f;        // 여러 발일 때 부채꼴 각도
+
+    [Header("Shockwave 전용")]
+    public int waveSteps = 3;               // 몇 단계로 퍼지는지
+    public float waveStepDistance = 2.6f;
+    public float waveStepInterval = 0.09f;
+
+    [Header("Buff 전용")]
+    public float buffAttackMult = 0.5f;     // +50%
+    public float buffDuration = 6f;
+
     public bool IsDefined => !string.IsNullOrEmpty(skillName);
+
+    public string KindLabel()
+    {
+        switch (kind)
+        {
+            case Kind.Dash:       return "돌진";
+            case Kind.Projectile: return "원거리";
+            case Kind.Shockwave:  return "충격파";
+            case Kind.Buff:       return "강화";
+            default:              return "베기";
+        }
+    }
 }
